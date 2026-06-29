@@ -1,52 +1,63 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Links all skills in the repository into the local skill directories used by
-# each agent harness:
-#   - ~/.claude/skills  — Claude Code
-#   - ~/.agents/skills  — pi and other Agent-Skills-standard harnesses
-# Each entry is a symlink into this repo, so a `git pull` is all that's needed
-# to keep installed skills up to date.
+# Dev-mode skill linker — the local equivalent of `npx skills add <repo>`, for when
+# you're actively developing skills in THIS repo and want live edits without
+# reinstalling after every change.
+#
+# It mirrors the layout skills.sh produces, so a dev link and a skills.sh install
+# are interchangeable (never additive — you won't get a skill linked twice):
+#
+#   ~/.agents/skills/<name>            canonical store. skills.sh copies skills here;
+#                                      this script symlinks them straight to the repo
+#                                      so edits are live.
+#   ~/.claude/skills/<name>            per-agent entry for Claude Code, a relative
+#     -> ../../.agents/skills/<name>   symlink into the store — exactly as skills.sh
+#                                      creates it.
+#
+# Use this on the machine where you develop the skills. Everywhere else — and once a
+# skill is committed — install the published version with `npx skills add <repo>`.
+# For a given skill, pick one: dev-link OR skills.sh, not both.
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-DESTS=("$HOME/.claude/skills" "$HOME/.agents/skills")
+AGENTS_STORE="$HOME/.agents/skills"
+CLAUDE_DIR="$HOME/.claude/skills"
 
-# Collect the repo's skills once, link into every destination.
-names=()
-srcs=()
-while IFS= read -r -d '' skill_md; do
-  src="$(dirname "$skill_md")"
-  names+=("$(basename "$src")")
-  srcs+=("$src")
-done < <(find "$REPO/skills" -name SKILL.md -not -path '*/node_modules/*' -not -path '*/deprecated/*' -print0)
-
-for DEST in "${DESTS[@]}"; do
-  # If $DEST is a symlink that resolves into this repo, we'd end up writing the
-  # per-skill symlinks back into the repo's own skills/ tree. Detect and bail
-  # out instead of polluting the working copy.
-  if [ -L "$DEST" ]; then
-    resolved="$(readlink -f "$DEST")"
+# If a destination is itself a symlink that resolves into this repo, the per-skill
+# links would be written back into the working copy. Detect and bail.
+for d in "$AGENTS_STORE" "$CLAUDE_DIR"; do
+  if [ -L "$d" ]; then
+    resolved="$(readlink -f "$d")"
     case "$resolved" in
-      "$REPO"|"$REPO"/*)
-        echo "error: $DEST is a symlink into this repo ($resolved)." >&2
-        echo "Remove it (rm \"$DEST\") and re-run; the script will recreate it as a real dir." >&2
+      "$REPO" | "$REPO"/*)
+        echo "error: $d is a symlink into this repo ($resolved)." >&2
+        echo "Remove it (rm \"$d\") and re-run; the script will recreate it as a real dir." >&2
         exit 1
         ;;
     esac
   fi
-
-  mkdir -p "$DEST"
-
-  for i in "${!names[@]}"; do
-    name="${names[$i]}"
-    src="${srcs[$i]}"
-    target="$DEST/$name"
-
-    if [ -e "$target" ] && [ ! -L "$target" ]; then
-      rm -rf "$target"
-    fi
-
-    ln -sfn "$src" "$target"
-    echo "linked $name -> $src ($DEST)"
-  done
 done
+
+mkdir -p "$AGENTS_STORE" "$CLAUDE_DIR"
+
+while IFS= read -r -d '' skill_md; do
+  src="$(dirname "$skill_md")"
+  name="$(basename "$src")"
+
+  # Canonical store entry -> live symlink into the repo. Replace a real dir left by
+  # a prior `npx skills add` so the dev link takes over.
+  store="$AGENTS_STORE/$name"
+  if [ -e "$store" ] && [ ! -L "$store" ]; then
+    rm -rf "$store"
+  fi
+  ln -sfn "$src" "$store"
+
+  # Per-agent entry for Claude Code: relative symlink into the store, like skills.sh.
+  claude="$CLAUDE_DIR/$name"
+  if [ -e "$claude" ] && [ ! -L "$claude" ]; then
+    rm -rf "$claude"
+  fi
+  ln -sfn "../../.agents/skills/$name" "$claude"
+
+  echo "dev-linked $name -> $src"
+done < <(find "$REPO/skills" -name SKILL.md -not -path '*/node_modules/*' -not -path '*/deprecated/*' -print0)
