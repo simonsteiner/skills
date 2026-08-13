@@ -120,6 +120,17 @@
       ]
     },
     {
+      "repo": "cursor/plugins",
+      "why": "Cursor's plugin monorepo — 78 skills across many kits. Exactly one is curated.",
+      "skills": [
+        {
+          "name": "thermo-nuclear-code-quality-review",
+          "path": "cursor-team-kit/skills/thermo-nuclear-code-quality-review",
+          "why": "User-invoked, deliberately harsh maintainability review of a branch: abstraction quality, giant files, spaghetti conditions, and restructurings that make the code simpler without changing behaviour. Sits alongside code-review rather than replacing it — that one checks standards and spec, this one attacks the structure. Upstream also ships thermo-nuclear-review (security/correctness) and thermos (runs both); neither is curated, so don't reach for thermos."
+        }
+      ]
+    },
+    {
       "repo": "vercel-labs/skills",
       "why": "Vercel's public skill collection; only the discovery skill is curated from it.",
       "skills": [

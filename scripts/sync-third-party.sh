@@ -175,19 +175,24 @@ check)
     for (const [name, where] of unmanaged)
       console.log(`unmanaged ${name} (in ${where.length}: ${where.join(", ")})`);
 
-    // A curated skill can hold different content in two places at once: the CLI wires
-    // some agents up with a symlink into the store and others with a copy, and it does
-    // not always refresh both. Either side can be the old one, so report the drift and
-    // name the older file rather than assuming the store is the truth.
+    // A curated skill can hold different content in the store and in an agent
+    // directory. Only one direction is actionable: an agent copy older than the store
+    // is an agent that missed an update. The reverse is just a vestigial store entry —
+    // this CLI installs new skills straight into the agent directory and never
+    // refreshes an old store copy — so it gets one summary line, not one per skill.
+    let vestigial = 0;
     for (const dir of dirs) {
       for (const name of curated) {
         const [there, here] = [skillMd(dir, name), skillMd(store, name)];
         if (!fs.existsSync(there) || !fs.existsSync(here)) continue;
         if (fs.readFileSync(there, "utf8") === fs.readFileSync(here, "utf8")) continue;
-        const older = fs.statSync(there).mtimeMs < fs.statSync(here).mtimeMs ? there : here;
-        console.log(`drift     ${name} (${dir} vs the store — older copy: ${older})`);
+        if (fs.statSync(there).mtimeMs < fs.statSync(here).mtimeMs)
+          console.log(`drift     ${name} (${dir} is older than the store — re-sync from a plain terminal)`);
+        else vestigial++;
       }
     }
+    if (vestigial)
+      console.log(`note      ${vestigial} store copies under ${store} are older than what the agents load, and unused`);
   ' "$LOCK" "$skills" "$owned" "$STORE" "${AGENT_DIRS[@]}"
   exit "$status"
   ;;

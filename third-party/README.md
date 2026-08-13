@@ -19,7 +19,8 @@ A source can override the top-level `agents` list — `cloudflare/skills` is cur
 | `missing` / `conflict` | curated but not installed, or installed from a different repo than the manifest names (exit 1) |
 | `uncurated` | installed from a remote source but absent from the manifest |
 | `unmanaged` | sitting in an agent's directory with nothing managing it — another channel's install, or an upstream deletion left behind |
-| `drift` | the same curated skill holds different content in an agent directory and in the store; names the older file |
+| `drift` | an agent directory holds an older copy of a curated skill than the store — that agent missed an update |
+| `note` | store copies older than what the agents load. The CLI installs new skills straight into the agent directory and never refreshes an old `~/.agents/skills` entry, so these are leftovers, not a failed sync |
 
 Curated skills are installed globally (`~/.agents/skills`), the same store the skills this repo owns land in, so a curated skill's name must never collide with one under [`../skills/`](../skills/). The sync script refuses to run if it does.
 
@@ -62,6 +63,16 @@ Cloudflare's own skills for the developer platform, all retrieval-first over liv
 - **[web-perf](https://github.com/cloudflare/skills/blob/main/skills/web-perf/SKILL.md)** — Core Web Vitals and load analysis via Chrome DevTools MCP.
 - **[cloudflare-one](https://github.com/cloudflare/skills/blob/main/skills/cloudflare-one/SKILL.md)** — Zero Trust and SASE: Access, Gateway, WARP, Tunnel, device posture.
 - **[cloudflare-one-migrations](https://github.com/cloudflare/skills/blob/main/skills/cloudflare-one-migrations/SKILL.md)** — migrations off Zscaler, Palo Alto, or a legacy VPN.
+
+## cursor/plugins
+
+Cursor's plugin monorepo ships 78 skills across many kits. One is curated.
+
+### User-invoked
+
+- **[thermo-nuclear-code-quality-review](https://github.com/cursor/plugins/blob/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review/SKILL.md)** — a deliberately harsh maintainability review of a branch: abstraction quality, giant files, spaghetti conditions, and restructurings that simplify without changing behaviour. Complements `code-review` (standards and spec) rather than replacing it.
+
+Upstream also ships `thermo-nuclear-review` (security and correctness) and `thermos`, which runs both in parallel. Neither is curated, so `thermos` would only find half its inputs.
 
 ## vercel-labs/skills
 
