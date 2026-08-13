@@ -22,6 +22,17 @@ Skills live in buckets under [`skills/`](./skills/) and split on one axis — wh
 
 - **[conventional-commit](./skills/engineering/conventional-commit/SKILL.md)** _(model-invoked)_ — generate a Conventional Commits v1.0.0 message from the current worktree state.
 
+## Third-party skills
+
+Skills by other people that I use but don't own are **curated, not forked**. [`third-party/skills.json`](./third-party/skills.json) records which upstream skills are worth having and why; a sync script installs them straight from their own repos, so nothing is copied into this one:
+
+```bash
+./scripts/sync-third-party.sh          # install (and upgrade) everything curated
+./scripts/sync-third-party.sh --check  # compare the manifest against what's installed
+```
+
+The annotated list is in [`third-party/README.md`](./third-party/README.md).
+
 ## Developing
 
 To hack on a skill with live edits, symlink this repo's skills into your local agent directories:
