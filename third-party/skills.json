@@ -2,6 +2,68 @@
   "agents": ["claude-code"],
   "sources": [
     {
+      "repo": "cloudflare/skills",
+      "agents": ["claude-code", "github-copilot", "gemini-cli", "antigravity"],
+      "why": "Cloudflare's own skills for the developer platform. Curated across every agent that already had them — see docs/adr/0003. The repo also ships commands/ and rules/, which only its Claude Code plugin installs; skipped deliberately.",
+      "skills": [
+        {
+          "name": "cloudflare",
+          "path": "skills/cloudflare",
+          "why": "Umbrella platform skill — Workers, storage, AI, networking, security. Retrieval-first over live Cloudflare docs rather than pre-trained knowledge."
+        },
+        {
+          "name": "wrangler",
+          "path": "skills/wrangler",
+          "why": "Correct CLI syntax for deploys and resource management. Worth having loaded before any wrangler command."
+        },
+        {
+          "name": "workers-best-practices",
+          "path": "skills/workers-best-practices",
+          "why": "Catches the Workers anti-patterns that bite in production — floating promises, global state, streaming, secrets."
+        },
+        {
+          "name": "durable-objects",
+          "path": "skills/durable-objects",
+          "why": "Stateful coordination: RPC methods, SQLite storage, alarms, WebSockets, and the wrangler config to match."
+        },
+        {
+          "name": "agents-sdk",
+          "path": "skills/agents-sdk",
+          "why": "Building agents on Workers — durable execution, queues, retries, React hooks."
+        },
+        {
+          "name": "sandbox-stable",
+          "path": "skills/sandbox-stable",
+          "why": "Sandboxed execution of untrusted or generated code on the stable @cloudflare/sandbox package. Replaces the old sandbox-sdk skill, which upstream split into sandbox-stable / sandbox-next / sandbox-migrate-to-next; the other two only matter on the 1.0 preview."
+        },
+        {
+          "name": "cloudflare-email-service",
+          "path": "skills/cloudflare-email-service",
+          "why": "Transactional email end to end, including the SPF/DKIM/DMARC config that's easy to get wrong."
+        },
+        {
+          "name": "turnstile-spin",
+          "path": "skills/turnstile-spin",
+          "why": "Wires Turnstile through the whole stack, including canonical server-side siteverify."
+        },
+        {
+          "name": "web-perf",
+          "path": "skills/web-perf",
+          "why": "Core Web Vitals and load analysis via Chrome DevTools MCP."
+        },
+        {
+          "name": "cloudflare-one",
+          "path": "skills/cloudflare-one",
+          "why": "Zero Trust and SASE — Access, Gateway, WARP, Tunnel, device posture."
+        },
+        {
+          "name": "cloudflare-one-migrations",
+          "path": "skills/cloudflare-one-migrations",
+          "why": "Migration planning off Zscaler, Palo Alto, or a legacy VPN. Paired with cloudflare-one."
+        }
+      ]
+    },
+    {
       "repo": "mattpocock/skills",
       "why": "The repo this one forked from. These are the skills worth tracking upstream rather than owning — see docs/adr/0001.",
       "skills": [

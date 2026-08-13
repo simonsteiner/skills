@@ -18,6 +18,11 @@ set -euo pipefail
 # upstream default branch today. If you ever need a reproducible pinned version,
 # curation is the wrong tool and you'd have to vendor the skill instead.
 #
+# Run this from a plain terminal, not from inside a coding-agent session. The CLI
+# detects the agent it's running under and installs non-interactively to that agent
+# alone, so a sync started inside Claude Code updates the store and Claude Code and
+# silently leaves every other agent in the manifest on its old copy.
+#
 # Skills this repo owns (skills/**) are installed a different way — with
 # `npx skills add simonsteiner/skills`, or scripts/link-skills.sh while developing.
 # The two sets must never overlap; the collision guard below enforces that.
@@ -60,11 +65,12 @@ esac
 # Read the manifest through node (already a hard dependency — the CLI runs under npx).
 manifest() { node -e "$1" "$MANIFEST"; }
 
-agents="$(manifest 'process.stdout.write(require(process.argv[1]).agents.join(","))')"
-# One line per source: "<repo><TAB><comma-separated skill names>"
+# One line per source: "<repo><TAB><skill names><TAB><agents>". A source may override
+# the top-level agent list — curate a skill only into the agents that should carry it.
 sources="$(manifest '
-  for (const s of require(process.argv[1]).sources)
-    console.log([s.repo, s.skills.map((k) => k.name).join(",")].join("\t"));
+  const m = require(process.argv[1]);
+  for (const s of m.sources)
+    console.log([s.repo, s.skills.map((k) => k.name).join(","), (s.agents ?? m.agents).join(",")].join("\t"));
 ')"
 # One line per skill: "<name><TAB><repo>"
 skills="$(manifest '
@@ -72,10 +78,23 @@ skills="$(manifest '
     for (const k of s.skills) console.log([k.name, s.repo].join("\t"));
 ')"
 
+# The store the CLI installs into, and the per-agent directories it wires up. Used only
+# to report drift — installs go through the CLI, which owns the real agent-to-path map,
+# so an agent missing from this list just goes unreported, never uninstalled.
+STORE="$HOME/.agents/skills"
+AGENT_DIRS=(
+  "$HOME/.claude/skills"             # claude-code
+  "$HOME/.copilot/skills"            # github-copilot
+  "$HOME/.gemini/skills"             # gemini-cli
+  "$HOME/.gemini/antigravity/skills" # antigravity
+)
+
 # A curated skill and an owned skill would fight over the same name in the global
 # store, and whichever synced last would silently win. Refuse instead.
+owned=""
 while IFS= read -r -d '' skill_md; do
   own="$(basename "$(dirname "$skill_md")")"
+  owned="${owned:+$owned,}$own"
   if awk -F'\t' -v n="$own" '$1 == n { found = 1 } END { exit !found }' <<<"$skills"; then
     echo "error: '$own' is curated in third-party/skills.json but this repo also owns skills/**/$own." >&2
     echo "Rename one of them, or drop it from the manifest — they cannot both be installed." >&2
@@ -127,13 +146,65 @@ check)
       if (s.source && s.sourceType === "github" && !curated.has(name))
         console.log(`uncurated ${name} (installed from ${s.source})`);
   ' "$LOCK" "$skills"
+
+  # Skills sitting in an agent's directory that nothing manages: absent from the lock
+  # file, uncurated, and not owned here. That's how another channel's install shows up
+  # — a Claude Code plugin marketplace, or a hand copy — as a frozen snapshot with no
+  # upgrade path. See docs/adr/0003.
+  # shellcheck disable=SC2016  # ${...} here is a JS template literal — the shell must not expand it
+  node -e '
+    const fs = require("fs");
+    const [lockPath, curatedTsv, ownedCsv, store, ...dirs] = process.argv.slice(1);
+    const curated = curatedTsv.split("\n").filter(Boolean).map((l) => l.split("\t")[0]);
+    const known = new Set([
+      ...Object.keys(require(lockPath).skills),
+      ...curated,
+      ...ownedCsv.split(",").filter(Boolean),
+    ]);
+    const skillMd = (dir, name) => `${dir}/${name}/SKILL.md`;
+
+    const unmanaged = new Map();
+    for (const dir of [store, ...dirs]) {
+      if (!fs.existsSync(dir)) continue;
+      for (const name of fs.readdirSync(dir)) {
+        if (known.has(name) || !fs.existsSync(skillMd(dir, name))) continue;
+        if (!unmanaged.has(name)) unmanaged.set(name, []);
+        unmanaged.get(name).push(dir);
+      }
+    }
+    for (const [name, where] of unmanaged)
+      console.log(`unmanaged ${name} (in ${where.length}: ${where.join(", ")})`);
+
+    // A curated skill can hold different content in two places at once: the CLI wires
+    // some agents up with a symlink into the store and others with a copy, and it does
+    // not always refresh both. Either side can be the old one, so report the drift and
+    // name the older file rather than assuming the store is the truth.
+    for (const dir of dirs) {
+      for (const name of curated) {
+        const [there, here] = [skillMd(dir, name), skillMd(store, name)];
+        if (!fs.existsSync(there) || !fs.existsSync(here)) continue;
+        if (fs.readFileSync(there, "utf8") === fs.readFileSync(here, "utf8")) continue;
+        const older = fs.statSync(there).mtimeMs < fs.statSync(here).mtimeMs ? there : here;
+        console.log(`drift     ${name} (${dir} vs the store — older copy: ${older})`);
+      }
+    }
+  ' "$LOCK" "$skills" "$owned" "$STORE" "${AGENT_DIRS[@]}"
   exit "$status"
   ;;
 
 sync)
-  while IFS=$'\t' read -r repo names; do
+  while IFS=$'\t' read -r repo names srcagents; do
     echo "==> $repo: $names"
-    npx --yes skills@latest add "$repo" --global --yes --agent "$agents" --skill "$names"
+    # One --skill / --agent flag per value. The CLI reads a comma-separated list as a
+    # single name and fails the whole install with "No matching skills found".
+    flags=()
+    IFS=, read -ra parts <<<"$names"
+    for p in "${parts[@]}"; do flags+=(--skill "$p"); done
+    IFS=, read -ra parts <<<"$srcagents"
+    for p in "${parts[@]}"; do flags+=(--agent "$p"); done
+    # </dev/null or the CLI drains the loop's stdin and every source after the first
+    # is silently skipped.
+    npx --yes skills@latest add "$repo" --global --yes "${flags[@]}" </dev/null
   done <<<"$sources"
   echo
   echo "Synced. Verify with: $0 --check"
