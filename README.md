@@ -1,6 +1,6 @@
 # Skills
 
-My personal collection of agent skills for real engineering. They're small, easy to adapt, composable, and work with any model.
+My personal collection of agent skills for real engineering. They're small, easy to adapt, composable, and work with any model — each one is a plain folder with a `SKILL.md`, following the open [Agent Skills](https://github.com/agentskills/agentskills) format, so any agent that speaks it can load them.
 
 > This repository is a fork of Matt Pocock's [`skills`](https://github.com/mattpocock/skills). It keeps the structure of the original but maintains its own pared-down set of skills, and does not sync with upstream.
 

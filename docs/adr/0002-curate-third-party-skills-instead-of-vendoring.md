@@ -27,3 +27,11 @@ Three ways to do that:
 - **Upstream deletions and renames break the sync**, loudly, at install time. That's the intended failure mode: a skill that vanished upstream should force a decision, not linger as a stale copy.
 - **The manifest can drift from reality** — nothing forces a sync after an edit, and skills added by hand with `npx skills add` won't be in it. `--check` exists to surface both directions of drift; it isn't run automatically.
 - **Publisher and consumer roles stay separate.** `npx skills add simonsteiner/skills` still installs exactly the skills this repo wrote, and no attribution or licensing question arises from re-shipping someone else's work.
+
+## When to revisit
+
+"A git repo plus scripts" is a known pattern with a known critique — [localskills.sh's roundup of skills.sh alternatives](https://localskills.sh/blog/skills-sh-alternatives) puts it as total control bought with total maintenance burden, where you end up rebuilding versioning, per-tool format translation, and access control by hand: fine at very small scale, unreasonable past a handful of engineers. (It's a registry vendor's post, so read the conclusion with that in mind.)
+
+Half of that critique doesn't land here, because this isn't fully DIY: fetching from upstream and wiring skills into each agent's directory are the skills.sh CLI's job, and the format is the [Agent Skills](https://github.com/agentskills/agentskills) spec, so there's no per-tool translation to maintain. What this repo owns is only the curated list. The half that does land is versioning — no pinning, no rollback — and there is no access control at all, which is fine while everything curated is public and the audience is one person.
+
+The triggers to move to a registry with real versioning (localskills.sh, or whatever the equivalent is by then) are: more than a couple of people consuming this list, needing to pin or roll back a skill version, or wanting private skills in the same flow.
