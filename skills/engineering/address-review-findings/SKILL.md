@@ -8,6 +8,8 @@ description: >
 
 Turn a PR's review threads into fixes, replies, and resolutions — one decision per thread, none of them silent.
 
+Read, triage, and fix without pausing for permission; the only gate is Step 4, where replies and resolutions go out to a PR other people are watching.
+
 The feedback lives on GitHub, so `gh` must be authenticated (`gh auth status`). Findings produced in this session by a review skill are a different thing: act on those directly, no PR round-trip needed.
 
 ---
@@ -65,7 +67,7 @@ Open the file at the referenced line **before** deciding. The comment is a claim
 
 Never convert "disagree" into a silent resolve. An unconvinced reviewer with a closed thread is worse than an open one.
 
-Present the triage before touching code, so the user can overrule any verdict.
+**Don't stop for approval of the triage — write the fixes straight away** and report the verdicts alongside them in Step 5. The user can overrule any verdict after seeing the diff, which is cheaper than reading a table of intentions. The one exception is a *needs a decision* thread: that one waits for the user while every other thread proceeds.
 
 ---
 
