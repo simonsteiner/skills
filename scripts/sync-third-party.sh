@@ -147,10 +147,14 @@ check)
         console.log(`uncurated ${name} (installed from ${s.source})`);
   ' "$LOCK" "$skills"
 
-  # Skills sitting in an agent's directory that nothing manages: absent from the lock
-  # file, uncurated, and not owned here. That's how another channel's install shows up
-  # — a Claude Code plugin marketplace, or a hand copy — as a frozen snapshot with no
-  # upgrade path. See docs/adr/0003.
+  # Skills sitting in the store or an agent's directory that nothing manages: absent
+  # from the lock file, uncurated, and not owned here. That's how another channel's
+  # install shows up — a Claude Code plugin marketplace, or a hand copy — as a frozen
+  # snapshot with no upgrade path. See docs/adr/0003.
+  #
+  # The store is scanned too, on purpose. A store copy of a *curated* skill is `known`
+  # and never reaches this report; what does reach it is a store entry whose lock
+  # record is gone, which is unmanaged in exactly the sense that matters.
   # shellcheck disable=SC2016  # ${...} here is a JS template literal — the shell must not expand it
   node -e '
     const fs = require("fs");

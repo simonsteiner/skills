@@ -4,7 +4,7 @@ My personal collection of agent skills for real engineering. They're small, easy
 
 > This repository is a fork of Matt Pocock's [`skills`](https://github.com/mattpocock/skills). It keeps the structure of the original but maintains its own pared-down set of skills, and does not sync with upstream.
 
-It currently ships a single skill, with the bucket structure kept in place to grow into.
+Only the engineering bucket is populated today; the rest of the structure is kept in place to grow into.
 
 ## Install
 

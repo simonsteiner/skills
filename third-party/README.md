@@ -18,7 +18,7 @@ A source can override the top-level `agents` list — `cloudflare/skills` is cur
 |---|---|
 | `missing` / `conflict` | curated but not installed, or installed from a different repo than the manifest names (exit 1) |
 | `uncurated` | installed from a remote source but absent from the manifest |
-| `unmanaged` | sitting in an agent's directory with nothing managing it — another channel's install, or an upstream deletion left behind |
+| `unmanaged` | sitting in the store or an agent's directory with nothing managing it — another channel's install, or an upstream deletion left behind |
 | `drift` | an agent directory holds an older copy of a curated skill than the store — that agent missed an update |
 | `note` | store copies older than what the agents load. The CLI installs new skills straight into the agent directory and never refreshes an old `~/.agents/skills` entry, so these are leftovers, not a failed sync |
 
