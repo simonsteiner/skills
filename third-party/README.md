@@ -10,6 +10,17 @@ Skills written by other people that I use but don't own. Nothing here is forked,
 
 Re-running the sync re-fetches each skill, so **sync is also the upgrade command**. The flip side: there is no version pinning — every sync moves each skill to whatever is on its upstream default branch that day. Read the diff upstream before syncing if that matters.
 
+**Run the sync from a plain terminal, not from inside a coding-agent session.** The CLI detects the agent it's running under and installs to that agent alone, so a sync started inside Claude Code updates the store and Claude Code and silently leaves every other agent on its old copy.
+
+A source can override the top-level `agents` list — `cloudflare/skills` is curated into four agents, everything else into Claude Code only. What `--check` reports:
+
+| | |
+|---|---|
+| `missing` / `conflict` | curated but not installed, or installed from a different repo than the manifest names (exit 1) |
+| `uncurated` | installed from a remote source but absent from the manifest |
+| `unmanaged` | sitting in an agent's directory with nothing managing it — another channel's install, or an upstream deletion left behind |
+| `drift` | the same curated skill holds different content in an agent directory and in the store; names the older file |
+
 Curated skills are installed globally (`~/.agents/skills`), the same store the skills this repo owns land in, so a curated skill's name must never collide with one under [`../skills/`](../skills/). The sync script refuses to run if it does.
 
 To add one: find it (`npx skills find`, or `/find-skills`), try it without installing (`npx skills use <owner/repo>@<skill>`), then add an entry to `skills.json` with a real reason and list it below.
@@ -33,6 +44,24 @@ The repo this one forked from ([ADR 0001](../docs/adr/0001-fork-and-pare-down-to
 - **[grilling](https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md)** — the interview engine behind the grill skills.
 - **[prototype](https://github.com/mattpocock/skills/blob/main/skills/engineering/prototype/SKILL.md)** — build a throwaway prototype to answer a design question.
 - **[research](https://github.com/mattpocock/skills/blob/main/skills/engineering/research/SKILL.md)** — investigate a question against primary sources and land the findings as Markdown.
+
+## cloudflare/skills
+
+Cloudflare's own skills for the developer platform, all retrieval-first over live Cloudflare docs. These arrived through a plugin marketplace and sat outside the manifest as frozen copies until [ADR 0003](../docs/adr/0003-move-the-cloudflare-skills-onto-the-curated-channel.md) moved them onto this channel; the repo's `commands/` and `rules/` are deliberately not curated, since only its Claude Code plugin installs those.
+
+### Model-invoked
+
+- **[cloudflare](https://github.com/cloudflare/skills/blob/main/skills/cloudflare/SKILL.md)** — umbrella platform skill: Workers, storage, AI, networking, security, IaC.
+- **[wrangler](https://github.com/cloudflare/skills/blob/main/skills/wrangler/SKILL.md)** — correct CLI syntax for deploys and resource management.
+- **[workers-best-practices](https://github.com/cloudflare/skills/blob/main/skills/workers-best-practices/SKILL.md)** — authoring and reviewing Workers against production practices.
+- **[durable-objects](https://github.com/cloudflare/skills/blob/main/skills/durable-objects/SKILL.md)** — stateful coordination, RPC, SQLite storage, alarms, WebSockets.
+- **[agents-sdk](https://github.com/cloudflare/skills/blob/main/skills/agents-sdk/SKILL.md)** — agents on Workers: durable execution, queues, retries, React hooks.
+- **[sandbox-stable](https://github.com/cloudflare/skills/blob/main/skills/sandbox-stable/SKILL.md)** — sandboxed code execution on the stable `@cloudflare/sandbox` package.
+- **[cloudflare-email-service](https://github.com/cloudflare/skills/blob/main/skills/cloudflare-email-service/SKILL.md)** — transactional email, routing, and the SPF/DKIM/DMARC setup.
+- **[turnstile-spin](https://github.com/cloudflare/skills/blob/main/skills/turnstile-spin/SKILL.md)** — Turnstile end to end, including server-side siteverify.
+- **[web-perf](https://github.com/cloudflare/skills/blob/main/skills/web-perf/SKILL.md)** — Core Web Vitals and load analysis via Chrome DevTools MCP.
+- **[cloudflare-one](https://github.com/cloudflare/skills/blob/main/skills/cloudflare-one/SKILL.md)** — Zero Trust and SASE: Access, Gateway, WARP, Tunnel, device posture.
+- **[cloudflare-one-migrations](https://github.com/cloudflare/skills/blob/main/skills/cloudflare-one-migrations/SKILL.md)** — migrations off Zscaler, Palo Alto, or a legacy VPN.
 
 ## vercel-labs/skills
 
