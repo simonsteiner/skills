@@ -26,8 +26,9 @@ Stop and report — do not "clean up" — if:
 ```bash
 # with an upstream: what hasn't been pushed
 git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null && git log '@{u}..HEAD' --oneline
-# without one: what isn't on the default branch yet
-git log origin/<default>..HEAD --oneline
+# without one: what isn't on the default branch yet. origin/HEAD resolves on its own,
+# so this works before step 2 has picked the branch apart
+git log origin/HEAD..HEAD --oneline
 ```
 
 `git log @{u}..HEAD` fails with *no upstream configured* on a fresh branch — that's expected, fall through to the second form rather than treating it as an error.
@@ -38,12 +39,15 @@ Leaving unpushed commits behind isn't fatal — they stay on their branch — bu
 
 ## Step 2 — Find the default branch
 
-Never assume `main`.
+Never assume `main`. Note the ref is remote-qualified — strip the remote before using it as a local branch name, or `git switch` detaches HEAD instead of switching.
 
 ```bash
-git symbolic-ref --short refs/remotes/origin/HEAD   # -> origin/main
-git remote set-head origin --auto                   # if the above is unset
+git remote set-head origin --auto                          # only if the ref below is unset
+default="$(git symbolic-ref --short refs/remotes/origin/HEAD)"   # -> origin/main
+default="${default#origin/}"                                     # -> main
 ```
+
+Carry `$default` into the next steps.
 
 ---
 
@@ -51,8 +55,8 @@ git remote set-head origin --auto                   # if the above is unset
 
 ```bash
 git fetch --prune origin
-git switch <default>
-git merge --ff-only origin/<default>
+git switch "$default"
+git merge --ff-only "origin/$default"
 ```
 
 `--ff-only` is the point: it updates the branch or it fails. If it fails, the local default has diverged from origin — commits were made directly on it. **Stop and report**; resetting or merging it is the user's call, not a step in a branch-creation flow.

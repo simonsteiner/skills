@@ -19,7 +19,13 @@ gh pr view --json number,title,url,headRefName,baseRefName,state,reviewDecision,
 gh pr view --comments   # review summaries and issue comments — the prose around the threads
 ```
 
-Inline threads need GraphQL; the REST comments endpoint doesn't expose whether a thread is resolved.
+Inline threads need GraphQL; the REST comments endpoint doesn't expose whether a thread is resolved. Set the three variables the query needs first — unset ones give an empty result, not an error:
+
+```bash
+OWNER="$(gh repo view --json owner --jq .owner.login)"
+REPO="$(gh repo view --json name --jq .name)"
+PR="$(gh pr view --json number --jq .number)"
+```
 
 ```bash
 gh api graphql -f query='
@@ -37,8 +43,6 @@ query($owner:String!, $repo:String!, $number:Int!) {
 }' -f owner="$OWNER" -f repo="$REPO" -F number="$PR" \
   --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)'
 ```
-
-`$OWNER`/`$REPO` come from `gh repo view --json owner,name`; `$PR` from step 1.
 
 - `id` is the thread ID — it's what replies and resolutions attach to. Keep it with each finding.
 - **`line` is null on outdated threads.** Use `originalLine` and `diffHunk` to locate what the reviewer was looking at; the code has moved since.
