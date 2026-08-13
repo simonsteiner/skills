@@ -85,6 +85,7 @@ done < <(find "$REPO/skills" -name SKILL.md -not -path '*/node_modules/*' -print
 
 case "$mode" in
 list)
+  # shellcheck disable=SC2016  # ${...} here is a JS template literal — the shell must not expand it
   manifest '
     for (const s of require(process.argv[1]).sources) {
       console.log(`\n${s.repo} — ${s.why}`);
@@ -118,6 +119,7 @@ check)
 
   # Global skills installed from a remote source but absent from the manifest: either
   # curate them deliberately or remove them with `npx skills remove -g`.
+  # shellcheck disable=SC2016  # ${...} here is a JS template literal — the shell must not expand it
   node -e '
     const lock = require(process.argv[1]).skills;
     const curated = new Set(process.argv[2].split("\n").filter(Boolean).map((l) => l.split("\t")[0]));
