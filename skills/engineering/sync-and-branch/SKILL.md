@@ -1,12 +1,14 @@
 ---
 name: sync-and-branch
 description: >
-  Fast-forward the default branch to origin and cut a fresh feature branch from it. Use when the user wants to start a new feature, task, or piece of work, asks for a new branch, or says to sync with main first — and before starting work that would otherwise land on a stale base.
+  Fast-forward the default branch to origin and cut a fresh feature branch from it, in place or as a new git worktree when the current tree is dirty. Use when the user wants to start a new feature, task, or piece of work, asks for a new branch or a worktree, or says to sync with main first — and before starting work that would otherwise land on a stale base.
 ---
 
 # Sync and Branch
 
-Bring the default branch up to date and start the new work on top of it. **Refuses to run on a dirty worktree** — nothing here stashes, commits, or discards anything on the user's behalf.
+Bring the default branch up to date and start the new work on top of it. Nothing here stashes, commits, or discards anything on the user's behalf.
+
+A dirty worktree isn't a dead end: switching in place would disturb the work, so **branch into a new git worktree instead** (Step 6) and leave it exactly where it is. In-place is the default when the tree is clean.
 
 ---
 
@@ -16,11 +18,13 @@ Bring the default branch up to date and start the new work on top of it. **Refus
 git rev-parse --abbrev-ref HEAD
 git status --porcelain
 git stash list
+git worktree list   # what already exists, and which branches are spoken for
 ```
+
+**`git status --porcelain` non-empty picks the route, it doesn't stop the run.** Uncommitted work would follow you onto the new branch or block the switch, so take Step 6 instead of Steps 3–5 and say why. Never stash or commit it to clear the way.
 
 Stop and report — do not "clean up" — if:
 
-- **`git status --porcelain` is non-empty.** Uncommitted work would follow you onto the new branch or block the switch. List what's dirty and ask the user to commit, stash, or discard it themselves.
 - **The current branch has work that exists nowhere else.** Check it, minding that a branch may have no upstream at all:
 
 ```bash
@@ -94,9 +98,38 @@ Do not push and do not set an upstream. The first `git push -u origin <name>` be
 
 ---
 
+## Step 6 — The worktree route (dirty tree)
+
+A worktree is a second checkout of the same repository in another directory. The dirty tree stays exactly as it is, on its own branch, while the new branch gets a clean directory of its own.
+
+Steps 1, 2 and 4 still apply — preflight, resolve `$default`, name the branch. Steps 3 and 5 are replaced by:
+
+```bash
+git fetch --prune origin
+
+# Fast-forward the local default branch without checking it out. This fails if the
+# default branch is checked out in any worktree; that's harmless here — skip it, since
+# the new branch is cut from origin/$default either way.
+git fetch origin "$default:$default"
+
+repo="$(basename "$(git rev-parse --show-toplevel)")"
+path="../$repo.worktrees/<slug>"
+git worktree add --no-track "$path" -b <name> "origin/$default"
+```
+
+- **`--no-track` is not optional.** Without it the new branch is created tracking `origin/$default`, so `git status` reports it as ahead of `main` and a bare `git pull` pulls the default branch into the feature branch.
+- `<slug>` is the branch name with `/` flattened — `feat/add-foo` → `feat-add-foo`. A path is not a ref; nested directories from a branch name are noise.
+- The branch must not already exist: `git worktree add -b` fails outright if it does, and git refuses to check out one branch in two worktrees at once. Step 4's availability check is what prevents this.
+
+Report the **absolute path** of the new worktree and the fact that the shell doesn't move: the session stays in the original directory, and the user has to `cd` there. An agent continuing the work has to change directory too, or it will edit the wrong checkout.
+
+When the work is done: `git worktree remove <path>` — which deletes the directory but keeps the branch, so a merged branch still needs its own cleanup. `git worktree list` shows what exists; `git worktree prune` clears records of directories deleted by hand.
+
+---
+
 ## Rules of thumb
 
-- Refuse rather than tidy. Stashing someone's uncommitted work to unblock yourself is how work gets lost.
+- Branch beside the work rather than tidying it away. Stashing someone's uncommitted work to unblock yourself is how work gets lost; a worktree needs no one's tree to be clean.
 - A failed `--ff-only` is information, not an obstacle to route around.
 - One branch per intent. If the user describes two unrelated things, ask which one this branch is for.
 - Already on an up-to-date default branch with a clean tree? Steps 1–3 are near-instant — still run them, that's how you know.
