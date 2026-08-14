@@ -1,6 +1,8 @@
 {
   "name": "simonsteiner-skills",
   "skills": [
-    "./skills/engineering/conventional-commit"
+    "./skills/engineering/address-review-findings",
+    "./skills/engineering/conventional-commit",
+    "./skills/engineering/sync-and-branch"
   ]
 }

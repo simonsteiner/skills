@@ -1,5 +1,7 @@
 # Model-invoked vs user-invoked
 
+The file format itself — a folder with a `SKILL.md`, its frontmatter, and the discovery/activation/execution loading model — is the open [Agent Skills](https://github.com/agentskills/agentskills) spec, not something this repo defines. This doc covers only the one axis the spec leaves to the author.
+
 Every `SKILL.md` in this repo is a skill. The one axis that splits them is **invocation** — who can reach it:
 
 - **User-invoked** — reachable **only by the human typing its name**. Set `disable-model-invocation: true` in the frontmatter. The `description` is **human-facing**: a one-line summary read by a person browsing slash-commands. Strip trigger lists ("Use when the user says…").

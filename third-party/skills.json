@@ -1,0 +1,145 @@
+{
+  "agents": ["claude-code"],
+  "sources": [
+    {
+      "repo": "cloudflare/skills",
+      "agents": ["claude-code", "github-copilot", "gemini-cli", "antigravity"],
+      "why": "Cloudflare's own skills for the developer platform. Curated across every agent that already had them — see docs/adr/0003. The repo also ships commands/ and rules/, which only its Claude Code plugin installs; skipped deliberately.",
+      "skills": [
+        {
+          "name": "cloudflare",
+          "path": "skills/cloudflare",
+          "why": "Umbrella platform skill — Workers, storage, AI, networking, security. Retrieval-first over live Cloudflare docs rather than pre-trained knowledge."
+        },
+        {
+          "name": "wrangler",
+          "path": "skills/wrangler",
+          "why": "Correct CLI syntax for deploys and resource management. Worth having loaded before any wrangler command."
+        },
+        {
+          "name": "workers-best-practices",
+          "path": "skills/workers-best-practices",
+          "why": "Catches the Workers anti-patterns that bite in production — floating promises, global state, streaming, secrets."
+        },
+        {
+          "name": "durable-objects",
+          "path": "skills/durable-objects",
+          "why": "Stateful coordination: RPC methods, SQLite storage, alarms, WebSockets, and the wrangler config to match."
+        },
+        {
+          "name": "agents-sdk",
+          "path": "skills/agents-sdk",
+          "why": "Building agents on Workers — durable execution, queues, retries, React hooks."
+        },
+        {
+          "name": "sandbox-stable",
+          "path": "skills/sandbox-stable",
+          "why": "Sandboxed execution of untrusted or generated code on the stable @cloudflare/sandbox package. Replaces the old sandbox-sdk skill, which upstream split into sandbox-stable / sandbox-next / sandbox-migrate-to-next; the other two only matter on the 1.0 preview."
+        },
+        {
+          "name": "cloudflare-email-service",
+          "path": "skills/cloudflare-email-service",
+          "why": "Transactional email end to end, including the SPF/DKIM/DMARC config that's easy to get wrong."
+        },
+        {
+          "name": "turnstile-spin",
+          "path": "skills/turnstile-spin",
+          "why": "Wires Turnstile through the whole stack, including canonical server-side siteverify."
+        },
+        {
+          "name": "web-perf",
+          "path": "skills/web-perf",
+          "why": "Core Web Vitals and load analysis via Chrome DevTools MCP."
+        },
+        {
+          "name": "cloudflare-one",
+          "path": "skills/cloudflare-one",
+          "why": "Zero Trust and SASE — Access, Gateway, WARP, Tunnel, device posture."
+        },
+        {
+          "name": "cloudflare-one-migrations",
+          "path": "skills/cloudflare-one-migrations",
+          "why": "Migration planning off Zscaler, Palo Alto, or a legacy VPN. Paired with cloudflare-one."
+        }
+      ]
+    },
+    {
+      "repo": "mattpocock/skills",
+      "why": "The repo this one forked from. These are the skills worth tracking upstream rather than owning — see docs/adr/0001.",
+      "skills": [
+        {
+          "name": "code-review",
+          "path": "skills/engineering/code-review",
+          "why": "Reviews changes since a fixed point on two axes — repo standards and the originating spec."
+        },
+        {
+          "name": "codebase-design",
+          "path": "skills/engineering/codebase-design",
+          "why": "Deep-module vocabulary. Shared dependency of grilling and improve-codebase-architecture."
+        },
+        {
+          "name": "diagnosing-bugs",
+          "path": "skills/engineering/diagnosing-bugs",
+          "why": "Diagnosis loop for hard bugs and performance regressions."
+        },
+        {
+          "name": "domain-modeling",
+          "path": "skills/engineering/domain-modeling",
+          "why": "Maintains ubiquitous language and ADRs. Shared dependency of grill-with-docs."
+        },
+        {
+          "name": "grill-me",
+          "path": "skills/productivity/grill-me",
+          "why": "User-invoked entry point to the grilling interview."
+        },
+        {
+          "name": "grill-with-docs",
+          "path": "skills/engineering/grill-with-docs",
+          "why": "Grilling that writes ADRs and a glossary as it goes. Needs domain-modeling."
+        },
+        {
+          "name": "grilling",
+          "path": "skills/productivity/grilling",
+          "why": "The interview engine itself. Required by grill-me and grill-with-docs."
+        },
+        {
+          "name": "improve-codebase-architecture",
+          "path": "skills/engineering/improve-codebase-architecture",
+          "why": "Scans for deepening opportunities and grills through the one you pick. Needs codebase-design."
+        },
+        {
+          "name": "prototype",
+          "path": "skills/engineering/prototype",
+          "why": "Throwaway prototypes to sanity-check a state model or UI before committing to it."
+        },
+        {
+          "name": "research",
+          "path": "skills/engineering/research",
+          "why": "Delegates reading legwork to a background agent and lands findings as Markdown in the repo."
+        }
+      ]
+    },
+    {
+      "repo": "cursor/plugins",
+      "why": "Cursor's plugin monorepo — 78 skills across many kits. Exactly one is curated.",
+      "skills": [
+        {
+          "name": "thermo-nuclear-code-quality-review",
+          "path": "cursor-team-kit/skills/thermo-nuclear-code-quality-review",
+          "why": "User-invoked, deliberately harsh maintainability review of a branch: abstraction quality, giant files, spaghetti conditions, and restructurings that make the code simpler without changing behaviour. Sits alongside code-review rather than replacing it — that one checks standards and spec, this one attacks the structure. Upstream also ships thermo-nuclear-review (security/correctness) and thermos (runs both); neither is curated, so don't reach for thermos."
+        }
+      ]
+    },
+    {
+      "repo": "vercel-labs/skills",
+      "why": "Vercel's public skill collection; only the discovery skill is curated from it.",
+      "skills": [
+        {
+          "name": "find-skills",
+          "path": "skills/find-skills",
+          "why": "Finds and installs skills on demand — the discovery front-end to everything else."
+        }
+      ]
+    }
+  ]
+}
