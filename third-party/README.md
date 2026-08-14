@@ -2,6 +2,8 @@
 
 Skills written by other people that I use but don't own. Nothing here is forked, copied, or vendored — [`skills.json`](./skills.json) is a curated list of *which* upstream skills are worth having and *why*, and [`../scripts/sync-third-party.sh`](../scripts/sync-third-party.sh) installs them from their own repos via the [skills.sh](https://skills.sh) CLI.
 
+From the repo root:
+
 ```bash
 ./scripts/sync-third-party.sh          # install everything below, at latest
 ./scripts/sync-third-party.sh --check  # compare the manifest against what's installed
