@@ -8,7 +8,7 @@ description: >
 
 Turn a PR's review threads into fixes, replies, and resolutions — one decision per thread, none of them silent.
 
-Read, triage, and fix without pausing for permission; the only gate is Step 4, where replies and resolutions go out to a PR other people are watching.
+**Run the whole loop hands-off** — read, triage, fix, commit, push, reply, resolve — and report at the end. Nothing here waits for the user. What keeps that safe is what the run refuses to do, not a checkpoint: a thread is only ever resolved when it was actually addressed, and a thread that needs a human keeps itself open by staying open.
 
 The feedback lives on GitHub, so `gh` must be authenticated (`gh auth status`). Findings produced in this session by a review skill are a different thing: act on those directly, no PR round-trip needed.
 
@@ -62,12 +62,12 @@ Open the file at the referenced line **before** deciding. The comment is a claim
 | fix | the reviewer is right | change the code |
 | already fixed | a later commit resolved it | verify it really did, then reply with the commit |
 | stale | thread is outdated and the code no longer exists in that form | reply explaining what replaced it |
-| needs a decision | a trade-off or a scope question that isn't yours to settle | ask the user, leave the thread open |
+| needs a decision | a trade-off or a scope question that isn't yours to settle | reply with the question, leave the thread open, keep going |
 | disagree | the suggestion is wrong or would break something | reply with the reasoning, leave the thread open |
 
 Never convert "disagree" into a silent resolve. An unconvinced reviewer with a closed thread is worse than an open one.
 
-**Don't stop for approval of the triage — write the fixes straight away** and report the verdicts alongside them in Step 5. The user can overrule any verdict after seeing the diff, which is cheaper than reading a table of intentions. The one exception is a *needs a decision* thread: that one waits for the user while every other thread proceeds.
+**Write the fixes straight away** and report the verdicts alongside them in Step 5. A verdict is cheaper to overrule from the diff than from a table of intentions. A *needs a decision* thread doesn't stall the run either — put the question in the thread, leave it open, and carry on with the rest.
 
 ---
 
@@ -83,7 +83,7 @@ Never convert "disagree" into a silent resolve. An unconvinced reviewer with a c
 
 ## Step 4 — Push, reply, resolve
 
-These post to a PR other people are watching. **Show the user the exact reply text per thread and get an explicit go-ahead first.**
+These post to a PR other people are watching, and a reply can't be unsent — so write each one as if the reviewer reads it without you there to explain. Then send it; no confirmation step.
 
 Push the commits, then per thread:
 
@@ -109,7 +109,7 @@ A reply says what changed and where — the commit SHA or the new symbol name �
 
 ## Step 5 — Report
 
-One line per thread: reviewer, file, verdict, and the commit or the reason it's still open. Then state plainly what was left unaddressed and why. If any thread needed the user's decision, ask now.
+The report is the whole of the user's involvement, so it carries what a checkpoint would have: one line per thread — reviewer, file, verdict, and the commit or the reason it's still open — then what was left unaddressed and why, and which threads are waiting on a human. Link the pushed commits so any verdict can be overruled from the diff.
 
 ---
 
@@ -117,6 +117,6 @@ One line per thread: reviewer, file, verdict, and the commit or the reason it's 
 
 - One thread, one decision. Never bulk-resolve.
 - The reviewer's diagnosis can be wrong while the symptom is real — fix the cause you find, and say so in the reply.
-- Two comments that contradict each other are a question for the user, not a coin flip.
+- Two comments that contradict each other are a question for the thread, not a coin flip — ask it there and leave the thread open.
 - An outdated thread that looks fixed often isn't; the code moved, and the bug moved with it.
 - Don't rewrite history on a branch under review — reviewers lose their place. Add commits.
