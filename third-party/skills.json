@@ -1,9 +1,9 @@
 {
-  "agents": ["claude-code"],
+  "agents": ["claude-code", "codex"],
   "sources": [
     {
       "repo": "cloudflare/skills",
-      "agents": ["claude-code", "github-copilot", "gemini-cli", "antigravity"],
+      "agents": ["claude-code", "github-copilot", "gemini-cli", "antigravity", "codex"],
       "why": "Cloudflare's own skills for the developer platform. Curated across every agent that already had them — see docs/adr/0003. The repo also ships commands/ and rules/, which only its Claude Code plugin installs; skipped deliberately.",
       "skills": [
         {

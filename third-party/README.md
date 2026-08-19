@@ -14,7 +14,7 @@ Re-running the sync re-fetches each skill, so **sync is also the upgrade command
 
 **Run the sync from a plain terminal, not from inside a coding-agent session.** The CLI detects the agent it's running under and installs to that agent alone, so a sync started inside Claude Code updates the store and Claude Code and silently leaves every other agent on its old copy.
 
-A source can override the top-level `agents` list — `cloudflare/skills` is curated into four agents, everything else into Claude Code only. What `--check` reports:
+A source can override the top-level `agents` list — `cloudflare/skills` is curated into five agents, while the other sources are curated into Claude Code and Codex. What `--check` reports:
 
 | | |
 |---|---|

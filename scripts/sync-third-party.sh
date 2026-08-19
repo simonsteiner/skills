@@ -82,12 +82,43 @@ skills="$(manifest '
 # to report drift — installs go through the CLI, which owns the real agent-to-path map,
 # so an agent missing from this list just goes unreported, never uninstalled.
 STORE="$HOME/.agents/skills"
+CODEX_DIR="$HOME/.codex/skills"
 AGENT_DIRS=(
   "$HOME/.claude/skills"             # claude-code
   "$HOME/.copilot/skills"            # github-copilot
   "$HOME/.gemini/skills"             # gemini-cli
   "$HOME/.gemini/antigravity/skills" # antigravity
+  "$HOME/.codex/skills"              # codex
 )
+
+# skills.sh calls Codex a "universal" agent and currently stores those skills only
+# under ~/.agents/skills. Codex itself discovers global skills from ~/.codex/skills,
+# so keep explicit links there until the CLI wires that path itself.
+link_codex_skills() {
+  mkdir -p "$CODEX_DIR"
+
+  while IFS=$'\t' read -r name _; do
+    source="$STORE/$name"
+    destination="$CODEX_DIR/$name"
+
+    if [ ! -f "$source/SKILL.md" ]; then
+      echo "error: cannot link '$name' into Codex; no installed skill at $source." >&2
+      return 1
+    fi
+
+    if [ -e "$destination" ] || [ -L "$destination" ]; then
+      if [ "$(readlink -f "$destination")" = "$(readlink -f "$source")" ]; then
+        continue
+      fi
+      echo "error: refusing to replace existing Codex skill '$destination'." >&2
+      echo "It does not point to the curated source at '$source'." >&2
+      return 1
+    fi
+
+    ln -s "$source" "$destination"
+    echo "linked Codex skill $name"
+  done <<<"$skills"
+}
 
 # A curated skill and an owned skill would fight over the same name in the global
 # store, and whichever synced last would silently win. Refuse instead.
@@ -198,6 +229,13 @@ check)
     if (vestigial)
       console.log(`note      ${vestigial} store copies under ${store} are older than what the agents load, and unused`);
   ' "$LOCK" "$skills" "$owned" "$STORE" "${AGENT_DIRS[@]}"
+
+  while IFS=$'\t' read -r name _; do
+    if [ ! -f "$CODEX_DIR/$name/SKILL.md" ]; then
+      echo "drift     $name (Codex is missing $CODEX_DIR/$name)"
+      status=1
+    fi
+  done <<<"$skills"
   exit "$status"
   ;;
 
@@ -215,6 +253,7 @@ sync)
     # is silently skipped.
     npx --yes skills@latest add "$repo" --global --yes "${flags[@]}" </dev/null
   done <<<"$sources"
+  link_codex_skills
   echo
   echo "Synced. Verify with: $0 --check"
   ;;
