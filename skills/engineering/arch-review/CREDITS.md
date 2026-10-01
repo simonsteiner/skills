@@ -2,7 +2,7 @@
 
 Adapted from two MIT-licensed skills:
 
-- `improve-codebase-architecture` from https://github.com/mattpocock/skills — the scan questions, YAGNI scoping, candidate format, strength scale, and vocabulary rules.
+- `improve-codebase-architecture` from https://github.com/mattpocock/skills — the scan questions, YAGNI scoping, candidate format, strength scale, the HTML report's scaffold, diagram patterns and tone rules (`report-template.html`, `REPORT.md`), and the vocabulary rules.
 - `thermo-nuclear-code-quality-review` from https://github.com/cursor/plugins (`cursor-team-kit`) — the maintainability lens and the approval bar.
 
 Both licenses follow. They share the same terms; only the copyright line differs.
