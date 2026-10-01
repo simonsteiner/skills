@@ -67,15 +67,23 @@ manifest() { node -e "$1" "$MANIFEST"; }
 
 # One line per source: "<repo><TAB><skill names><TAB><agents>". A source may override
 # the top-level agent list — curate a skill only into the agents that should carry it.
+# A source with nothing curated is skipped: with no --skill flag the CLI would install
+# every skill in the repo.
 sources="$(manifest '
   const m = require(process.argv[1]);
-  for (const s of m.sources)
+  for (const s of m.sources.filter((s) => s.skills.length))
     console.log([s.repo, s.skills.map((k) => k.name).join(","), (s.agents ?? m.agents).join(",")].join("\t"));
 ')"
 # One line per skill: "<name><TAB><repo>"
 skills="$(manifest '
   for (const s of require(process.argv[1]).sources)
     for (const k of s.skills) console.log([k.name, s.repo].join("\t"));
+')"
+# One line per archived skill: "<name><TAB><repo>". Archived skills were curated once
+# and retired; the entry keeps the reason, and --check flags any still installed.
+archived="$(manifest '
+  for (const s of require(process.argv[1]).sources)
+    for (const k of s.archived ?? []) console.log([k.name, s.repo].join("\t"));
 ')"
 
 # The store the CLI installs into, and the per-agent directories it wires up. Used only
@@ -140,6 +148,7 @@ list)
     for (const s of require(process.argv[1]).sources) {
       console.log(`\n${s.repo} — ${s.why}`);
       for (const k of s.skills) console.log(`  ${k.name.padEnd(30)} ${k.why}`);
+      for (const k of s.archived ?? []) console.log(`  ${(k.name + " (archived)").padEnd(30)} ${k.why}`);
     }
   '
   ;;
@@ -168,15 +177,20 @@ check)
   done <<<"$skills"
 
   # Global skills installed from a remote source but absent from the manifest: either
-  # curate them deliberately or remove them with `npx skills remove -g`.
+  # curate them deliberately or remove them with `npx skills remove -g`. Archived ones
+  # get their own line, since the manifest already says they should go.
   # shellcheck disable=SC2016  # ${...} here is a JS template literal — the shell must not expand it
   node -e '
     const lock = require(process.argv[1]).skills;
-    const curated = new Set(process.argv[2].split("\n").filter(Boolean).map((l) => l.split("\t")[0]));
-    for (const [name, s] of Object.entries(lock))
-      if (s.source && s.sourceType === "github" && !curated.has(name))
+    const names = (tsv) => new Set(tsv.split("\n").filter(Boolean).map((l) => l.split("\t")[0]));
+    const [curated, archived] = [names(process.argv[2]), names(process.argv[3])];
+    for (const [name, s] of Object.entries(lock)) {
+      if (archived.has(name))
+        console.log(`archived  ${name} is still installed — remove it with: npx skills remove -g ${name}`);
+      else if (s.source && s.sourceType === "github" && !curated.has(name))
         console.log(`uncurated ${name} (installed from ${s.source})`);
-  ' "$LOCK" "$skills"
+    }
+  ' "$LOCK" "$skills" "$archived"
 
   # Skills sitting in the store or an agent's directory that nothing manages: absent
   # from the lock file, uncurated, and not owned here. That's how another channel's
