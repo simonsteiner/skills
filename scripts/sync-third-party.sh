@@ -74,10 +74,11 @@ sources="$(manifest '
   for (const s of m.sources.filter((s) => s.skills.length))
     console.log([s.repo, s.skills.map((k) => k.name).join(","), (s.agents ?? m.agents).join(",")].join("\t"));
 ')"
-# One line per skill: "<name><TAB><repo>"
+# One line per skill: "<name><TAB><repo><TAB><agents>"
 skills="$(manifest '
-  for (const s of require(process.argv[1]).sources)
-    for (const k of s.skills) console.log([k.name, s.repo].join("\t"));
+  const m = require(process.argv[1]);
+  for (const s of m.sources)
+    for (const k of s.skills) console.log([k.name, s.repo, (s.agents ?? m.agents).join(",")].join("\t"));
 ')"
 # One line per archived skill: "<name><TAB><repo>". Archived skills were curated once
 # and retired; the entry keeps the reason, and --check flags any still installed.
@@ -90,7 +91,6 @@ archived="$(manifest '
 # to report drift — installs go through the CLI, which owns the real agent-to-path map,
 # so an agent missing from this list just goes unreported, never uninstalled.
 STORE="$HOME/.agents/skills"
-CODEX_DIR="$HOME/.codex/skills"
 AGENT_DIRS=(
   "$HOME/.claude/skills"             # claude-code
   "$HOME/.copilot/skills"            # github-copilot
@@ -99,33 +99,54 @@ AGENT_DIRS=(
   "$HOME/.codex/skills"              # codex
 )
 
-# skills.sh calls Codex a "universal" agent and currently stores those skills only
-# under ~/.agents/skills. Codex itself discovers global skills from ~/.codex/skills,
-# so keep explicit links there until the CLI wires that path itself.
-link_codex_skills() {
-  mkdir -p "$CODEX_DIR"
+# skills.sh treats these agents as "universal": a global install writes the store and
+# never touches the agent's own directory. Whether each agent also reads the store
+# varies by agent and version, so the sync links every curated skill into their
+# directories itself — a symlink into the store is current whichever path is read.
+# (Before this, those directories held frozen copies from another channel that no
+# sync ever refreshed; see docs/adr/0003.)
+declare -A LINKED_DIRS=(
+  [codex]="$HOME/.codex/skills"
+  [github-copilot]="$HOME/.copilot/skills"
+  [gemini-cli]="$HOME/.gemini/skills"
+  [antigravity]="$HOME/.gemini/antigravity/skills"
+)
 
-  while IFS=$'\t' read -r name _; do
+# One line per link the manifest wants: "<name><TAB><agent><TAB><agent dir>".
+wanted_links() {
+  while IFS=$'\t' read -r name _ agents; do
+    IFS=, read -ra list <<<"$agents"
+    for agent in "${list[@]}"; do
+      [ -n "${LINKED_DIRS[$agent]-}" ] && printf '%s\t%s\t%s\n' "$name" "$agent" "${LINKED_DIRS[$agent]}"
+    done
+  done <<<"$skills"
+}
+
+link_agent_skills() {
+  local failed=0
+  while IFS=$'\t' read -r name agent dir; do
     source="$STORE/$name"
-    destination="$CODEX_DIR/$name"
+    destination="$dir/$name"
 
     if [ ! -f "$source/SKILL.md" ]; then
-      echo "error: cannot link '$name' into Codex; no installed skill at $source." >&2
-      return 1
+      echo "error: cannot link '$name' into $agent; no installed skill at $source." >&2
+      failed=1
+      continue
     fi
 
     if [ -e "$destination" ] || [ -L "$destination" ]; then
-      if [ "$(readlink -f "$destination")" = "$(readlink -f "$source")" ]; then
-        continue
-      fi
-      echo "error: refusing to replace existing Codex skill '$destination'." >&2
-      echo "It does not point to the curated source at '$source'." >&2
-      return 1
+      [ "$(readlink -f "$destination")" = "$(readlink -f "$source")" ] && continue
+      echo "error: refusing to replace '$destination' — it isn't a link to the curated copy in the store." >&2
+      echo "       If it's a stale copy from another channel, move it aside and re-run the sync." >&2
+      failed=1
+      continue
     fi
 
+    mkdir -p "$dir"
     ln -s "$source" "$destination"
-    echo "linked Codex skill $name"
-  done <<<"$skills"
+    echo "linked $name into $agent"
+  done < <(wanted_links)
+  return "$failed"
 }
 
 # A curated skill and an owned skill would fight over the same name in the global
@@ -160,7 +181,7 @@ check)
     exit 1
   fi
   status=0
-  while IFS=$'\t' read -r name repo; do
+  while IFS=$'\t' read -r name repo _; do
     installed="$(node -e '
       const s = require(process.argv[1]).skills[process.argv[2]];
       process.stdout.write(s ? s.source : "");
@@ -201,7 +222,7 @@ check)
   # and never reaches this report; what does reach it is a store entry whose lock
   # record is gone, which is unmanaged in exactly the sense that matters.
   # shellcheck disable=SC2016  # ${...} here is a JS template literal — the shell must not expand it
-  node -e '
+  LINKED="$(IFS=:; echo "${LINKED_DIRS[*]}")" node -e '
     const fs = require("fs");
     const [lockPath, curatedTsv, ownedCsv, store, ...dirs] = process.argv.slice(1);
     const curated = curatedTsv.split("\n").filter(Boolean).map((l) => l.split("\t")[0]);
@@ -229,8 +250,10 @@ check)
     // is an agent that missed an update. The reverse is just a vestigial store entry —
     // this CLI installs new skills straight into the agent directory and never
     // refreshes an old store copy — so it gets one summary line, not one per skill.
+    // The directories of universal agents are checked separately, link by link.
+    const linked = new Set((process.env.LINKED || "").split(":").filter(Boolean));
     let vestigial = 0;
-    for (const dir of dirs) {
+    for (const dir of dirs.filter((d) => !linked.has(d))) {
       for (const name of curated) {
         const [there, here] = [skillMd(dir, name), skillMd(store, name)];
         if (!fs.existsSync(there) || !fs.existsSync(here)) continue;
@@ -244,12 +267,18 @@ check)
       console.log(`note      ${vestigial} store copies under ${store} are older than what the agents load, and unused`);
   ' "$LOCK" "$skills" "$owned" "$STORE" "${AGENT_DIRS[@]}"
 
-  while IFS=$'\t' read -r name _; do
-    if [ ! -f "$CODEX_DIR/$name/SKILL.md" ]; then
-      echo "drift     $name (Codex is missing $CODEX_DIR/$name)"
-      status=1
+  # Every universal agent's directory must hold a link into the store, not a copy.
+  while IFS=$'\t' read -r name agent dir; do
+    destination="$dir/$name"
+    if [ "$(readlink -f "$destination" 2>/dev/null)" = "$(readlink -f "$STORE/$name")" ]; then
+      continue
+    elif [ -L "$destination" ] || [ ! -e "$destination" ]; then
+      echo "drift     $name ($agent is missing the link $destination — run the sync)"
+    else
+      echo "drift     $name ($destination is a stale copy, not a link into the store — move it aside, then run the sync)"
     fi
-  done <<<"$skills"
+    status=1
+  done < <(wanted_links)
   exit "$status"
   ;;
 
@@ -267,7 +296,7 @@ sync)
     # is silently skipped.
     npx --yes skills@latest add "$repo" --global --yes "${flags[@]}" </dev/null
   done <<<"$sources"
-  link_codex_skills
+  link_agent_skills
   echo
   echo "Synced. Verify with: $0 --check"
   ;;

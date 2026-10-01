@@ -14,14 +14,18 @@ Re-running the sync re-fetches each skill, so **sync is also the upgrade command
 
 **Run the sync from a plain terminal, not from inside a coding-agent session.** The CLI detects the agent it's running under and installs to that agent alone, so a sync started inside Claude Code updates the store and Claude Code and silently leaves every other agent on its old copy.
 
-A source can override the top-level `agents` list — `cloudflare/skills` is curated into five agents, while the other sources are curated into Claude Code and Codex. What `--check` reports:
+A source can override the top-level `agents` list — `cloudflare/skills` is curated into five agents, while the other sources are curated into Claude Code and Codex.
+
+The skills.sh CLI treats Codex, GitHub Copilot, Gemini CLI and Antigravity as "universal" agents: a global install writes only the store, `~/.agents/skills`, and never their own directories. So the sync links each curated skill into `~/.codex/skills`, `~/.copilot/skills`, `~/.gemini/skills` and `~/.gemini/antigravity/skills` itself, for the agents its source lists. A real directory already sitting there is a stale copy from another channel; the sync refuses to replace it, and `--check` says so.
+
+What `--check` reports:
 
 | | |
 |---|---|
 | `missing` / `conflict` | curated but not installed, or installed from a different repo than the manifest names (exit 1) |
 | `uncurated` | installed from a remote source but absent from the manifest |
 | `unmanaged` | sitting in the store or an agent's directory with nothing managing it — another channel's install, or an upstream deletion left behind |
-| `drift` | an agent directory holds an older copy of a curated skill than the store — that agent missed an update |
+| `drift` | an agent missed an update: its directory holds an older copy than the store, a universal agent is missing its link, or holds a stale copy instead of a link (move it aside, then sync) |
 | `archived` | a skill the manifest has retired is still installed |
 | `note` | store copies older than what the agents load. The CLI installs new skills straight into the agent directory and never refreshes an old `~/.agents/skills` entry, so these are leftovers, not a failed sync |
 
