@@ -99,7 +99,7 @@ Map the candidate as a decision tree: the shape of the deepened module, what sit
 4. Run what the repo runs — typecheck, lint, the full suite. Where the project has golden outputs, show they're byte-identical, or explain the intended difference.
 5. Check the diff against the approval bar in [LENSES.md](LENSES.md). Then call the Skill tool with "code-review": fixed point = the base branch, spec = this candidate's section of the report. Fix what's real.
 6. Update the candidate's row (`pr-open`, PR number, Breaking) and write any **Departure** from the report, in the same branch.
-7. Call the Skill tool with "conventional-commit" to commit, push, then `gh pr create --base <base>`. PR body: what changed (a call tree or diff sketch), evidence before/after, a link to the decisions, breaking yes/no. Never merge.
+7. Call the Skill tool with "conventional-commit" to commit, push, then `gh pr create --base <base>`. Call the Skill tool with "pr" for the body, and link the candidate's decisions from it. Never merge.
 
 ---
 
