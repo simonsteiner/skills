@@ -1,52 +1,50 @@
-# Report and ledger
+# Report format
 
-Every scan writes two files side by side in `docs/arch-review/`:
+One Markdown file per scan: `docs/arch-review/YYYY-MM-DD-<slug>.md`, built from [report-template.md](report-template.md). It renders on GitHub — Mermaid diagrams, callouts, collapsible sections — so the report is read where the code is, and agents edit it and git diffs it line by line.
 
-| File | What it is | Changes after the scan? |
-|---|---|---|
-| `YYYY-MM-DD-<slug>.html` | **The report.** A visual, self-contained page: ranked overview, friction map, one card per candidate with before/after diagrams, smaller findings, recommendation. | No — it's the dated record of what the scan found. |
-| `YYYY-MM-DD-<slug>.md` | **The ledger.** Status table, decisions, departures — the state every later session reads and updates. | Yes, on every candidate. |
+The look is borrowed from upstream's HTML report: diagrams carry the weight, prose is sparse, every candidate is a card with the same shape. The index `docs/arch-review/README.md` lists reports newest first: date, linked headline, open row count.
 
-The report is for reading; the ledger is for working. Agents edit Markdown tables cleanly and git diffs them readably, so nothing that changes lives in the HTML. The index `docs/arch-review/README.md` lists scans newest first: date, headline linked to the report, ledger link, open row count.
+## What changes after the scan
 
-## The report
+Only three parts: the **Status** table, each candidate's **Decisions**, and **Departures**. Everything else is the dated record of what the scan found — never rewritten. A new scan is a new file.
 
-Start from [report-template.html](report-template.html): copy it, keep `<head>`, the legend, and the class names, and fill the sections in order. Tailwind and Mermaid come from CDNs; there are no other scripts. Open it for the user when it's written (`wslview` on WSL, `xdg-open` on Linux, `open` on macOS) and give the absolute path. GitHub shows HTML as source, so the report is read locally or from a checkout; the ledger is what renders on GitHub.
+## Sections, in order
 
-### Sections
+1. **Header** — repo and headline, then one meta line: date, SHA and branch, scope, glossary file, ADRs read. A jump line to the sections and candidates. The legend sits in a collapsed `<details>`. No introduction paragraph.
+2. **Status** — the backlog at a glance, in rank order: badges, lens, status, planned branch, PR, breaking, notes. Step 4 proposes the batch from it; every later session reads it first.
+3. **Where it hurts** — one diagram of the scanned area with the hot modules marked, and one line of evidence for why they're hot.
+4. **Since the last review** — the previous report's open rows and what became of them. Omit on a first scan.
+5. **Candidate cards** — the centrepiece; see below. Separated by `---`.
+6. **Smaller findings** — `S1…`: title, `path:line`, which PR it rides with, two sentences.
+7. **Recommendation** — an `[!IMPORTANT]` callout: the candidate to take first, why in one sentence, the proposed batch (every Strong, in order).
+8. **Departures** — empty at scan time.
 
-1. **Header** — repo, date, SHA and branch, scope, glossary file, link to the ledger, the legend, and a jump bar to each candidate. No introduction paragraph.
-2. **Candidates, ranked** — one row per candidate: strength and live-defect badges, lens, planned branch, and which candidate it builds on. This is the backlog at a glance, and the order Step 4 proposes.
-3. **Where it hurts** — one diagram of the scanned area with the hot modules marked, and one line of evidence for why they're hot (churn counts, defect count).
-4. **Since the last review** — the previous ledger's open rows and what became of them. Omit on a first review.
-5. **Candidate cards** — the centrepiece; see below.
-6. **Smaller findings** — compact cards: title, `path:line`, two sentences, and whether it rides with a candidate PR.
-7. **Top recommendation** — the candidate to take first, why in one sentence, and the proposed batch (every Strong, in order).
+## Candidate card
 
-### Candidate card
+If a diagram needs a paragraph to be understood, redraw the diagram.
 
-The diagrams carry the weight. If a diagram needs a paragraph to be understood, redraw the diagram.
+- **Heading** — `## C1 · <title>`, a short title naming the deepening ("Collapse the order intake pipeline").
+- **Badge line** — strength (🟢 Strong · 🟡 Worth exploring · ⚪ Speculative), 🔴 live defect when a bug was reproduced, the dependency category in code font (`in-process`, `local-substitutable`, `ports & adapters`, `mock`), and what it builds on.
+- **Files** — code-font paths with line ranges, on one line.
+- **Before / After** — one Mermaid flowchart with two subgraphs side by side (`flowchart LR`, each subgraph `direction TB`, `before ~~~ after` to keep them apart). It's the only way GitHub puts two diagrams next to each other.
+- **Evidence** — a `[!CAUTION]` callout with the reproduced failure for a live defect; otherwise one plain line with the count that shows the friction.
+- **Problem / Solution / Wins** — a one-row table: one sentence, one sentence, ≤ 6-word wins separated by `<br>`. No interface design here; that's Step 6.
+- **ADR** — a `[!NOTE]` callout, only when an ADR bears on it.
+- **Decisions** — a collapsed `<details>`, empty until the candidate is implemented.
 
-- **Title** — short, names the deepening ("Collapse the order intake pipeline").
-- **Badges** — strength (`Strong` emerald, `Worth exploring` amber, `Speculative` slate), `live defect` in red when you reproduced a bug, and the dependency category (`in-process`, `local-substitutable`, `ports & adapters`, `mock`).
-- **Files** — monospaced, with line ranges.
-- **Before / After** — side by side, ~220–320px tall. Under *Before*, one line of evidence: the reproduced failure in red for a live defect, otherwise the count that shows the friction.
-- **Problem / Solution / Wins** — one sentence, one sentence, bullets of ≤ 6 words. No interface design here; that happens per candidate in Step 6.
-- **ADR callout** — one amber line, only when an ADR bears on it.
+## Diagrams
 
-### Diagram patterns
+Every diagram ends with the same `classDef` block from the template, so the visual language holds across reports: white `module`, dashed grey `shallow`, dark `deep`, `faded` internals inside a deep module, red `leak`. Quote every label, and never put `{{ }}` in a diagram — double braces are Mermaid's hexagon shape and break the render.
 
-Mix them. Every diagram looking the same is a sign of not thinking about what each candidate needs to show.
+Pick the pattern that fits the candidate. Every diagram looking the same is a sign of not thinking about what each one needs to show.
 
-- **Mermaid flowchart** — the workhorse for "X calls Y calls Z, and look at the mess". `classDef` red for leaks; sequence diagrams for "before: six round-trips, after: one".
-- **Hand-built deep module** — a thick dark `.deep` box with the small interface in a dashed `.seam` box on top and the absorbed modules `.faded` inside. Mermaid can't give an *after* the right weight; this can. The template's *After* panel is this pattern.
-- **Cross-section** — stacked horizontal bands (`h-12 border-l-4`) for the layers a call passes through. Before: six thin bands doing nothing. After: one thick band named for the responsibility.
-- **Mass diagram** — two rectangles per module, interface height against implementation height. Shallow: nearly equal. Deep: short interface, tall implementation.
-- **Call-graph collapse** — before: nested boxes of calls. After: the same tree as one box, the now-internal calls faded inside it.
+- **Call flow** — `flowchart`, the workhorse for "X calls Y calls Z, and look at the mess". Mark leaking modules `:::leak` and label the edge `"leak"`.
+- **Deep module** — the *after* as a dark `:::deep` node for the interface, joined by a dotted edge to a dark subgraph holding the absorbed modules as `:::faded` nodes. The template's card is this pattern.
+- **Round-trips** — `sequenceDiagram` for "before: six round-trips; after: one".
+- **Cross-section** — `flowchart TB` of thin `:::shallow` nodes for each pass-through a call crosses; after, one `:::deep` node named for the responsibility.
+- **Collapse** — before: a nested call tree as subgraphs; after: the same tree inside one dark subgraph, its calls faded.
 
-Style: editorial, not dashboard. Generous whitespace, serif headings, one accent (emerald) plus red for leaks and defects and amber for warnings. Module labels in diagrams use `.lbl` so they read as schematic, not UI.
-
-### Tone
+## Tone
 
 Plain and concise, with the nouns and verbs from codebase-design.
 
@@ -55,32 +53,3 @@ Plain and concise, with the nouns and verbs from codebase-design.
 - Fits: "Order intake is shallow: its interface nearly matches its implementation." "Pricing leaks across the seam." "Two adapters justify the seam: HTTP in prod, in-memory in tests."
 - **Wins** name the gain in those terms — "locality: pricing bugs live in one module", "interface shrinks; implementation absorbs the wrappers" — never "easier to maintain" or "cleaner code".
 - No hedging, no throat-clearing. If a sentence could be a bullet, make it one; if a bullet could be cut, cut it.
-
-## The ledger
-
-Plain Markdown, so it renders on GitHub and diffs line by line.
-
-```markdown
-# YYYY-MM-DD — <same headline as the report>
-
-Report: [YYYY-MM-DD-<slug>.html](YYYY-MM-DD-<slug>.html) · reviewed at `<sha>`
-
-## Status
-
-| ID | Candidate | Strength | Status | Branch | PR | Breaking | Notes |
-|---|---|---|---|---|---|---|---|
-| C1 | <names the deepening> | Strong, live defect | todo | refactor/<slug> | | | |
-| S1 | <smaller finding> | — | todo | (rides with C1) | | | |
-
-Status is one of `todo`, `in-progress`, `pr-open`, `merged`, `blocked`, `dropped`. `blocked` and `dropped` always carry a reason.
-
-## Decisions
-
-### C1
-
-Q1 — <question> → <answer>, because <fact>.
-
-## Departures
-
-<where an implementation deliberately differs from the report, and why>
-```
