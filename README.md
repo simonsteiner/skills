@@ -21,7 +21,7 @@ Skills live in buckets under [`skills/`](./skills/) and split on one axis — wh
 ### Engineering
 
 - **[address-review-findings](./skills/engineering/address-review-findings/SKILL.md)** _(model-invoked)_ — work through a PR's unresolved review threads, then reply and resolve.
-- **[conventional-commit](./skills/engineering/conventional-commit/SKILL.md)** _(model-invoked)_ — generate a Conventional Commits v1.0.0 message from the current worktree state.
+- **[conventional-commit](./skills/engineering/conventional-commit/SKILL.md)** _(model-invoked)_ — write Conventional Commits v1.0.0 messages and make the commits, split into atomic ones when the work spans concerns.
 - **[sync-and-branch](./skills/engineering/sync-and-branch/SKILL.md)** _(model-invoked)_ — fast-forward the default branch and cut a fresh feature branch from it, in place or as a new worktree.
 
 ## Third-party skills
