@@ -22,21 +22,21 @@ A source can override the top-level `agents` list — `cloudflare/skills` is cur
 | `uncurated` | installed from a remote source but absent from the manifest |
 | `unmanaged` | sitting in the store or an agent's directory with nothing managing it — another channel's install, or an upstream deletion left behind |
 | `drift` | an agent directory holds an older copy of a curated skill than the store — that agent missed an update |
+| `archived` | a skill the manifest has retired is still installed |
 | `note` | store copies older than what the agents load. The CLI installs new skills straight into the agent directory and never refreshes an old `~/.agents/skills` entry, so these are leftovers, not a failed sync |
 
-Curated skills are installed globally (`~/.agents/skills`), the same store the skills this repo owns land in, so a curated skill's name must never collide with one under [`../skills/`](../skills/). The sync script refuses to run if it does.
+Curated skills are installed globally (`~/.agents/skills`), the same store the skills this repo owns land in, so a curated skill's name must never collide with one under [[`skills/`](../skills/)](../skills/). The sync script refuses to run if it does.
 
 To add one: find it (`npx skills find`, or `/find-skills`), try it without installing (`npx skills use <owner/repo>@<skill>`), then add an entry to `skills.json` with a real reason and list it below.
 
 ## mattpocock/skills
 
-The repo this one forked from ([ADR 0001](../docs/adr/0001-fork-and-pare-down-to-conventional-commit.md)). Pared down to `conventional-commit` for what I own; the rest of the flow is tracked from upstream instead.
+The repo this one forked from ([ADR 0001](../docs/adr/0001-fork-and-pare-down-to-conventional-commit.md)). What I own lives under [`skills/`](../skills/); the rest of the flow is tracked from upstream instead.
 
 ### User-invoked
 
 - **[grill-me](https://github.com/mattpocock/skills/blob/main/skills/productivity/grill-me/SKILL.md)** — a relentless interview to sharpen a plan or design.
 - **[grill-with-docs](https://github.com/mattpocock/skills/blob/main/skills/engineering/grill-with-docs/SKILL.md)** — the same interview, writing ADRs and a glossary as it goes.
-- **[improve-codebase-architecture](https://github.com/mattpocock/skills/blob/main/skills/engineering/improve-codebase-architecture/SKILL.md)** — scan a codebase for deepening opportunities, report them, then grill through the one you pick.
 
 ### Model-invoked
 
@@ -66,18 +66,15 @@ Cloudflare's own skills for the developer platform, all retrieval-first over liv
 - **[cloudflare-one](https://github.com/cloudflare/skills/blob/main/skills/cloudflare-one/SKILL.md)** — Zero Trust and SASE: Access, Gateway, WARP, Tunnel, device posture.
 - **[cloudflare-one-migrations](https://github.com/cloudflare/skills/blob/main/skills/cloudflare-one-migrations/SKILL.md)** — migrations off Zscaler, Palo Alto, or a legacy VPN.
 
-## cursor/plugins
-
-Cursor's plugin monorepo ships 78 skills across many kits. One is curated.
-
-### User-invoked
-
-- **[thermo-nuclear-code-quality-review](https://github.com/cursor/plugins/blob/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review/SKILL.md)** — a deliberately harsh maintainability review of a branch: abstraction quality, giant files, spaghetti conditions, and restructurings that simplify without changing behaviour. Complements `code-review` (standards and spec) rather than replacing it.
-
-Upstream also ships `thermo-nuclear-review` (security and correctness) and `thermos`, which runs both in parallel. Neither is curated, so `thermos` would only find half its inputs.
-
 ## vercel-labs/skills
 
 ### Model-invoked
 
 - **[find-skills](https://github.com/vercel-labs/skills/blob/main/skills/find-skills/SKILL.md)** — discover and install skills on demand.
+
+## Archived
+
+Curated once, then retired. Each stays in `skills.json` under its source's `archived` list with the reason, so the decision isn't re-litigated; the sync no longer installs it, and `--check` reports an `archived` line while a copy is still installed (`npx skills remove -g <name>` clears it).
+
+- **[improve-codebase-architecture](https://github.com/mattpocock/skills/blob/main/skills/engineering/improve-codebase-architecture/SKILL.md)** (mattpocock/skills) — and
+- **[thermo-nuclear-code-quality-review](https://github.com/cursor/plugins/blob/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review/SKILL.md)** (cursor/plugins) — both replaced by the owned [`arch-review`](../skills/engineering/arch-review/SKILL.md), which combines the first's deepening scan with the second's maintainability rubric and adds the save-and-implement loop neither had. See [ADR 0004](../docs/adr/0004-own-arch-review-instead-of-curating-two-review-skills.md).

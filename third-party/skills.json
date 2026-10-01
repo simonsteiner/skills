@@ -75,7 +75,7 @@
         {
           "name": "codebase-design",
           "path": "skills/engineering/codebase-design",
-          "why": "Deep-module vocabulary. Shared dependency of grilling and improve-codebase-architecture."
+          "why": "Deep-module vocabulary. Shared dependency of grilling and the owned arch-review."
         },
         {
           "name": "diagnosing-bugs",
@@ -103,11 +103,6 @@
           "why": "The interview engine itself. Required by grill-me and grill-with-docs."
         },
         {
-          "name": "improve-codebase-architecture",
-          "path": "skills/engineering/improve-codebase-architecture",
-          "why": "Scans for deepening opportunities and grills through the one you pick. Needs codebase-design."
-        },
-        {
           "name": "prototype",
           "path": "skills/engineering/prototype",
           "why": "Throwaway prototypes to sanity-check a state model or UI before committing to it."
@@ -117,16 +112,24 @@
           "path": "skills/engineering/research",
           "why": "Delegates reading legwork to a background agent and lands findings as Markdown in the repo."
         }
+      ],
+      "archived": [
+        {
+          "name": "improve-codebase-architecture",
+          "path": "skills/engineering/improve-codebase-architecture",
+          "why": "Replaced by the owned arch-review skill (docs/adr/0004), which adapts its scan and candidate format but writes the backlog into the repo and implements it. User-invoked, so nothing could call it; it stopped after a /tmp report every time."
+        }
       ]
     },
     {
       "repo": "cursor/plugins",
-      "why": "Cursor's plugin monorepo — 78 skills across many kits. Exactly one is curated.",
-      "skills": [
+      "why": "Cursor's plugin monorepo — 78 skills across many kits. Nothing curated right now; the one skill that was is archived below.",
+      "skills": [],
+      "archived": [
         {
           "name": "thermo-nuclear-code-quality-review",
           "path": "cursor-team-kit/skills/thermo-nuclear-code-quality-review",
-          "why": "User-invoked, deliberately harsh maintainability review of a branch: abstraction quality, giant files, spaghetti conditions, and restructurings that make the code simpler without changing behaviour. Sits alongside code-review rather than replacing it — that one checks standards and spec, this one attacks the structure. Upstream also ships thermo-nuclear-review (security/correctness) and thermos (runs both); neither is curated, so don't reach for thermos."
+          "why": "Replaced by the owned arch-review skill (docs/adr/0004): its maintainability rubric and approval bar now live in arch-review's LENSES.md. Used once in months."
         }
       ]
     },
