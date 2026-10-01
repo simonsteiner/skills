@@ -13,5 +13,5 @@ Reachable only when typed (`disable-model-invocation: true`).
 Model- or user-reachable (rich trigger phrasing so the model can reach for them).
 
 - **[address-review-findings](./address-review-findings/SKILL.md)** — Pull the unresolved review threads on one PR or a stack, fix what's real, then reply and resolve.
-- **[conventional-commit](./conventional-commit/SKILL.md)** — Generate a Conventional Commits v1.0.0 message (header, body, footers) from the current worktree state.
+- **[conventional-commit](./conventional-commit/SKILL.md)** — Write Conventional Commits v1.0.0 messages and make the commits, split into atomic ones when the work spans concerns.
 - **[sync-and-branch](./sync-and-branch/SKILL.md)** — Cut a branch from the fresh default branch, carrying uncommitted work along (or stacking when it won't apply), and sync a fork with its upstream.

@@ -114,8 +114,9 @@ Imperative, present tense; lowercase first letter; no trailing period.
 
 ## Splitting unrelated changes
 
-If a diff mixes, say, a bug fix and an unrelated dependency bump, propose two
-commits rather than one:
+If a diff mixes, say, a bug fix and an unrelated dependency bump, make two
+commits rather than one — the fix first if the bump doesn't depend on it, each
+staged by path:
 
 ```
 fix(views): correct same-day filter using date(start_date)
