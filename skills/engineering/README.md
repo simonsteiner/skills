@@ -14,4 +14,5 @@ Model- or user-reachable (rich trigger phrasing so the model can reach for them)
 
 - **[address-review-findings](./address-review-findings/SKILL.md)** — Pull the unresolved review threads on one PR or a stack, fix what's real, then reply and resolve.
 - **[conventional-commit](./conventional-commit/SKILL.md)** — Generate a Conventional Commits v1.0.0 message (header, body, footers) from the current worktree state.
+- **[land-prs](./land-prs/SKILL.md)** — Merge one PR, several, or a stack in order — retargeting each next PR before its base is deleted, carrying the merge up — then sync, clean up merged branches and worktrees, and deploy when asked.
 - **[sync-and-branch](./sync-and-branch/SKILL.md)** — Fast-forward the default branch to origin and cut a fresh feature branch from it — in place, carrying uncommitted work along, or as a new worktree beside unrelated work — and sync a fork with its upstream.

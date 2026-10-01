@@ -142,7 +142,7 @@ The report is the whole of the user's involvement, so it carries what a checkpoi
 
 A line like "one thread is waiting on your decision" with no question in it is the report failing at its one job.
 
-Merging is not part of this skill. If the user asked to merge as well, finish the report first, then merge only PRs with no open threads and green checks — and in a stack, retarget the next PR to the default branch (`gh pr edit <next> --base <default>`) **before** merging its base with `--delete-branch`, or GitHub closes the next PR instead of retargeting it.
+Merging is not part of this skill. If the user asked to merge as well, finish the report first, then call the Skill tool with "land-prs" — it merges only what's ready and retargets each PR in a stack before deleting its base.
 
 ---
 
