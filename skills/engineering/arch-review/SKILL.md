@@ -51,7 +51,7 @@ Rank: strength, then live defect, then churn, then dependency order (a candidate
 
 ## Step 3 — Land the report as the backlog
 
-- **New report:** call the Skill tool with "sync-and-branch" for `docs/arch-review-<slug>`, then call the Skill tool with "conventional-commit" to commit the report and index. Push and open a PR. This is the base of the stack — merging it puts the backlog on the default branch for every later session.
+- **New report:** cut `docs/arch-review-<slug>` from the fresh default branch (`git fetch origin && git switch --no-track -c docs/arch-review-<slug> origin/<default>`), then call the Skill tool with "conventional-commit" to commit the report and index. Push and open a PR. This is the base of the stack — merging it puts the backlog on the default branch for every later session.
 - **Resume:** reconcile the report's status table against reality first — `gh pr list --state all --head <branch>` for each open row, and `git branch -a`. Fix rows that lag (a merged PR still marked `pr-open`). The next base is the tip of the highest open branch in the stack, or the default branch if everything merged.
 
 `/arch-review report` stops here and reports the PR.
