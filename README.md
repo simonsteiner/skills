@@ -46,9 +46,12 @@ The annotated list is in [`third-party/README.md`](./third-party/README.md).
 To hack on a skill with live edits, symlink this repo's skills into your local agent directories:
 
 ```bash
-./scripts/link-skills.sh
+./scripts/link-skills.sh          # link every owned skill, prune links to removed or deprecated ones
+./scripts/link-skills.sh --check  # report owned skills that aren't linked, and dead links
 ```
 
 This is the dev-mode equivalent of `npx skills add`: it links each skill into `~/.agents/skills` (and mirrors it for Claude Code under `~/.claude/skills`), so edits here take effect immediately. Use it on the machine where you develop the skills, and install with skills.sh everywhere else — pick one path per skill, not both.
+
+On that machine, `./scripts/sync-skills.sh` runs `link-skills.sh` and then `sync-third-party.sh` (pass `--check` to check both). Run it after pulling, or after adding, moving or removing a skill, then restart your agents — they read their skill list at startup.
 
 Repo conventions are in [`CLAUDE.md`](./CLAUDE.md), and design decisions are recorded as ADRs in [`docs/adr/`](./docs/adr/).
