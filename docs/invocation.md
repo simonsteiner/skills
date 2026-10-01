@@ -25,4 +25,4 @@ The convention follows upstream's [`.agents/invocation.md`](https://github.com/m
 
 ## Passive vs active domain work
 
-Merely _reading_ `CONTEXT.md` for vocabulary is a one-line prose pointer, not the `domain-modeling` skill. Only the active build/sharpen discipline (challenge terms, edge-case scenarios, write ADRs, update `CONTEXT.md` inline) is `domain-modeling`.
+Merely _reading_ `GLOSSARY.md` for vocabulary is a one-line prose pointer, not the `domain-modeling` skill. Only the active build/sharpen discipline (challenge terms, edge-case scenarios, write ADRs, update `GLOSSARY.md` inline) is `domain-modeling`. Upstream renamed the convention from `CONTEXT.md`; a project that still has one should rename it, since the curated skills now look for `GLOSSARY.md` only.
