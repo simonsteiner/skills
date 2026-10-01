@@ -1,7 +1,7 @@
 ---
 name: address-review-findings
 description: >
-  Work through the review feedback on a GitHub pull request — pull the unresolved threads, fix what's real, then reply and resolve. Use when the user wants to address review comments or PR feedback, respond to a reviewer, resolve review threads, asks what's left on the PR, or says the review came back.
+  Work through the review feedback on GitHub pull requests — one PR, several, or a stack — pull the unresolved threads, fix what's real, then reply and resolve. Use when the user wants to address review comments or PR feedback, respond to a reviewer, resolve review threads or conversations, asks what's left on the PR(s), or says the review came back.
 ---
 
 # Address Review Findings
@@ -11,6 +11,18 @@ Turn a PR's review threads into fixes, replies, and resolutions — one decision
 **Run the whole loop hands-off** — read, triage, fix, commit, push, reply, resolve — and report at the end. Nothing here waits for the user. What keeps that safe is what the run refuses to do, not a checkpoint: a thread is only ever resolved when it was actually addressed, and a thread that needs a human keeps itself open by staying open.
 
 The feedback lives on GitHub, so `gh` must be authenticated (`gh auth status`). Findings produced in this session by a review skill are a different thing: act on those directly, no PR round-trip needed.
+
+---
+
+## Step 0 — Which PRs
+
+No PR named → the one for the current branch. "The open PRs", a list of numbers, or "the stack" → several. Map them first:
+
+```bash
+gh pr list --state open --author @me --json number,title,headRefName,baseRefName,isDraft
+```
+
+A PR whose base is another PR's head branch is **stacked** on it. Order the set bottom-up — base first — and run Steps 1–4 once per PR in that order, checking each out before touching its code (`gh pr checkout <n>`; the tree must be clean between PRs, which it is once Step 4 has pushed). A fix made low in the stack is still missing from every PR above it until Step 4 carries it up.
 
 ---
 
@@ -49,7 +61,8 @@ query($owner:String!, $repo:String!, $number:Int!) {
 - `id` is the thread ID — it's what replies and resolutions attach to. Keep it with each finding.
 - **`line` is null on outdated threads.** Use `originalLine` and `diffHunk` to locate what the reviewer was looking at; the code has moved since.
 - Read every comment in a thread, not just the first. A reviewer often answers themselves further down.
-- If nothing is unresolved, say so and stop.
+- If nothing is unresolved, say so and move to the next PR (or stop).
+- **No review at all is not a clean review.** Copilot doesn't review a PR whose base is another branch, so a stacked layer can arrive with zero threads because nobody looked. Check `gh pr view <n> --json reviews --jq '.reviews | length'`; if it's 0, say so in the report rather than counting the PR as done.
 
 ---
 
@@ -76,7 +89,7 @@ Never convert "disagree" into a silent resolve. An unconvinced reviewer with a c
 - Fix **what the comment is about**, not only the line it hangs on. A comment on one duplicated block usually implicates the others.
 - Group into the smallest coherent commits — one concern each, not one commit per thread and not one commit for everything.
 - Run whatever the repo runs (tests, linters, type checks). A review fix that breaks the build is a worse finding than the one it closed.
-- Write the messages with the `conventional-commit` skill. Say what changed and why, referencing the reviewer's point — never a bare "address feedback".
+- Commit with the `conventional-commit` skill. Say what changed and why, referencing the reviewer's point — never a bare "address feedback".
 - Stay inside the review's scope. A review is not a mandate to refactor what nobody commented on.
 
 ---
@@ -105,11 +118,31 @@ mutation($threadId:ID!) {
 
 A reply says what changed and where — the commit SHA or the new symbol name — not "done". Resolve only threads you fixed or proved already fixed. Threads left open are the record of what still needs the reviewer.
 
+**In a stack, carry the fixes up** before moving to the next PR. Merge each branch into the one stacked on it, bottom-up, and push — merge, not rebase, so reviewers of the upper PRs don't lose their place:
+
+```bash
+git switch <upper-head> && git merge --no-edit <lower-head> && git push
+```
+
+A conflict here is the upper PR's code meeting the fix: resolve it on the upper branch, keeping both intents, and run the checks again.
+
 ---
 
 ## Step 5 — Report
 
-The report is the whole of the user's involvement, so it carries what a checkpoint would have: one line per thread — reviewer, file, verdict, and the commit or the reason it's still open — then what was left unaddressed and why, and which threads are waiting on a human. Link the pushed commits so any verdict can be overruled from the diff.
+The report is the whole of the user's involvement, so it carries what a checkpoint would have: per PR, one line per thread — reviewer, file, verdict, and the commit or the reason it's still open — then what was left unaddressed and why. Link the pushed commits so any verdict can be overruled from the diff. Name any PR that had no review at all.
+
+**Every *needs a decision* and *disagree* thread gets spelled out in the report**, not just pointed at — the user should be able to decide without opening GitHub:
+
+> **PR #12 · `src/export.ts:40` — needs a decision**
+> The reviewer wants PDF links to expire after 24h; today they never expire.
+> - **A.** Expire after 24h — matches the reviewer; breaks links already sent by email.
+> - **B.** Keep permanent links — current behaviour; the thread stays open.
+> - **Recommended: A**, with a one-off note to existing users. [thread](url)
+
+A line like "one thread is waiting on your decision" with no question in it is the report failing at its one job.
+
+Merging is not part of this skill. If the user asked to merge as well, finish the report first, then merge only PRs with no open threads and green checks — and in a stack, retarget the next PR to the default branch (`gh pr edit <next> --base <default>`) **before** merging its base with `--delete-branch`, or GitHub closes the next PR instead of retargeting it.
 
 ---
 
