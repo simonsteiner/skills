@@ -89,7 +89,7 @@ Never convert "disagree" into a silent resolve. An unconvinced reviewer with a c
 - Fix **what the comment is about**, not only the line it hangs on. A comment on one duplicated block usually implicates the others.
 - Group into the smallest coherent commits — one concern each, not one commit per thread and not one commit for everything.
 - Run whatever the repo runs (tests, linters, type checks). A review fix that breaks the build is a worse finding than the one it closed.
-- Commit with the `conventional-commit` skill. Say what changed and why, referencing the reviewer's point — never a bare "address feedback".
+- Call the Skill tool with "conventional-commit" to commit. Say what changed and why, referencing the reviewer's point — never a bare "address feedback".
 - Stay inside the review's scope. A review is not a mandate to refactor what nobody commented on.
 
 ---

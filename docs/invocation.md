@@ -13,7 +13,15 @@ Bucket `README.md`s and the top-level `README.md` group entries into **User-invo
 
 ## Dependencies between them
 
-Dependencies are expressed as **`/skill`-style prose invocation** ("Run the `/grilling` skill"), not deep `../other-skill/FILE.md` cross-references. Shared reference docs live inside the skill that owns them; other skills reach that material by invoking the skill, not by linking across folders.
+Dependencies are expressed as an explicit instruction to **call the Skill tool** with the named skill (`Call the Skill tool with "conventional-commit"`), not deep `../other-skill/FILE.md` cross-references, and not a bare `/skill` mention left for the model to interpret. Naming the tool is what gets it fired: most harnesses expose skills as a tool the model calls, and saying so hits more reliably than a `/name` dropped into prose. A bare skill name also stays harness-neutral — it assumes no harness's trigger syntax. Shared reference docs live inside the skill that owns them; other skills reach that material by calling the Skill tool with it, not by linking across folders.
+
+This covers **operative** instructions only — a skill's own steps telling the agent to run another skill now. Prose that merely names a skill (a README, a rule of thumb, a credit) isn't invoking anything and stays a plain label.
+
+The Skill tool takes one skill per call. A step that needs two says so: `Call the Skill tool twice, for "grilling" and "domain-modeling"`.
+
+Only a **model-invoked** skill can be reached this way. When a step depends on a user-invoked skill, phrase it for the human: "tell the user to run `/<name>`" — never a Skill tool call.
+
+The convention follows upstream's [`.agents/invocation.md`](https://github.com/mattpocock/skills/blob/main/.agents/invocation.md).
 
 ## Passive vs active domain work
 

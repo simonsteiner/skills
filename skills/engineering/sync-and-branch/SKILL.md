@@ -140,7 +140,7 @@ If the current branch *is* the default branch, there's nothing to stack on: orig
 
 Report the branch, its base (`origin/$default` at `<sha>`, or the branch it's stacked on), and the files that came along (`git status --short`).
 
-If the user asked to commit, the commit comes next — run the `conventional-commit` skill for it. This skill only moves the work; it never commits it.
+If the user asked to commit, the commit comes next — call the Skill tool with "conventional-commit" for it. This skill only moves the work; it never commits it.
 
 ---
 
