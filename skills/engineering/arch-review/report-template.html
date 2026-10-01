@@ -1,0 +1,199 @@
+<!doctype html>
+<!--
+  arch-review report scaffold. Copy it to docs/arch-review/YYYY-MM-DD-<slug>.html and fill it in.
+  Keep <head>, the legend, and the class names as they are: every report looking the same is the point.
+  Replace each {{placeholder}}; repeat the marked blocks per candidate / finding; delete sections marked optional when empty.
+  Escape &, < and > in text you paste in. Inside Mermaid, quote every label ("like this") and never
+  use {{ }}: double braces are Mermaid's hexagon syntax and break the diagram. The Mermaid blocks
+  below hold example module names, not placeholders: replace them with the real ones.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Architecture review: {{repo}}, {{YYYY-MM-DD}}</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+</script>
+<style>
+  .lbl { font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; }
+  .seam { border-style: dashed; }
+  .deep { background: linear-gradient(135deg, #0f172a, #1e293b); color: #e2e8f0; }
+  .shallow { background: repeating-linear-gradient(45deg, #fff, #fff 6px, #f1f5f9 6px, #f1f5f9 12px); }
+  .faded { opacity: .45; }
+  .mermaid { display: flex; justify-content: center; }
+  .diagram { min-height: 220px; }
+  @media print {
+    body { background: #fff; }
+    article, section { break-inside: avoid; }
+    nav { display: none; }
+  }
+</style>
+</head>
+<body class="bg-stone-50 text-slate-900 font-sans">
+<main class="max-w-6xl mx-auto px-6 py-12 space-y-14">
+
+<!-- ============ Header: no intro paragraph, straight to the facts ============ -->
+<header class="space-y-3">
+  <h1 class="font-serif text-4xl">{{repo}}: {{one-line headline}}</h1>
+  <p class="text-slate-500 text-sm">
+    {{YYYY-MM-DD}} · at <span class="font-mono">{{sha}}</span> (<span class="font-mono">{{branch}}</span>)
+    · scope: {{direction, or the churn hot spots and how they were found}}
+    · glossary: <span class="font-mono">{{GLOSSARY.md | none}}</span>
+    · live status: <a class="underline" href="{{YYYY-MM-DD-slug}}.md">ledger</a>
+  </p>
+  <div class="flex flex-wrap gap-4 text-xs text-slate-600 pt-2">
+    <span class="flex items-center gap-2"><span class="inline-block w-5 h-4 border-2 border-slate-500 bg-white"></span>module</span>
+    <span class="flex items-center gap-2"><span class="inline-block w-5 h-4 border-2 border-slate-400 shallow"></span>shallow module</span>
+    <span class="flex items-center gap-2"><span class="inline-block w-5 h-4 deep rounded-sm"></span>deep module</span>
+    <span class="flex items-center gap-2"><span class="inline-block w-8 border-t-2 border-dashed border-slate-500"></span>seam</span>
+    <span class="flex items-center gap-2"><span class="inline-block w-8 border-t-2 border-red-600"></span>leak</span>
+  </div>
+  <nav class="flex flex-wrap gap-2 pt-2 text-xs">
+    <!-- one link per candidate, then the fixed sections -->
+    <a href="#c1" class="px-2 py-1 rounded bg-white border border-slate-200 hover:border-slate-400">C1</a>
+    <a href="#smaller" class="px-2 py-1 rounded bg-white border border-slate-200 hover:border-slate-400">Smaller findings</a>
+    <a href="#top" class="px-2 py-1 rounded bg-white border border-slate-200 hover:border-slate-400">Recommendation</a>
+  </nav>
+</header>
+
+<!-- ============ Overview: the whole backlog at a glance, in rank order ============ -->
+<section id="overview" class="space-y-4">
+  <h2 class="font-serif text-2xl">Candidates, ranked</h2>
+  <div class="overflow-x-auto rounded-xl bg-white border border-slate-200">
+    <table class="w-full text-sm">
+      <thead class="text-left text-slate-500"><tr class="border-b border-slate-200">
+        <th class="lbl px-4 py-3">ID</th><th class="lbl px-4 py-3">Deepening</th><th class="lbl px-4 py-3">Strength</th>
+        <th class="lbl px-4 py-3">Lens</th><th class="lbl px-4 py-3">Planned branch</th><th class="lbl px-4 py-3">Builds on</th>
+      </tr></thead>
+      <tbody class="divide-y divide-slate-100">
+        <!-- repeat per candidate -->
+        <tr>
+          <td class="px-4 py-3 font-mono"><a href="#c1" class="underline">C1</a></td>
+          <td class="px-4 py-3">{{names the deepening}}</td>
+          <td class="px-4 py-3"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-xs font-semibold">Strong</span> <span class="px-2 py-0.5 rounded bg-red-100 text-red-800 text-xs font-semibold">live defect</span></td>
+          <td class="px-4 py-3 text-slate-600">{{deepening | maintainability}}</td>
+          <td class="px-4 py-3 font-mono text-xs">refactor/{{slug}}</td>
+          <td class="px-4 py-3 font-mono text-xs">{{— | C2}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ Map: where the friction sits (one diagram) ============ -->
+<section id="map" class="space-y-4">
+  <h2 class="font-serif text-2xl">Where it hurts</h2>
+  <div class="rounded-xl bg-white border border-slate-200 p-6">
+    <pre class="mermaid">
+flowchart LR
+  A["OrderHandler"] --> B["OrderValidator"]
+  B -.leak.-> C["PricingClient"]
+  classDef hot fill:#fef2f2,stroke:#dc2626,stroke-width:2px,color:#991b1b;
+  class B,C hot
+    </pre>
+    <p class="text-xs text-slate-500 mt-3">{{one line: what the red modules have in common, e.g. "touched in 31 of the last 40 commits"}}</p>
+  </div>
+</section>
+
+<!-- ============ Since the last review (optional: omit on a first review) ============ -->
+<section id="since" class="space-y-3">
+  <h2 class="font-serif text-2xl">Since the last review</h2>
+  <ul class="text-sm space-y-1 list-disc ml-5">
+    <li><span class="font-mono">{{2026-08-19 C3}}</span>: {{merged in #41 / still open / dropped because …}}</li>
+  </ul>
+</section>
+
+<!-- ============ Candidates: one article each, diagrams carry the weight ============ -->
+<section id="candidates" class="space-y-10">
+
+<!-- repeat per candidate -->
+<article id="c1" class="rounded-xl bg-white border border-slate-200 shadow-sm p-6 space-y-5">
+  <div class="flex items-start justify-between gap-4">
+    <h2 class="font-serif text-2xl">C1 · {{short title naming the deepening}}</h2>
+    <div class="flex flex-wrap justify-end gap-2 shrink-0">
+      <!-- Strong = emerald-100/800 · Worth exploring = amber-100/800 · Speculative = slate-100/700 -->
+      <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-xs font-semibold">Strong</span>
+      <span class="px-2 py-0.5 rounded bg-red-100 text-red-800 text-xs font-semibold">live defect</span>
+      <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-xs">{{in-process | local-substitutable | ports &amp; adapters | mock}}</span>
+    </div>
+  </div>
+  <p class="font-mono text-sm text-slate-600">{{path/a.py:81-127 · path/b.py:117 · tests/test_a.py:34}}</p>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="rounded-lg border border-slate-200 p-4 diagram">
+      <div class="lbl text-slate-500 mb-2">Before</div>
+      <pre class="mermaid">
+flowchart TB
+  A["OrderHandler"] --> B["OrderValidator<br/>shallow"]
+  B --> C["OrderRepo"]
+  C -.leak.-> D["PricingClient"]
+  classDef leak stroke:#dc2626,stroke-width:2px,color:#991b1b;
+  class C,D leak
+      </pre>
+      <!-- evidence that something is wrong today: a reproduced failure, a count. Red only for a live defect. -->
+      <p class="text-xs text-red-700 mt-2">{{input → wrong output, no error}}</p>
+    </div>
+    <div class="rounded-lg border border-slate-200 p-4 diagram">
+      <div class="lbl text-slate-500 mb-2">After</div>
+      <!-- hand-built deep module: thick dark box, interface on top, internals faded inside -->
+      <div class="deep rounded-lg p-5 space-y-3">
+        <div class="lbl text-slate-400">{{deep module name}}</div>
+        <div class="border border-dashed border-slate-400 rounded p-2 text-sm">{{the small interface}}</div>
+        <div class="faded text-xs space-y-1">
+          <div>{{absorbed: former shallow module}}</div>
+          <div>{{absorbed: former shallow module}}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid md:grid-cols-3 gap-4 text-sm">
+    <div><div class="lbl text-slate-500 mb-1">Problem</div><p>{{one sentence: what hurts}}</p></div>
+    <div><div class="lbl text-slate-500 mb-1">Solution</div><p>{{one sentence: what changes; no interface design}}</p></div>
+    <div><div class="lbl text-slate-500 mb-1">Wins</div>
+      <ul class="list-disc ml-4">
+        <li>{{locality: bugs concentrate in one module}}</li>
+        <li>{{leverage: one interface, N call sites}}</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- optional: only when an ADR bears on it -->
+  <p class="text-sm rounded-md bg-amber-50 border border-amber-200 px-3 py-2">ADR {{0007}}: {{one line on how it bears}}</p>
+</article>
+
+</section>
+
+<!-- ============ Smaller findings: local fixes, compact ============ -->
+<section id="smaller" class="space-y-4">
+  <h2 class="font-serif text-2xl">Smaller findings</h2>
+  <div class="grid md:grid-cols-2 gap-4">
+    <!-- repeat per finding -->
+    <div class="rounded-lg bg-white border border-slate-200 p-4 space-y-2 text-sm">
+      <div class="flex items-center justify-between gap-2">
+        <h3 class="font-semibold">S1 · {{title}}</h3>
+        <span class="text-xs text-slate-500">{{rides with C1 | own PR}}</span>
+      </div>
+      <p class="font-mono text-xs text-slate-600">{{path:line}}</p>
+      <p>{{what, and the fix, in two sentences}}</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Recommendation and proposed batch ============ -->
+<section id="top" class="rounded-xl deep p-8 space-y-4">
+  <div class="lbl text-slate-400">Top recommendation</div>
+  <h2 class="font-serif text-3xl"><a href="#c1" class="underline decoration-slate-500">C1 · {{title}}</a></h2>
+  <p class="text-slate-300">{{one sentence on why this one first}}</p>
+  <div class="pt-2">
+    <div class="lbl text-slate-400 mb-2">Proposed batch: every Strong, in order</div>
+    <p class="font-mono text-sm text-slate-200">{{C1 → C3 → C2}}</p>
+  </div>
+</section>
+
+</main>
+</body>
+</html>
