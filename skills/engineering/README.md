@@ -2,6 +2,12 @@
 
 Skills I use daily for code work.
 
+## User-invoked
+
+Reachable only when typed (`disable-model-invocation: true`).
+
+- **[arch-review](./arch-review/SKILL.md)** — Scan for deepening and maintainability candidates, save a ranked backlog to `docs/arch-review/`, then implement the batch you confirm as one stacked PR per candidate, with decisions recorded and loose ends audited.
+
 ## Model-invoked
 
 Model- or user-reachable (rich trigger phrasing so the model can reach for them).
