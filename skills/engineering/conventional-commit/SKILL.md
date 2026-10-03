@@ -1,7 +1,7 @@
 ---
 name: conventional-commit
 description: >
-  Write Conventional Commits v1.0.0 messages and make the commits — one, or several atomic ones when the work spans concerns. Use before running any `git commit`, including when the user says "commit", "commit and push", "commit in logical chunks", "commit this to a new branch", or when another workflow (review fixes, refactors, releases) reaches its commit step. Also use when asked to write or improve a commit message.
+  Writes Conventional Commits v1.0.0 messages and makes the commits — one, or several atomic ones when the work spans concerns. Use before running any `git commit`, including when the user says "commit", "commit and push", "commit in logical chunks", or when another workflow (review fixes, refactors, releases) reaches its commit step. Also use when asked to write or improve a commit message.
 ---
 
 # Conventional Commit
@@ -15,7 +15,7 @@ Turn the current worktree into **Conventional Commits v1.0.0**-compliant commits
 
 Push only when the push was asked for too ("commit and push").
 
-For more examples and edge cases, see `references/commit-examples.md`.
+Read [references/commit-examples.md](references/commit-examples.md) for a revert, several footers, a `!` without a `BREAKING CHANGE` footer, or a worked example of a body.
 
 ---
 
@@ -59,68 +59,28 @@ If the worktree mixes logically unrelated changes, plan one commit per concern �
 
 ## Step 3 — Write the message
 
-Structure (each part separated by a blank line):
+`<type>[(scope)][!]: <description>`, then an optional body and footers, each after a blank line.
 
-```
-<type>[(scope)][!]: <description>
+**Header, ≤ 72 chars.**
 
-[body]
+- **Type:** `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `style`, `build`, `ci`, `chore`, `revert`. `chore` never changes source behaviour.
+- **Scope:** a lowercase noun for the area touched — `feat(auth):` — taken from the scopes this repo's log already uses. Omit it when the change is genuinely cross-cutting.
+- **Description:** imperative ("add", not "added"/"adds"), lowercase first letter, no trailing period. State the change, not the file.
 
-[footer(s)]
-```
+**Body** — for anything non-trivial:
 
-### Header (≤ 72 chars)
-
-**Type** — required, lowercase, one of:
-
-| type     | when to use |
-|----------|-------------|
-| feat     | a new feature (correlates with SemVer MINOR) |
-| fix      | a bug fix (correlates with SemVer PATCH) |
-| refactor | code change that neither fixes a bug nor adds a feature |
-| perf     | performance improvement |
-| test     | adding or correcting tests |
-| docs     | documentation only |
-| style    | formatting/whitespace, no logic change |
-| build    | build system or dependencies |
-| ci       | CI configuration and scripts |
-| chore    | maintenance, tooling, config (no src behaviour change) |
-| revert   | reverts a previous commit |
-
-**Scope** — optional, lowercase noun in parentheses, naming a section of the codebase: `feat(auth):`. Use scopes that match this repo (e.g. `auth`, `api`, `db`, `ai`, `sync`, `views`). Omit when the change is genuinely cross-cutting.
-
-**Description** — required. Imperative mood ("add", not "added"/"adds"), lowercase first letter, no trailing period. State the change, not the file.
-
-### Body — optional, recommended for non-trivial changes
-
-- Explain **what** and **why**, not how (the diff shows how).
-- Be as long as it needs to be to say what changed — don't truncate for length.
-- Free-form; one blank line after the header.
-- Lowercase first letter, no trailing period.
-- Use `-` bullets for multiple distinct points.
+- **What** and **why**, not how (the diff shows how). As long as it needs to be.
+- `-` bullets for distinct points. Each bullet or paragraph starts lowercase and ends without a period; sentences inside it keep theirs.
 - **Do not hard-wrap body lines.** Write each bullet or paragraph as one continuous line and let the editor soft-wrap it — never insert manual newlines at ~72 chars or any other column. The ≤ 72 char limit applies only to the header; body and footer lines run as long as they need to. (A multi-line bullet wraps only because the content has a real line break, not to hit a width.)
 
-### Footers — optional
+**Footers** — one per line: `Closes #42`, `Refs PROJ-7`, `Reviewed-by: Name <email>`. A branch that encodes a ticket (`feature/PROJ-42-login`) gets `Refs PROJ-42`.
 
-One per line, `Token: value` (use `-` instead of spaces in the token, except `BREAKING CHANGE`). Examples:
-
-- Issue refs: `Closes #42`, `Fixes #123`, `Refs PROJ-7`
-- Trailers: `Co-authored-by: Name <email>`, `Reviewed-by: Name <email>`
-- If the branch encodes a ticket (e.g. `feature/PROJ-42-login`), add `Refs PROJ-42`.
-
-### Breaking changes
-
-Mark **either** way (both is fine):
-
-- A `!` before the colon: `feat(api)!: drop legacy /login endpoint`
-- A `BREAKING CHANGE:` footer describing the break and migration path.
-
-A `BREAKING CHANGE` footer correlates with a SemVer MAJOR bump and may appear on any type, not just `feat`/`fix`.
+**Breaking** — a public contract or behaviour callers rely on changed, on any type: mark it with `!` before the colon, a `BREAKING CHANGE:` footer giving the break and the migration path, or both.
 
 ```
 feat(api)!: require client_id on the auth endpoint
 
-BREAKING CHANGE: /api/auth now rejects requests without client_id. Add client_id to every auth call before upgrading.
+BREAKING CHANGE: /api/auth now rejects requests without client_id. Add client_id to every auth call before upgrading
 ```
 
 ---
@@ -133,8 +93,8 @@ Pass the message through a quoted heredoc, so the body reaches git exactly as wr
 git commit -F - <<'EOF'
 feat(scope): short imperative description
 
-- What changed and why, on one line however long it runs.
-- Caveats or context.
+- what changed and why, on one line however long it runs
+- caveats or context
 
 Closes #123
 EOF
@@ -175,8 +135,8 @@ Output the full message in a single code block so it's copy-pasteable:
 ```
 feat(scope): short imperative description
 
-- What changed and why.
-- Caveats or context.
+- what changed and why
+- caveats or context
 
 Closes #123
 ```

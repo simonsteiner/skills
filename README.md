@@ -55,4 +55,6 @@ This is the dev-mode equivalent of `npx skills add`: it links each skill into `~
 
 On that machine, `./scripts/sync-skills.sh` runs `link-skills.sh` and then `sync-third-party.sh` (pass `--check` to check both). Run it after pulling, or after adding, moving or removing a skill, then restart your agents — they read their skill list at startup.
 
+`./scripts/lint-skills.py` checks every skill against Anthropic's [skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices) and the listing rules in `CLAUDE.md`; CI runs it, with shellcheck, on every PR.
+
 Repo conventions are in [`CLAUDE.md`](./CLAUDE.md), and design decisions are recorded as ADRs in [`docs/adr/`](./docs/adr/).
