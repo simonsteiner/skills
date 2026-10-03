@@ -129,7 +129,7 @@ Branch `refactor/<candidate-slug>` (the planned name) off the base. Map the cand
 
 5. Check the diff against the approval bar in [LENSES.md](LENSES.md). Then call the Skill tool with "code-review": fixed point = the base branch, spec = this candidate's card and decisions in the report. Fix what's real, and rerun the checks.
 6. Update the candidate's status row (`pr-open`, PR number, Breaking) and write any **Departure** from the report, in the same branch.
-7. Call the Skill tool with "conventional-commit" to commit, push, then `gh pr create --base <base>`. Call the Skill tool with "pr" for the body, and link the candidate's card in the report from it. Never merge.
+7. Call the Skill tool with "conventional-commit" to commit, push, then `gh pr create --base <base>`. Call the Skill tool with "pr-body" for the body, and link the candidate's card in the report from it. Never merge.
 
 ---
 
