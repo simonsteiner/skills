@@ -1,7 +1,7 @@
 ---
 name: address-review-findings
 description: >
-  Work through the review feedback on GitHub pull requests — one PR, several, or a stack — pull the unresolved threads, fix what's real, then reply and resolve. Use when the user wants to address review comments or PR feedback, respond to a reviewer, resolve review threads or conversations, asks what's left on the PR(s), or says the review came back.
+  Works through the review feedback on GitHub pull requests — one PR, several, or a stack — pulling the unresolved threads, fixing what's real, then replying and resolving. Use when the user wants to address review comments or PR feedback, respond to a reviewer, resolve review threads or conversations, asks what's left on the PR(s), or says the review came back.
 ---
 
 # Address Review Findings
@@ -10,7 +10,7 @@ Turn a PR's review threads into fixes, replies, and resolutions — one decision
 
 **Run the whole loop hands-off** — read, triage, fix, commit, push, reply, resolve — and report at the end. Nothing here waits for the user. What keeps that safe is what the run refuses to do, not a checkpoint: a thread is only ever resolved when it was actually addressed, and a thread that needs a human keeps itself open by staying open.
 
-The feedback lives on GitHub, so `gh` must be authenticated (`gh auth status`). Findings produced in this session by a review skill are a different thing: act on those directly, no PR round-trip needed.
+The feedback lives on GitHub, so `gh` must be authenticated (`gh auth status`). The thread queries are bundled as scripts — run them from the repo under review by their path in this skill's directory (`<skill-dir>/scripts/…`). Findings produced in this session by a review skill are a different thing: act on those directly, no PR round-trip needed.
 
 ---
 
@@ -33,36 +33,18 @@ gh pr view --json number,title,url,headRefName,baseRefName,state,reviewDecision,
 gh pr view --comments   # review summaries and issue comments — the prose around the threads
 ```
 
-Inline threads need GraphQL; the REST comments endpoint doesn't expose whether a thread is resolved. Set the three variables the query needs first — unset ones give an empty result, not an error:
+Inline threads need GraphQL — the REST endpoint doesn't say whether a thread is resolved. Run this skill's script, which pages through every thread and prints the unresolved ones as one JSON object per line:
 
 ```bash
-OWNER="$(gh repo view --json owner --jq .owner.login)"
-REPO="$(gh repo view --json name --jq .name)"
-PR="$(gh pr view --json number --jq .number)"
-```
-
-```bash
-gh api graphql -f query='
-query($owner:String!, $repo:String!, $number:Int!) {
-  repository(owner:$owner, name:$repo) {
-    pullRequest(number:$number) {
-      reviewThreads(first:100) {
-        nodes {
-          id isResolved isOutdated path line startLine
-          comments(first:20) { nodes { databaseId author { login } body url originalLine diffHunk } }
-        }
-      }
-    }
-  }
-}' -f owner="$OWNER" -f repo="$REPO" -F number="$PR" \
-  --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)'
+scripts/unresolved-threads.sh [<pr>]   # default: the current branch's PR
 ```
 
 - `id` is the thread ID — it's what replies and resolutions attach to. Keep it with each finding.
 - **`line` is null on outdated threads.** Use `originalLine` and `diffHunk` to locate what the reviewer was looking at; the code has moved since.
 - Read every comment in a thread, not just the first. A reviewer often answers themselves further down.
 - If nothing is unresolved, say so and move to the next PR (or stop).
-- **No review at all is not a clean review.** Copilot doesn't review a PR whose base is another branch, so a stacked layer can arrive with zero threads because nobody looked. Check `gh pr view <n> --json reviews --jq '.reviews | length'`; if it's 0, say so in the report rather than counting the PR as done.
+- `commentCount` above the length of `comments` means the thread outgrew one page — open its `url` and read the rest there.
+- **No review at all is not a clean review.** A stacked layer can arrive with zero threads because no reviewer looked at it — some automated reviewers skip PRs based on another branch. The script warns on stderr when a PR has no reviews; say so in the report rather than counting the PR as done.
 
 ---
 
@@ -101,20 +83,12 @@ These post to a PR other people are watching, and a reply can't be unsent — so
 Push the commits, then per thread:
 
 ```bash
-# reply in the thread
-gh api graphql -f query='
-mutation($threadId:ID!, $body:String!) {
-  addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$threadId, body:$body}) {
-    comment { url }
-  }
-}' -f threadId="$THREAD_ID" -f body="$BODY"
-
-# resolve it — only if it was actually addressed
-gh api graphql -f query='
-mutation($threadId:ID!) {
-  resolveReviewThread(input:{threadId:$threadId}) { thread { isResolved } }
-}' -f threadId="$THREAD_ID"
+scripts/reply-resolve.sh <thread-id> [--resolve] <<'BODY'
+Fixed in abc1234: the export now …
+BODY
 ```
+
+`--resolve` only when the thread was actually addressed. The script refuses an empty body, so nothing gets resolved silently.
 
 A reply says what changed and where — the commit SHA or the new symbol name — not "done". Resolve only threads you fixed or proved already fixed. Threads left open are the record of what still needs the reviewer.
 
