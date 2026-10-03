@@ -95,11 +95,6 @@
           "why": "The interview engine. Model-invoked, so it fires on 'grill me' on its own; used to stress-test plans, often with 'answer with your recommendations'."
         },
         {
-          "name": "pr",
-          "path": "skills/engineering/pr",
-          "why": "PR body template — diagram, before/after evidence, merge danger. Fills the step before address-review-findings; most PRs here are opened by an agent."
-        },
-        {
           "name": "research",
           "path": "skills/engineering/research",
           "why": "Delegates reading legwork to a background agent and lands findings as Markdown in the repo."
@@ -116,6 +111,11 @@
         }
       ],
       "archived": [
+        {
+          "name": "pr",
+          "path": "skills/engineering/pr",
+          "why": "Replaced by the owned pr-body skill. One template for every PR forced a before/after onto features (\"Before: invalid choice\") and a three-section body onto one-line chores, and had no slot for the context line, deploy steps, consumer notes or what's not done, which agents kept adding by hand. pr-body keeps its views and swaps the evidence per kind of change."
+        },
         {
           "name": "improve-codebase-architecture",
           "path": "skills/engineering/improve-codebase-architecture",

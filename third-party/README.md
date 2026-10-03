@@ -44,7 +44,6 @@ The repo this one forked from ([ADR 0001](../docs/adr/0001-fork-and-pare-down-to
 - **[diagnosing-bugs](https://github.com/mattpocock/skills/blob/main/skills/engineering/diagnosing-bugs/SKILL.md)** — diagnosis loop for hard bugs and performance regressions.
 - **[domain-modeling](https://github.com/mattpocock/skills/blob/main/skills/engineering/domain-modeling/SKILL.md)** — build and sharpen a project's domain model.
 - **[grilling](https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md)** — the interview engine; fires on "grill me" and friends by itself.
-- **[pr](https://github.com/mattpocock/skills/blob/main/skills/engineering/pr/SKILL.md)** — PR body template: diagram, before/after evidence, merge danger.
 - **[research](https://github.com/mattpocock/skills/blob/main/skills/engineering/research/SKILL.md)** — investigate a question against primary sources and land the findings as Markdown.
 - **[tdd](https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md)** — test-first red → green at agreed seams, and what a test worth keeping looks like.
 - **[wizard](https://github.com/mattpocock/skills/blob/main/skills/engineering/wizard/SKILL.md)** — generate a bash wizard that walks a human through steps only they can do.
