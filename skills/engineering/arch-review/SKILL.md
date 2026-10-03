@@ -18,6 +18,12 @@ Find where the code fights its maintainers, write it down in the repo as a backl
 
 **One checkpoint, then hands-off.** The user confirms the batch once (Step 4). After that every design question is decided with the recommended answer and written down; nothing else waits for the user except a one-way door (Step 6). The report is the state — any session, any agent, picks up from its status table.
 
+**Budget.** A run is long, and its cost is turns × context: every turn re-reads everything the agent has loaded. So:
+
+- **Tier the models.** Judgement — this session and the Step 6 design agent — runs on the strongest model. Everything else — scanners, Build and Ship agents, and every nested sub-agent any of them spawns (code-review's reviewers, design-it-twice's designers) — runs on the mid-tier model (`model: "sonnet"` in Claude Code). Say so in every brief, including that nested sub-agents inherit the rule.
+- **Keep contexts small.** Every brief carries the [context rules](#context-rules). Prefer a fresh agent over a long one.
+- **One run at a time.** Two arch-reviews in parallel multiply the burn rate; queue the next repo instead.
+
 Call the Skill tool with "codebase-design" before anything else. Use its vocabulary exactly — module, interface, implementation, depth, seam, adapter, leverage, locality — in the report, the decisions, commits, and PR bodies.
 
 **Pick the entry from what was asked:**
@@ -32,7 +38,7 @@ Call the Skill tool with "codebase-design" before anything else. Use its vocabul
 
 - A direction from the user wins. Otherwise find the hot spots: `git log --since=3.months --name-only --format= | sort | uniq -c | sort -rn | head -40`. Deepening pays off only where change keeps landing — weight those paths first; widen only if churn is scattered.
 - Read the domain glossary (`GLOSSARY.md` or `CONTEXT.md`, whichever exists), the ADRs under `docs/adr/`, and the previous reports in `docs/arch-review/`. Don't re-suggest what an ADR or an earlier `dropped` row already settled, unless the friction is real enough to reopen it — then say which ADR and why.
-- Spawn sub-agents to walk the scoped code with both lenses in [LENSES.md](LENSES.md) — one per lens, or one per hot area in a large repo. Give each the scope, the vocabulary, and its lens; ask for evidence (file:line, counts, a failing input) behind every claim.
+- Spawn mid-tier sub-agents to walk the scoped code with both lenses in [LENSES.md](LENSES.md) — one per lens, or one per hot area in a large repo. Give each the scope, the vocabulary, its lens, and the [context rules](#context-rules); ask for evidence (file:line, counts, a failing input) behind every claim, and a findings list under 800 words — not file contents.
 - Apply the deletion test to every suspected shallow module. Verify each sub-agent claim yourself before it becomes a candidate.
 
 ---
@@ -64,7 +70,7 @@ Propose the batch and **wait for the user's answer** — this is the run's one c
 
 - **Default: every `Strong` row still `todo`**, in rank order. List each as `ID — title — strength — planned branch`.
 - Name what's left out (`Worth exploring`, `Speculative`) so the user can pull a row in.
-- Say where the smaller findings go: with the candidate PR that touches the same module, or together in one final PR.
+- Say where the smaller findings go: with the candidate PR that touches the same module, or in final PRs of at most five `S` rows each, grouped by module.
 
 The user can accept as is, add or drop rows, or reorder. Write the confirmed batch into the report's status table (`in-progress` for the first row), then go.
 
@@ -72,20 +78,39 @@ The user can accept as is, add or drop rows, or reorder. Write the confirmed bat
 
 ## Step 5 — Implement the batch
 
-Per candidate, spawn **one implementer sub-agent** — fresh context per candidate is what keeps the run from stalling halfway. Brief it with pointers, not copies: the report path, the candidate ID, the base branch, and Steps 6–7 of this skill. Run candidates in sequence; each branch stacks on the previous one. When the harness has no sub-agents, do it inline and still finish one candidate completely before starting the next.
+Per candidate, spawn **three sub-agents in sequence**, each with a fresh context — a single implementer's context grows past what the later phases need, and the review and PR turns then pay for all of it:
 
-After each sub-agent returns, verify its work — branch pushed, PR open against the right base, row updated — before starting the next.
+| Phase | Model | Does | Hands back |
+|---|---|---|---|
+| **Design** | strongest | Step 6 | Decisions committed to the report on the candidate branch, or the row `blocked` |
+| **Build** | mid-tier | Step 7.1–4 | Branch committed with checks green, or what failed |
+| **Ship** | mid-tier | Step 7.5–7 | PR number, base, row updated and pushed |
+
+Brief each with pointers, not copies: the report path, the candidate ID, the branch and its base, its steps of this skill, the [context rules](#context-rules), and the model rule for anything it spawns. Build and Ship work from the candidate's card and Decisions — they don't reopen the design; a Decision that proves wrong becomes a **Departure**.
+
+Run candidates in sequence; each branch stacks on the previous one. A batch of smaller findings is one candidate without a Design phase; its Build agent cuts the branch. When the harness has no sub-agents, do it inline and still finish one candidate completely before starting the next.
+
+Between phases, check the hand-back — Decisions in the report, checks green, PR open against the right base, row updated. A gap goes back to a fresh agent of the same phase with the gap named; don't patch it from this session's context.
+
+### Context rules
+
+Put these in every brief:
+
+- Read your candidate's card, not the report: `grep -n` its heading, then read that range.
+- Read files in ranges (`grep -n`, then `sed -n` or `Read` with offset/limit); never a whole test file or a whole module you aren't rewriting.
+- Trim command output: `… 2>&1 | tail -40` for tests, lint, and typecheck; `git diff --stat` before any full diff.
+- Don't re-read what you already hold; keep notes in the report or the commit, not in the conversation.
 
 ---
 
 ## Step 6 — Decide the design (autonomous grilling)
 
-Map the candidate as a decision tree: the shape of the deepened module, what sits behind the seam, the dependency category (codebase-design's DEEPENING), which tests survive, which callers change.
+Branch `refactor/<candidate-slug>` (the planned name) off the base. Map the candidate as a decision tree: the shape of the deepened module, what sits behind the seam, the dependency category (codebase-design's DEEPENING), which tests survive, which callers change.
 
 - Work it in rounds. Each round, take every decision whose prerequisites are settled and **answer each one yourself with the recommended option**.
 - Ground every answer in a fact from this tree — a measurement, a grep count, a reproduced failure — not an assertion. Look facts up; never guess them.
 - When the interface shape is genuinely open, use codebase-design's design-it-twice pattern and take your own recommendation.
-- Record every decision in the candidate's **Decisions** block in the report: `Q<n> — question → answer, because <fact>`.
+- Record every decision in the candidate's **Decisions** block in the report: `Q<n> — question → answer, because <fact>`. Call the Skill tool with "conventional-commit" to commit the Decisions on the candidate branch.
 - **One-way doors stop the candidate, not the run:** data migrations, published wire or file formats, deletion of user data. Mark the row `blocked` with the question in Notes and move on to the next candidate.
 - A new domain term, or a sharpened one: call the Skill tool with "domain-modeling" and update the glossary inline. Dropping a candidate for a load-bearing reason: record it as an ADR the same way, so the next review doesn't re-suggest it.
 
@@ -93,11 +118,16 @@ Map the candidate as a decision tree: the shape of the deepened module, what sit
 
 ## Step 7 — Build, check, ship
 
-1. Branch `refactor/<candidate-slug>` (the planned name) off the base.
+**Build** (7.1–4):
+
+1. Work on the candidate branch from Step 6.
 2. **Live defect:** pin it with a failing test first, then move code.
 3. Implement the decisions. Replace, don't layer: write tests at the new interface, delete the tests and shallow modules it makes redundant, update docs and code maps that name moved files.
-4. Run what the repo runs — typecheck, lint, the full suite. Where the project has golden outputs, show they're byte-identical, or explain the intended difference.
-5. Check the diff against the approval bar in [LENSES.md](LENSES.md). Then call the Skill tool with "code-review": fixed point = the base branch, spec = this candidate's card and decisions in the report. Fix what's real.
+4. Run what the repo runs — typecheck, lint, the full suite. Where the project has golden outputs, show they're byte-identical, or explain the intended difference. Call the Skill tool with "conventional-commit" to commit.
+
+**Ship** (7.5–7):
+
+5. Check the diff against the approval bar in [LENSES.md](LENSES.md). Then call the Skill tool with "code-review": fixed point = the base branch, spec = this candidate's card and decisions in the report. Fix what's real, and rerun the checks.
 6. Update the candidate's status row (`pr-open`, PR number, Breaking) and write any **Departure** from the report, in the same branch.
 7. Call the Skill tool with "conventional-commit" to commit, push, then `gh pr create --base <base>`. Call the Skill tool with "pr" for the body, and link the candidate's card in the report from it. Never merge.
 
