@@ -1,7 +1,7 @@
 ---
 name: pr-body
 description: >
-  Write a pull request body shaped by the kind of change — a fix shows before → after, a feature shows it working, a refactor shows nothing changed, a chore stays a few lines. Use when writing or rewriting a PR body or description, before `gh pr create`, or when another workflow reaches its open-a-PR step.
+  Writes a pull request body shaped by the kind of change — a fix shows before → after, a feature shows it working, a refactor shows nothing changed, a chore stays a few lines. Use when writing or rewriting a PR body or description, before `gh pr create`, or when another workflow reaches its open-a-PR step.
 ---
 
 # PR Body
