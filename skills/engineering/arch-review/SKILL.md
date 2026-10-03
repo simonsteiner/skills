@@ -1,6 +1,6 @@
 ---
 name: arch-review
-description: Scan the codebase for deepening and maintainability candidates, save a ranked Markdown report with diagrams and a status table to docs/arch-review/, then implement the batch you confirm — one stacked PR per candidate, decisions recorded, loose ends audited.
+description: Scans the codebase for deepening and maintainability candidates, saves a ranked Markdown report with diagrams and a status table to docs/arch-review/, then implements the batch you confirm — one stacked PR per candidate, decisions recorded, loose ends audited.
 disable-model-invocation: true
 metadata:
   credits:
@@ -20,8 +20,8 @@ Find where the code fights its maintainers, write it down in the repo as a backl
 
 **Budget.** A run is long, and its cost is turns × context: every turn re-reads everything the agent has loaded. So:
 
-- **Tier the models.** Judgement — this session and the Step 6 design agent — runs on the strongest model. Everything else — scanners, Build and Ship agents, and every nested sub-agent any of them spawns (code-review's reviewers, design-it-twice's designers) — runs on the mid-tier model (`model: "sonnet"` in Claude Code). Say so in every brief, including that nested sub-agents inherit the rule.
-- **Keep contexts small.** Every brief carries the [context rules](#context-rules). Prefer a fresh agent over a long one.
+- **Tier the models.** Judgement — this session and the Design sub-agent — runs on the strongest model. Everything else — scanner, Build, and Ship sub-agents, and every nested sub-agent any of them spawns (code-review's reviewers, design-it-twice's designers) — runs on the mid-tier model (`model: "sonnet"` in Claude Code). Say so in every brief, including that nested sub-agents inherit the rule.
+- **Keep contexts small.** Every brief carries the [context rules](#context-rules). Prefer a fresh sub-agent over a long one.
 - **One run at a time.** Two arch-reviews in parallel multiply the burn rate; queue the next repo instead.
 
 Call the Skill tool with "codebase-design" before anything else. Use its vocabulary exactly — module, interface, implementation, depth, seam, adapter, leverage, locality — in the report, the decisions, commits, and PR bodies.
@@ -37,7 +37,7 @@ Call the Skill tool with "codebase-design" before anything else. Use its vocabul
 ## Step 1 — Scope, then scan
 
 - A direction from the user wins. Otherwise find the hot spots: `git log --since=3.months --name-only --format= | sort | uniq -c | sort -rn | head -40`. Deepening pays off only where change keeps landing — weight those paths first; widen only if churn is scattered.
-- Read the domain glossary (`GLOSSARY.md` or `CONTEXT.md`, whichever exists), the ADRs under `docs/adr/`, and the previous reports in `docs/arch-review/`. Don't re-suggest what an ADR or an earlier `dropped` row already settled, unless the friction is real enough to reopen it — then say which ADR and why.
+- Read the domain glossary (`GLOSSARY.md`; a repo still on `CONTEXT.md` should rename it — say so in the report), the ADRs under `docs/adr/`, and the previous reports in `docs/arch-review/`. Don't re-suggest what an ADR or an earlier `dropped` row already settled, unless the friction is real enough to reopen it — then say which ADR and why.
 - Spawn mid-tier sub-agents to walk the scoped code with both lenses in [LENSES.md](LENSES.md) — one per lens, or one per hot area in a large repo. Give each the scope, the vocabulary, its lens, and the [context rules](#context-rules); ask for evidence (file:line, counts, a failing input) behind every claim, and a findings list under 800 words — not file contents.
 - Apply the deletion test to every suspected shallow module. Verify each sub-agent claim yourself before it becomes a candidate.
 
@@ -88,9 +88,9 @@ Per candidate, spawn **three sub-agents in sequence**, each with a fresh context
 
 Brief each with pointers, not copies: the report path, the candidate ID, the branch and its base, its steps of this skill, the [context rules](#context-rules), and the model rule for anything it spawns. Build and Ship work from the candidate's card and Decisions — they don't reopen the design; a Decision that proves wrong becomes a **Departure**.
 
-Run candidates in sequence; each branch stacks on the previous one. A batch of smaller findings is one candidate without a Design phase; its Build agent cuts the branch. When the harness has no sub-agents, do it inline and still finish one candidate completely before starting the next.
+Run candidates in sequence; each branch stacks on the previous one. A batch of smaller findings is one candidate without a Design phase; its Build sub-agent cuts the branch. When the harness has no sub-agents, do it inline and still finish one candidate completely before starting the next.
 
-Between phases, check the hand-back — Decisions in the report, checks green, PR open against the right base, row updated. A gap goes back to a fresh agent of the same phase with the gap named; don't patch it from this session's context.
+Between phases, check the hand-back — Decisions in the report, checks green, PR open against the right base, row updated. A gap goes back to a fresh sub-agent of the same phase with the gap named; don't patch it from this session's context.
 
 ### Context rules
 

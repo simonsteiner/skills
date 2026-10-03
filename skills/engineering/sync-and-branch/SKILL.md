@@ -1,7 +1,7 @@
 ---
 name: sync-and-branch
 description: >
-  Put work on a fresh branch cut from the up-to-date default branch — carrying uncommitted changes along when they're the branch's work — or sync a fork's default branch with its upstream. Use when the user says "commit this to a new branch", "move this to a feature branch", "branch off fresh main", or "sync with upstream".
+  Puts work on a fresh branch cut from the up-to-date default branch — carrying uncommitted changes along when they're the branch's work — or syncs a fork's default branch with its upstream. Use when the user says "commit this to a new branch", "move this to a feature branch", "branch off fresh main", or "sync with upstream".
 ---
 
 # Sync and Branch
