@@ -1,0 +1,55 @@
+name: Changelog
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  changelog:
+    name: Apply changesets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Check out the current main, not the pushed commit: a run queued behind
+      # another would otherwise miss its changelog commit and re-apply its changesets.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Check for pending changesets
+        id: pending
+        run: |
+          if find .changeset -name '*.md' ! -name README.md | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node.js
+        if: steps.pending.outputs.found
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        if: steps.pending.outputs.found
+        run: npm ci
+
+      # Pushes straight to main rather than opening a version PR. A push made with
+      # GITHUB_TOKEN doesn't trigger workflows, so this doesn't re-run itself.
+      - name: Write CHANGELOG.md and push
+        if: steps.pending.outputs.found
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npx changeset version
+          npm install --package-lock-only --ignore-scripts
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: update changelog"
+          git pull --rebase origin main
+          git push origin HEAD:main

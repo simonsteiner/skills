@@ -1,5 +1,0 @@
----
-"simonsteiner-skills": minor
----
-
-Align the skills with Anthropic's skill authoring best practices. `address-review-findings` now runs bundled scripts for its GitHub calls: `unresolved-threads.sh` pages through every review thread (the inline query stopped at 100 threads and 20 comments, so a large PR could lose threads silently) and warns on a PR with no reviews, and `reply-resolve.sh` refuses an empty reply so nothing is resolved without one. `conventional-commit` drops its restatement of the spec, fixes examples that broke its own lowercase/no-period body rule, says when to read its examples file, and no longer competes with `sync-and-branch` for "commit this to a new branch". `arch-review` reads `GLOSSARY.md` only and flags a leftover `CONTEXT.md`. Descriptions are in the third person. `scripts/lint-skills.py`, run in CI with shellcheck, checks names, descriptions, body length, contents lists in long reference files, shared trigger phrases, and the README/plugin.json listing rules.
