@@ -14,8 +14,12 @@ jobs:
     permissions:
       contents: write
     steps:
+      # Check out the current main, not the pushed commit: a run queued behind
+      # another would otherwise miss its changelog commit and re-apply its changesets.
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Check for pending changesets
         id: pending
