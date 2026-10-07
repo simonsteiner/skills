@@ -29,6 +29,7 @@ Skills live in buckets under [`skills/`](./skills/) and split on one axis — wh
 - **[address-review-findings](./skills/engineering/address-review-findings/SKILL.md)** — work through the unresolved review threads on one PR or a stack, then reply and resolve.
 - **[conventional-commit](./skills/engineering/conventional-commit/SKILL.md)** — write Conventional Commits v1.0.0 messages and make the commits, split into atomic ones when the work spans concerns.
 - **[pr-body](./skills/engineering/pr-body/SKILL.md)** — write a PR body shaped by the kind of change: before → after for a fix, a real run for a feature, unchanged output for a refactor, a few lines for a chore.
+- **[review-prs](./skills/engineering/review-prs/SKILL.md)** — review open PRs (one, several, or a stack) with no real review yet or much new code since the last one, or a local diff since a fixed point, against correctness, the repo's standards and the spec; comment inline, then fix and resolve.
 - **[sync-and-branch](./skills/engineering/sync-and-branch/SKILL.md)** — cut a branch from the fresh default branch, carrying uncommitted work along, and sync a fork with its upstream.
 
 ## Third-party skills

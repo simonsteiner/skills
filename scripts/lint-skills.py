@@ -11,6 +11,18 @@ From Anthropic's skill authoring best practices
   (templates are copied out verbatim, so `*template*` files are exempt)
 - no quoted trigger phrase shared by two model-invoked descriptions
 
+From the other two guides (https://agentskills.io/skill-creation/best-practices and
+https://github.com/mgechev/skills-best-practices):
+
+- description is third person: no "I can…" / "You can use this…" (injected into the system prompt)
+- a model-invoked description says when to use it ("Use when…"), not only what it does
+- no README / CHANGELOG / INSTALL files inside a skill folder
+- bundled files sit at most one level below the skill folder (scripts/, references/, …)
+- every relative Markdown link in SKILL.md resolves, and every bundled file is mentioned
+  in SKILL.md (an unreferenced file is never read); CREDITS.md and evals/ are exempt
+- bundled Markdown doesn't link to other bundled Markdown (references stay one level deep)
+- no Windows-style paths, no time-sensitive "before <Month> <year>" instructions
+
 From CLAUDE.md:
 
 - skills in engineering/, productivity/, misc/ are linked from README.md and listed in
@@ -56,6 +68,44 @@ def frontmatter(text):
     return fields, text[m.end():]
 
 
+def check_guides(skill_md, folder, name, desc, fields, body):
+    """Rules from the agentskills.io and mgechev guides."""
+    if re.match(r"(I|You|We)\b", desc) or re.search(r"\b(I can|you can use|I will|I'll)\b", desc, re.I):
+        problem(skill_md, "description isn't third person")
+    if fields.get("disable-model-invocation") != "true" and not re.search(r"\bwhen\b", desc, re.I):
+        problem(skill_md, "model-invoked description never says when to use it")
+
+    files = [f for f in folder.rglob("*") if f.is_file()]
+    for f in files:
+        rel = f.relative_to(folder)
+        if re.fullmatch(r"(README|CHANGELOG|INSTALL\w*)(\.\w+)?", f.name, re.I):
+            problem(f, "documentation file inside a skill folder")
+        if len(rel.parts) > 2:
+            problem(f, "bundled file is more than one level below the skill folder")
+        if rel.parts[0] == "evals":
+            continue  # test cases for the author, never read by the agent
+        if f != skill_md and f.name != "CREDITS.md" and f.name not in body and rel.as_posix() not in body:
+            problem(f, "bundled file is never mentioned in SKILL.md")
+
+    for target in re.findall(r"\]\((?!https?:|#|mailto:)([^)#\s]+\.(?:md|sh|py|json|ya?ml))", body):
+        if not (folder / target).exists():
+            problem(skill_md, f"link to {target!r} doesn't resolve")
+
+    names = {f.name for f in files if f.suffix == ".md" and f != skill_md}
+    for md in files:
+        if md.suffix != ".md" or md == skill_md:
+            continue
+        for target in re.findall(r"\]\((?!https?:|#)([^)#\s]+\.md)", md.read_text()):
+            if Path(target).name in names:
+                problem(md, f"links to bundled {target!r}; references should be one level deep from SKILL.md")
+
+    text = body + "".join(f.read_text() for f in files if f.suffix == ".md" and f != skill_md)
+    if re.search(r"\b(scripts|references|assets)\\\w", text):
+        problem(skill_md, "Windows-style path (use forward slashes)")
+    if re.search(r"\b(before|after|until|as of)\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+20\d\d", text, re.I):
+        problem(skill_md, "time-sensitive instruction; move it to an 'old patterns' section")
+
+
 skills = {}
 for skill_md in sorted(REPO.glob("skills/*/*/SKILL.md")):
     folder = skill_md.parent
@@ -91,6 +141,8 @@ for skill_md in sorted(REPO.glob("skills/*/*/SKILL.md")):
         text = md.read_text()
         if text.count("\n") > 100 and "\n## Contents\n" not in text:
             problem(md, "over 100 lines without a '## Contents' list")
+
+    check_guides(skill_md, folder, name, desc, fields, body)
 
     skills[name] = {
         "bucket": bucket,

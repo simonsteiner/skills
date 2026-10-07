@@ -1,0 +1,45 @@
+{
+  "skills": ["review-prs"],
+  "evals": [
+    {
+      "query": "do a code review on the open PRs, if they haven't got a review yet or enough code changed since. comment any findings and fix them.",
+      "setup": "Repo with 3 open PRs: #1 reviewed by a human two commits ago with 5 changed lines since; #2 whose only review is Copilot's 'encountered an error and was unable to review'; #3 with a real review and 120 changed lines of code since it.",
+      "expected_behavior": [
+        "Treats #2 as unreviewed because the Copilot error stub is not a real review",
+        "Reviews #3 on the range since the reviewed commit only, after reading its existing threads",
+        "Skips #1 and names it in the report as recent enough",
+        "Posts one COMMENT review per reviewed PR through the reviews API, not request-changes",
+        "Calls address-review-findings for PRs that got comments and resolves only threads it fixed"
+      ]
+    },
+    {
+      "query": "review the stack",
+      "setup": "Three open PRs: #10 on main, #11 based on #10's branch, #12 based on #11's branch. A bug introduced in #10 is still visible in #11 and #12.",
+      "expected_behavior": [
+        "Orders the PRs #10, #11, #12 and reviews each against its own base branch",
+        "Posts the bug once, on #10, and does not repeat it on #11 or #12",
+        "Ends with a ready-to-merge verdict for the stack that notes #11 and #12 still depend on unmerged branches"
+      ]
+    },
+    {
+      "query": "review since main, the spec is docs/specs/export.md",
+      "setup": "Local branch, no PR. The diff implements CSV export but also adds an unrequested JSON export, and the spec's 'empty file for no rows' requirement is not handled.",
+      "expected_behavior": [
+        "Runs in local mode: pins git diff main...HEAD and checks the ref resolves before reviewing",
+        "Reports the missing empty-export requirement and the JSON export as Spec findings, quoting the spec line",
+        "Does not call any gh command or post comments",
+        "Fixes the real findings and calls conventional-commit to commit"
+      ]
+    },
+    {
+      "query": "review PR 7",
+      "setup": "PR #7 whose diff has one real bug on a line inside the diff and one concern about an untouched function elsewhere in the file.",
+      "expected_behavior": [
+        "Verifies the bug by naming the input that triggers it before commenting",
+        "Puts the bug on its diff line as an inline comment with a bold severity lead",
+        "Puts the concern about the untouched function in the review summary, not as an inline comment",
+        "Posts the review pinned to the PR's current head commit"
+      ]
+    }
+  ]
+}

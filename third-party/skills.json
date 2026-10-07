@@ -70,11 +70,6 @@
       "why": "The repo this one forked from. These are the skills worth tracking upstream rather than owning — see docs/adr/0001.",
       "skills": [
         {
-          "name": "code-review",
-          "path": "skills/engineering/code-review",
-          "why": "Reviews changes since a fixed point on two axes — repo standards and the originating spec."
-        },
-        {
           "name": "codebase-design",
           "path": "skills/engineering/codebase-design",
           "why": "Deep-module vocabulary. Shared dependency of grilling and the owned arch-review."
@@ -111,6 +106,11 @@
         }
       ],
       "archived": [
+        {
+          "name": "code-review",
+          "path": "skills/engineering/code-review",
+          "why": "Replaced by the owned review-prs skill (docs/adr/0005), which keeps its Standards and Spec axes and smell baseline and adds the GitHub loop: find PRs with no real review, comment inline, fix, resolve. Its local fixed-point review is review-prs's local mode."
+        },
         {
           "name": "pr",
           "path": "skills/engineering/pr",

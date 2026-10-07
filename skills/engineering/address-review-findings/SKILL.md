@@ -44,7 +44,8 @@ scripts/unresolved-threads.sh [<pr>]   # default: the current branch's PR
 - Read every comment in a thread, not just the first. A reviewer often answers themselves further down.
 - If nothing is unresolved, say so and move to the next PR (or stop).
 - `commentCount` above the length of `comments` means the thread outgrew one page — open its `url` and read the rest there.
-- **No review at all is not a clean review.** A stacked layer can arrive with zero threads because no reviewer looked at it — some automated reviewers skip PRs based on another branch. The script warns on stderr when a PR has no reviews; say so in the report rather than counting the PR as done.
+- **`awaitingReviewer: true`** means you already replied last in a thread someone else started — an earlier run left it open on purpose. Skip it unless the reviewer has written since; replying again just stacks duplicates. Threads from your own `review-prs` run are never flagged.
+- **No real review is not a clean review.** A stacked layer can arrive with zero threads because no reviewer looked at it, and an automated reviewer that failed ("Copilot encountered an error…", a rate-limit notice) looked at nothing either. The script warns on stderr when a PR has no real review; say so in the report rather than counting the PR as done, and suggest running `review-prs` on it.
 
 ---
 

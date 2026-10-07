@@ -1,6 +1,6 @@
 # Report format
 
-One Markdown file per scan: `docs/arch-review/YYYY-MM-DD-<slug>.md`, built from [report-template.md](report-template.md). It renders on GitHub — Mermaid diagrams, callouts, collapsible sections — so the report is read where the code is, and agents edit it and git diffs it line by line.
+One Markdown file per scan: `docs/arch-review/YYYY-MM-DD-<slug>.md`, built from `report-template.md` (SKILL.md links it). It renders on GitHub — Mermaid diagrams, callouts, collapsible sections — so the report is read where the code is, and agents edit it and git diffs it line by line.
 
 The look is borrowed from upstream's HTML report: diagrams carry the weight, prose is sparse, every candidate is a card with the same shape. The index `docs/arch-review/README.md` lists reports newest first: date, linked headline, open row count.
 
