@@ -24,9 +24,12 @@ jq -e '(.body | type == "string" and length > 0) and ((.comments // []) | type =
   || { echo "error: payload must be JSON with a non-empty \"body\" and an optional \"comments\" array — nothing posted" >&2; exit 1; }
 
 # New-file line ranges of every hunk, one "path<TAB>first<TAB>last" per line.
+# A "+++ " line is a path only in a file header; inside a hunk it is an added line.
 hunks="$(gh pr diff "$pr" | awk '
-  /^\+\+\+ / { path = substr($0, 7); next }
+  /^diff --git / { header = 1; next }
+  header && /^\+\+\+ / { path = substr($0, 7); next }
   /^@@ / {
+    header = 0
     split($3, r, ","); start = substr(r[1], 2); count = (r[2] == "" ? 1 : r[2])
     if (count > 0) printf "%s\t%d\t%d\n", path, start, start + count - 1
   }')"
