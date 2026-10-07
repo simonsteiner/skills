@@ -63,7 +63,7 @@ Spec source, first match: the PR's linked issues and body → a path the user ga
 
 One review per PR, with a summary and inline comments. Each comment is one finding: bold severity (**Bug**, **Security**, **Test**, **Standards**, **Spec**, **Smell**, **Nit**), the problem, the trigger, the fix.
 
-Post with [scripts/post-review.sh](scripts/post-review.sh), the payload on stdin. It pins the review to the PR's current head as a `COMMENT`, checks every comment's `path` and `line` (new-file numbers; `start_line` + `line` for a range) sits inside a hunk before sending anything, and deletes any empty draft a failed post leaves behind.
+Post with [scripts/post-review.sh](scripts/post-review.sh), the payload on stdin — run it from the repo under review by its path in this skill's directory (`<skill-dir>/scripts/post-review.sh`). It pins the review to the PR's current head as a `COMMENT`, checks every comment's `path` and `line` (new-file numbers; `start_line` + `line` for a range) sits inside a hunk before sending anything, refuses while you already have a draft review on the PR, and deletes the empty draft a failed post leaves behind.
 
 ```bash
 scripts/post-review.sh <n> <<'JSON'

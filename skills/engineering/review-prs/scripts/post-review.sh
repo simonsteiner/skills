@@ -48,14 +48,25 @@ if [[ -n "$outside" ]]; then
   exit 2
 fi
 
+# GitHub allows one pending review per user per PR. Note the user's existing
+# drafts so a failed post only ever deletes the one it created.
+me="$(gh api user --jq .login)"
+pending_ids() {
+  gh api "repos/{owner}/{repo}/pulls/$pr/reviews" --paginate \
+    --jq ".[] | select(.state == \"PENDING\" and .user.login == \"$me\") | .id"
+}
+existing="$(pending_ids)"
+if [[ -n "$existing" ]]; then
+  echo "error: you already have a pending draft review on PR $pr (id $existing) — submit or discard it first, nothing posted" >&2
+  exit 1
+fi
+
 head="$(gh pr view "$pr" --json headRefOid --jq .headRefOid)"
 body="$(jq --arg c "$head" '. + {commit_id: $c, event: "COMMENT"}' <<<"$payload")"
 
 if ! gh api "repos/{owner}/{repo}/pulls/$pr/reviews" --input - --jq '.html_url + " " + .state' <<<"$body"; then
   # A rejected post can still leave an empty draft; drop it so it can't be submitted later.
-  me="$(gh api user --jq .login)"
-  gh api "repos/{owner}/{repo}/pulls/$pr/reviews" --paginate \
-    --jq ".[] | select(.state == \"PENDING\" and .user.login == \"$me\") | .id" \
-    | while read -r id; do gh api -X DELETE "repos/{owner}/{repo}/pulls/$pr/reviews/$id" >/dev/null; echo "deleted pending review $id" >&2; done
+  # There was none before the post, so any pending review now is the one it created.
+  pending_ids | while read -r id; do gh api -X DELETE "repos/{owner}/{repo}/pulls/$pr/reviews/$id" >/dev/null; echo "deleted pending review $id" >&2; done
   exit 1
 fi
