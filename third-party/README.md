@@ -39,7 +39,6 @@ The repo this one forked from ([ADR 0001](../docs/adr/0001-fork-and-pare-down-to
 
 ### Model-invoked
 
-- **[code-review](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md)** — review changes since a fixed point, on both a standards and a spec axis.
 - **[codebase-design](https://github.com/mattpocock/skills/blob/main/skills/engineering/codebase-design/SKILL.md)** — shared vocabulary for designing deep modules.
 - **[diagnosing-bugs](https://github.com/mattpocock/skills/blob/main/skills/engineering/diagnosing-bugs/SKILL.md)** — diagnosis loop for hard bugs and performance regressions.
 - **[domain-modeling](https://github.com/mattpocock/skills/blob/main/skills/engineering/domain-modeling/SKILL.md)** — build and sharpen a project's domain model.
@@ -65,6 +64,8 @@ Curated once, then retired. Each stays in `skills.json` under its source's `arch
 
 - **[improve-codebase-architecture](https://github.com/mattpocock/skills/blob/main/skills/engineering/improve-codebase-architecture/SKILL.md)** (mattpocock/skills) — and
 - **[thermo-nuclear-code-quality-review](https://github.com/cursor/plugins/blob/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review/SKILL.md)** (cursor/plugins) — both replaced by the owned [`arch-review`](../skills/engineering/arch-review/SKILL.md), which combines the first's deepening scan with the second's maintainability rubric and adds the save-and-implement loop neither had. See [ADR 0004](../docs/adr/0004-own-arch-review-instead-of-curating-two-review-skills.md).
+
+- **[code-review](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md)** (mattpocock/skills) — replaced by the owned [`review-prs`](../skills/engineering/review-prs/SKILL.md), which keeps its Standards and Spec axes and smell baseline, reviews a local fixed point in its local mode, and adds the GitHub loop. See [ADR 0005](../docs/adr/0005-own-review-prs-instead-of-curating-code-review.md).
 
 Archived in October 2026 because chat history (Claude transcripts from late August, prompt history from May, Codex sessions) never once invoked them:
 

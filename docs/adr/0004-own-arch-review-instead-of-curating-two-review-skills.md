@@ -18,7 +18,7 @@ Neither skill can be bent into that loop from outside. Upstream's skill is user-
 - `arch-review` is user-invoked. It adapts improve-codebase-architecture's scan questions, scoping, candidate format, and strength scale, and folds thermo-nuclear's rubric in as a second lens and a per-PR approval bar — both rewritten into `codebase-design`'s vocabulary. Both upstreams are MIT; `CREDITS.md` carries the notices.
 - What it adds: the report lives in the repo — a Markdown file in `docs/arch-review/` that borrows upstream's HTML layout (candidate cards, side-by-side before/after diagrams, badges, a top recommendation) and carries a status table at the top. It lands as its own PR, and the confirmed batch ships as one stacked PR per candidate, with decisions answered from the recommended option and recorded beside their evidence, and a loose-ends audit before reporting.
 - The user confirms the batch once — every `Strong` candidate by default — and that is the run's only checkpoint short of a one-way door.
-- It reaches `codebase-design`, `domain-modeling`, and `code-review` (still curated) and this repo's `conventional-commit` through the Skill tool. It doesn't call `grilling`; it runs the method inline without waiting.
+- It reaches `codebase-design`, `domain-modeling`, and `code-review` (since replaced by the owned `review-prs`, [ADR 0005](./0005-own-review-prs-instead-of-curating-code-review.md)) and this repo's `conventional-commit` through the Skill tool. It doesn't call `grilling`; it runs the method inline without waiting.
 - The two curated entries move to an `archived` list in `skills.json` rather than disappearing, so the reason survives. The sync skips them, and `--check` reports any copy still installed.
 
 ## Consequences

@@ -20,7 +20,7 @@ Find where the code fights its maintainers, write it down in the repo as a backl
 
 **Budget.** A run is long, and its cost is turns × context: every turn re-reads everything the agent has loaded. So:
 
-- **Tier the models.** Judgement — this session and the Design sub-agent — runs on the strongest model. Everything else — scanner, Build, and Ship sub-agents, and every nested sub-agent any of them spawns (code-review's reviewers, design-it-twice's designers) — runs on the mid-tier model (`model: "sonnet"` in Claude Code). Say so in every brief, including that nested sub-agents inherit the rule.
+- **Tier the models.** Judgement — this session and the Design sub-agent — runs on the strongest model. Everything else — scanner, Build, and Ship sub-agents, and every nested sub-agent any of them spawns (design-it-twice's designers) — runs on the mid-tier model (`model: "sonnet"` in Claude Code). Say so in every brief, including that nested sub-agents inherit the rule.
 - **Keep contexts small.** Every brief carries the [context rules](#context-rules). Prefer a fresh sub-agent over a long one.
 - **One run at a time.** Two arch-reviews in parallel multiply the burn rate; queue the next repo instead.
 
@@ -127,7 +127,7 @@ Branch `refactor/<candidate-slug>` (the planned name) off the base. Map the cand
 
 **Ship** (7.5–7):
 
-5. Check the diff against the approval bar in [LENSES.md](LENSES.md). Then call the Skill tool with "code-review": fixed point = the base branch, spec = this candidate's card and decisions in the report. Fix what's real, and rerun the checks.
+5. Check the diff against the approval bar in [LENSES.md](LENSES.md). Then call the Skill tool with "review-prs" in local mode: fixed point = the base branch, spec = this candidate's card and decisions in the report. It fixes what's real; rerun the checks.
 6. Update the candidate's status row (`pr-open`, PR number, Breaking) and write any **Departure** from the report, in the same branch.
 7. Call the Skill tool with "conventional-commit" to commit, push, then `gh pr create --base <base>`. Call the Skill tool with "pr-body" for the body, and link the candidate's card in the report from it. Never merge.
 
