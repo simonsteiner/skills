@@ -23,10 +23,11 @@ export ME; ME="$(gh api user --jq .login)"; me="$ME"
 [[ -n "$pr" && -n "$owner" && -n "$repo" && -n "$me" ]] || { echo "error: could not resolve owner/repo/PR/user (pr='$pr')" >&2; exit 1; }
 
 # A failed automated review still shows up in `reviews`; it isn't one. Empty-bodied
-# reviews are real — they just carry inline comments.
+# reviews are real — they just carry inline comments. Only a short body can be a failure
+# stub; a long review that mentions "rate limit" is a real one.
 real="$(gh pr view "$pr" --json reviews --jq '[.reviews[]
   | select(.state != "PENDING")
-  | select(.body | test("unable to review|encountered an error|rate.?limit"; "i") | not)] | length')"
+  | select((.body | length) > 300 or (.body | test("unable to review|encountered an error|rate.?limit"; "i") | not))] | length')"
 if [[ "$real" == 0 ]]; then
   echo "warning: PR #$pr has no real review — none, or only failed ones; not a clean review, nobody looked" >&2
 fi

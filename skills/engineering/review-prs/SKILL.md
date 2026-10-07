@@ -15,7 +15,7 @@ Review what nobody has looked at, leave the findings where the author will see t
 
 ## Gotchas
 
-- A review that only reports its own failure ("Copilot encountered an error and was unable to review…", a rate-limit notice) is **not a review**; neither is an empty approval. Most PRs in a flaky-bot repo carry one.
+- A review that only reports its own failure ("Copilot encountered an error and was unable to review…", a rate-limit notice) is **not a review**. An empty approval isn't failed, so it counts as one. Most PRs in a flaky-bot repo carry one.
 - GitHub rejects the **whole** review if one inline comment's line is outside the diff (HTTP 422). Validate lines before posting.
 - The review posts under the user's account, so it can only be a plain `COMMENT`; a PR's author can't request changes on their own PR.
 - A stack layer's diff is against its **base branch**, not the default branch — otherwise every layer repeats the ones below it.
