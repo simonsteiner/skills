@@ -18,6 +18,8 @@
       "expected_behavior": [
         "Orders the PRs #10, #11, #12 and reviews each against its own base branch",
         "Posts the bug once, on #10, and does not repeat it on #11 or #12",
+        "Posts each review through scripts/post-review.sh, not a hand-built gh api call",
+        "Fixes the layers one at a time, #10 first, never in parallel",
         "Ends with a ready-to-merge verdict for the stack that notes #11 and #12 still depend on unmerged branches"
       ]
     },
