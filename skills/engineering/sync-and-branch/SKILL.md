@@ -47,7 +47,7 @@ Report the branch, the SHA it's based on, and the files that came along. Don't p
 ```bash
 git remote get-url upstream || git remote add upstream <url>   # ask for the url if missing
 git fetch --prune upstream
-up="$(<skill-dir>/scripts/default-branch.sh upstream)"
+up="$(<skill-dir>/scripts/default-branch.sh --refresh upstream)"   # a fetch never moves upstream/HEAD
 git log --oneline "upstream/$up..origin/$default"    # what the fork carries on top
 ```
 
