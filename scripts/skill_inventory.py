@@ -31,7 +31,7 @@ def scalar(value):
 
     A block indicator (`>`, `|`, …) starts empty; its indented lines are appended.
     """
-    quoted = re.match(r"""(['"])(.*)\1\s*(#.*)?$""", value)
+    quoted = re.match(r"""(['"])((?:(?!\1).)*)\1\s*(#.*)?$""", value)
     if quoted:
         return quoted.group(2)
     value = re.sub(r"\s+#.*$", "", value).strip()

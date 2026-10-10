@@ -79,6 +79,10 @@ class InventoryTest(RepoFixture):
         self.assertFalse(s.model_invoked)
         self.assertEqual(s.fields["description"], "x # y")
 
+    def test_a_quoted_value_ends_at_its_own_quote(self):
+        self.skill("engineering", "a", 'name: a\ndescription: x\ndisable-model-invocation: "true" # "x"')
+        self.assertFalse(inventory(self.repo).skills[0].model_invoked)
+
 
 class MainTest(RepoFixture):
     """The command line the shell scripts read with `cut`: name, bucket, folder."""
