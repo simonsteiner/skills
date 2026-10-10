@@ -9,12 +9,12 @@ https://agentskills.io/skill-creation/using-scripts):
 - description: non-empty, at most 1024 chars; compatibility, when present, 1-500 chars
 - SKILL.md body under 500 lines and about 5,000 tokens
 - bundled files sit at most one level below the skill folder (scripts/, references/, …),
-  and output templates (`*template*` files) sit in assets/
+  and output templates (`*template*` files outside scripts/ and evals/) sit in assets/
 - every relative link in SKILL.md resolves, and bundled Markdown doesn't link to other
   bundled Markdown (references stay one level deep)
 - no vague filler ("handle errors appropriately", "follow best practices"): say what
   the agent would get wrong instead
-- one-off `npx` / `bunx` / `uvx` / `pipx run` commands pin a version
+- one-off `npx` / `bunx` / `uvx` / `pipx run` commands in code pin a version, not a dist-tag
 - a bundled script has a shebang, is executable, answers `--help`, and never prompts
   (no `read -p`, `/dev/tty`, `input()`, `getpass`): agents run in non-interactive shells
 
@@ -57,6 +57,7 @@ VAGUE = (
 )
 MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
 UNPINNED = re.compile(r"\b(?:npx|bunx|uvx|pipx run)\s+(?:-{1,2}[\w-]+(?:=\S+)?\s+)*(@?[a-z][\w./-]*(?:[@=]=?\S+)?)")
+CODE = re.compile(r"```.*?```|`[^`\n]+`", re.DOTALL)  # fenced blocks and inline code spans
 PROMPTS = re.compile(r"\bread\s+(?:-\w+\s+)*-p\b|/dev/tty|\binput\(|\bgetpass\b")
 
 
@@ -129,7 +130,7 @@ def check_skill(s):
             problem(f, "documentation file inside a skill folder")
         if len(rel.parts) > 2:
             problem(f, "bundled file is more than one level below the skill folder")
-        if "template" in f.name and rel.parts[0] != "assets":
+        if "template" in f.name and rel.parts[0] not in ("assets", "scripts", "evals"):
             problem(f, "output template outside assets/")
         if rel.parts[0] == "scripts":
             out.extend(check_script(f))
@@ -162,16 +163,19 @@ def check_skill(s):
         for phrase in VAGUE:
             if phrase in text.lower():
                 problem(md, f'vague instruction "{phrase}"; say what the agent would get wrong instead')
-        for pkg in UNPINNED.findall(text):
-            if not re.search(r".@|==", pkg):
+        for pkg in UNPINNED.findall("\n".join(CODE.findall(text))):
+            if not re.search(r"@\d|==\d", pkg):
                 problem(md, f"unpinned one-off command for {pkg!r}; pin a version (pkg@1.2.3)")
     return out
 
 
 def check_script(f):
     """(path, problem) pairs for one file under a skill's scripts/."""
+    try:
+        text = f.read_text()
+    except UnicodeDecodeError:
+        return [(f, "bundled script isn't text")]
     out = []
-    text = f.read_text()
     if not text.startswith("#!"):
         out.append((f, "bundled script has no shebang"))
     if not os.access(f, os.X_OK):
