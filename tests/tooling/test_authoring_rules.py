@@ -74,9 +74,10 @@ class AuthoringRulesTest(unittest.TestCase):
 
     def test_one_off_commands_pin_a_version(self):
         self.skill(body="Run `npx eslint --fix .`, `uvx ruff@0.8.0 check`, `npx --yes rumdl@0.2 check`, "
-                        "`pipx run 'black==24.10.0'`, `npx @scope/tool@1.2`.\n")
-        self.assertEqual([p for p in self.problems() if "unpinned" in p],
-                         ["skills/engineering/a/SKILL.md: unpinned one-off command for 'eslint'; pin a version (pkg@1.2.3)"])
+                        "`pipx run 'black==24.10.0'`, `npx @scope/tool@1.2`, `npx prettier@latest .`.\n\n"
+                        "In prose uvx is handy.\n\n```bash\nbunx tsc --noEmit\n```\n")
+        self.assertEqual([p.split("command for ")[1].split(";")[0] for p in self.problems() if "unpinned" in p],
+                         ["'eslint'", "'prettier@latest'", "'tsc'"])
 
     def test_unmentioned_and_nested_files(self):
         self.skill(files={"NOTES.md": "x\n", "references/deep/x.md": "x\n", "README.md": "x\n"})
@@ -102,6 +103,39 @@ class AuthoringRulesTest(unittest.TestCase):
         self.assertEqual([p for p in self.problems() if "template" in p],
                          ["skills/engineering/a/a-template.md: output template outside assets/"])
 
+    def test_scripts_and_evals_named_template_arent_output_templates(self):
+        folder = self.skill(body="Run scripts/render-template.sh.\n",
+                            files={"scripts/render-template.sh": "#!/bin/sh\n# --help\n",
+                                   "evals/template-input.md": "x\n"})
+        (folder / "scripts/render-template.sh").chmod(0o755)
+        self.assertEqual(self.problems(), [])
+
+    def test_frontmatter_rules(self):
+        cases = {
+            "no YAML frontmatter": None,
+            "disable-model-invocation is 'yes'": GOOD + "\ndisable-model-invocation: yes",
+            "over 1024": "name: {name}\ndescription: Use when " + "x" * 1024,
+            "contains an XML tag": "name: {name}\ndescription: Use when <b>asked</b>.",
+        }
+        for fragment, frontmatter in cases.items():
+            with self.subTest(fragment):
+                self.setUp()
+                folder = self.skill(frontmatter=frontmatter or GOOD)
+                if frontmatter is None:
+                    (folder / "SKILL.md").write_text("Body.\n")
+                self.assertProblem(fragment)
+
+    def test_body_over_500_lines(self):
+        self.skill(body="x\n" * 500)
+        self.assertProblem("body is 500 lines")
+
+    def test_windows_paths_and_dates_in_any_instruction_file(self):
+        self.skill(body="Run scripts\\x.sh. See [R](R.md).\n",
+                   files={"R.md": "Use it until March 2026.\n", "CREDITS.md": "Before May 2025, scripts\\y.\n"})
+        self.assertProblem("SKILL.md: Windows-style path")
+        self.assertProblem("R.md: time-sensitive instruction")
+        self.assertFalse([p for p in self.problems() if "CREDITS.md" in p])
+
     def test_bundled_script_rules(self):
         folder = self.skill(body="Run scripts/ok.sh and scripts/bad.py.\n", files={
             "scripts/ok.sh": "#!/usr/bin/env bash\n# --help prints this\n",
@@ -112,6 +146,12 @@ class AuthoringRulesTest(unittest.TestCase):
                                     "bundled script doesn't answer --help",
                                     "bundled script prompts for input; take it from flags, env or stdin"])
         self.assertFalse([p for p in self.problems() if "ok.sh" in p])
+
+    def test_binary_file_in_scripts_is_reported_not_a_crash(self):
+        folder = self.skill(body="Run scripts/.DS_Store.\n")
+        (folder / "scripts").mkdir()
+        (folder / "scripts/.DS_Store").write_bytes(b"\x00\xff\xfe")
+        self.assertProblem("bundled script isn't text")
 
     def test_shared_trigger_between_model_invoked_skills(self):
         self.skill("a", 'name: a\ndescription: Use when the user says "ship it".')
