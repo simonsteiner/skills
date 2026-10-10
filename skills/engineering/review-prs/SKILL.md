@@ -24,7 +24,7 @@ Review what nobody has looked at, leave the findings where the author will see t
 - Shell variables don't survive between tool calls. Write a path `mktemp` printed into every later command literally, never `$wt`: an empty `$wt` makes `cd "$wt"` a silent no-op in the main checkout.
 - Delete only exact paths you created (a worktree and the `mktemp -d` folder around it, `mktemp` scratch files). Never by pattern — not `/tmp/tmp.*`, not a loop over `git worktree list` matching a prefix: parallel reviewers and other sessions keep theirs there.
 - A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data) and a running dev server serves the main checkout. Install or copy what a check needs, never symlink it in, or name the check as not run. Never `git stash` to compare before and after: the stash is shared by every worktree.
-- Don't pipe `git` or `gh` into `| tail` or `| head`. It hides the exit status; a failed fetch or worktree add looks like success.
+- Don't pipe a command whose exit status matters — `git`, `gh`, this skill's scripts — into `| tail`, `| head` or `| wc -l`: the pipe reports the last command's status, so a failure reads as success or as "0 threads". Capture first, then trim or count: `out="$(<command>)" && printf '%s\n' "$out" | wc -l`.
 - When a PR under review changes this skill, the installed skill may be a link into that repo, so its text and scripts change as fixes land mid-run. Read this skill's files at the start and run its scripts from a copy, using the path it prints: `d="$(mktemp -d)" && cp -r <skill-dir>/scripts "$d" && echo "$d/scripts"`. address-review-findings, which Step 4 hands off to, copies its own scripts the same way.
 - A command a guard or sandbox refuses stays refused. Don't re-run it through a script file or another wrapper; split it as the error asks, or skip it and say so in the report.
 
@@ -64,7 +64,7 @@ Read the changed files whole, run the repo's checks — tests, lint, type check,
 
 Don't regenerate committed artifacts or re-run data pipelines to check outputs; a claim only a re-run could verify goes in the summary as not checked.
 
-Several PRs may be reviewed in parallel by sub-agents. Create each one's worktree yourself and pass the path; tell it to return findings only, edit nothing, delete nothing — including its worktree, which you remove — and keep any scratch files inside that worktree. Verifying, posting and fixing stay with you.
+Several PRs may be reviewed in parallel by sub-agents. Create each one's worktree yourself and pass the path; tell it to return findings only, edit nothing, delete nothing — including its worktree, which you remove — and keep every scratch file in `<its worktree path>/.scratch/`, never in `/tmp` or the `mktemp` folder around the worktree, so removing the worktree removes them too. Verifying, posting and fixing stay with you.
 
 Spec source, first match: the PR's linked issues and body → a path the user gave → a file under `docs/`, `specs/` or `.scratch/` matching the branch. None found → skip the Spec axis and say so in the summary.
 
