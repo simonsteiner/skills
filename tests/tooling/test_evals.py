@@ -129,6 +129,10 @@ class EvalsTest(unittest.TestCase):
             ("grading.json", {"summary": None}, None),
             ("grading.json", {"summary": {"pass_rate": "0.5"}}, "grading.json: summary.pass_rate must be a number"),
             ("timing.json", {"duration_ms": "2s"}, "timing.json: duration_ms must be a number"),
+            ("grading.json", None, "grading.json must be a JSON object"),
+            ("timing.json", None, "timing.json must be a JSON object"),
+            ("grading.json", {"assertion_results": [True]}, "grading.json: assertion_results must be a list of objects"),
+            ("grading.json", {"assertion_results": {"a": 1}}, "grading.json: assertion_results must be a list of objects"),
         ]
         for name, content, error in cases:
             with self.subTest(name=name, content=content):

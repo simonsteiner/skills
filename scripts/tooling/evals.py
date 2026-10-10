@@ -165,6 +165,9 @@ def _read_json(path, iteration, fields):
         data = json.loads(path.read_text())
     except json.JSONDecodeError as e:
         raise ValueError(f"{where} isn't valid JSON: {e}") from None
+    kind = type(data).__name__
+    if kind != "dict":  # a ValueError like the rest, so eval-skill.py names the file
+        raise ValueError(f"{where} must be a JSON object, not {kind}")
     for field in fields:
         value, keys = data, field.split(".")
         while keys and isinstance(value, dict):
@@ -193,6 +196,8 @@ def benchmark(iteration):
     for run in runs:
         grading = _read_json(run / "grading.json", iteration, ["summary.pass_rate"])
         results = grading.get("assertion_results") or []
+        if not isinstance(results, list) or not all(isinstance(r, dict) for r in results):
+            raise ValueError(f"{(run / 'grading.json').relative_to(iteration)}: assertion_results must be a list of objects")
         rate = (grading.get("summary") or {}).get("pass_rate")
         if rate is None:
             rate = sum(r.get("passed") is True for r in results) / len(results) if results else 0.0
