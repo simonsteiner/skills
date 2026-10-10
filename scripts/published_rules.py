@@ -27,18 +27,26 @@ class Entry:
     line: int
 
 
+def prose(text):
+    """(line number, line) for every line outside HTML comments and fenced code blocks."""
+    text = re.sub(r"<!--.*?-->", lambda m: "\n" * m.group().count("\n"), text, flags=re.DOTALL)
+    fence = None
+    for n, line in enumerate(text.split("\n"), 1):
+        marker = re.match(r"\s*(`{3,}|~{3,})", line)
+        if marker and (fence is None or marker.group(1).startswith(fence)):
+            fence = None if fence else marker.group(1)
+            continue
+        if fence is None:
+            yield n, line
+
+
 def entries(text):
     """The skill entries in a Markdown list: `- **[name](target)**` items.
 
     Text inside HTML comments and fenced code blocks is not an entry.
     """
-    text = re.sub(r"<!--.*?-->", lambda m: "\n" * m.group().count("\n"), text, flags=re.S)
-    found, group, fenced = [], None, False
-    for n, line in enumerate(text.split("\n"), 1):
-        if line.startswith("```"):
-            fenced = not fenced
-        if fenced:
-            continue
+    found, group = [], None
+    for n, line in prose(text):
         heading = re.match(r"#+\s+(.*?)\s*$", line)
         if heading:
             group = heading.group(1) if heading.group(1) in GROUPS else None
@@ -47,6 +55,11 @@ def entries(text):
         if item:
             found.append(Entry(item.group(1), item.group(2), group, n))
     return found
+
+
+def links(text):
+    """(line number, target) for every Markdown link outside comments and code fences."""
+    return [(n, target) for n, line in prose(text) for target in re.findall(r"\]\(([^)\s]+)", line)]
 
 
 def check_list(path, listed, expected, repo):
@@ -72,16 +85,33 @@ def check_list(path, listed, expected, repo):
     return problems
 
 
+def said_why(entry):
+    why = entry.get("why")
+    return isinstance(why, str) and why.strip() != ""
+
+
 def check(repo, skills):
     """Every listing-rule problem for `skills` (an inventory) under `repo`, as messages."""
     problems = []
 
     readme = repo / "README.md"
     published = {f"./{s.skill_md.relative_to(repo).as_posix()}": s for s in skills if s.published}
-    listed = [e for e in entries(readme.read_text()) if e.target.startswith("./skills/")]
+    # Any link, not only a list entry, puts an unpublished skill in the README.
+    unpublished = {s.folder.relative_to(repo).as_posix(): s for s in skills if not s.published}
+
+    def unpublished_skill(target):
+        return unpublished.get(re.sub(r"^\./|/SKILL\.md$|/$", "", target))
+
+    for n, target in links(readme.read_text()):
+        if skill := unpublished_skill(target):
+            problems.append(f"README.md:{n}: {skill.name} is in {skill.bucket}/ but README.md links it")
+    listed = [e for e in entries(readme.read_text())
+              if e.target.startswith("./skills/") and not unpublished_skill(e.target)]
     problems += check_list(readme, listed, published, repo)
 
-    for bucket in sorted({s.bucket for s in skills}):
+    # Every bucket with skills, and every bucket README left behind by an emptied bucket.
+    buckets = {s.bucket for s in skills} | {p.parent.name for p in repo.glob("skills/*/README.md")}
+    for bucket in sorted(buckets):
         bucket_readme = repo / "skills" / bucket / "README.md"
         if not bucket_readme.exists():
             problems.append(f"skills/{bucket}/README.md is missing")
@@ -97,10 +127,10 @@ def check(repo, skills):
     manifest = repo / "third-party/skills.json"
     if manifest.exists():
         for source in json.loads(manifest.read_text())["sources"]:
-            if not str(source.get("why", "")).strip():
+            if not said_why(source):
                 problems.append(f"third-party/skills.json: source {source['repo']} doesn't say why")
             for kind in ("skills", "archived"):
                 for k in source.get(kind, []):
-                    if not str(k.get("why", "")).strip():
+                    if not said_why(k):
                         problems.append(f"third-party/skills.json: {kind} entry {k['name']} from {source['repo']} doesn't say why")
     return problems
