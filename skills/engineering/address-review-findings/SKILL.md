@@ -38,7 +38,9 @@ A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data). Instal
 
 - **Never `git stash`.** The stash is shared by every worktree; a pop can take another session's work.
 - **Delete only exact paths you created** (`mktemp` for scratch files too). Never by pattern: not `rm -rf /tmp/tmp.*`, not a loop over `git worktree list` matching a prefix.
-- **Don't pipe `git` or `gh` into `| tail`.** It hides the exit status; a failed checkout or push looks like success.
+- **Don't pipe `git` or `gh` into `| tail` or `| head`.** It hides the exit status; a failed checkout or push looks like success.
+- **Commits run the repo's hooks**, and tests a hook runs inherit `GIT_DIR` and `GIT_INDEX_FILE`; a test that runs `git` can then act on this repo instead of its fixture. After the first commit in a worktree, check `git log --oneline -3` holds only your commit and `git config core.bare` is `false` before pushing. Never skip hooks with `--no-verify`.
+- **Never rewrite pushed history**, even to remove commits a run pushed by mistake: undo them with `git revert`, or stop and report what landed. Force-push only when the user asks for it, then fix every reply that cites a dropped SHA.
 
 ---
 
@@ -119,13 +121,13 @@ cd <upper PR's worktree path> && git fetch origin && git merge --no-edit "origin
 
 The upper PR has no worktree yet on its first carry: create it with the Step 0 recipe and reuse it for that PR's own Steps 1–4. Merge the lower layer as pushed (`origin/…`), not a local branch another worktree may hold at an older commit.
 
-A conflict here is the upper PR's code meeting the fix: resolve it on the upper branch, keeping both intents, and run the checks again.
+A conflict here is the upper PR's code meeting the fix: resolve it on the upper branch by editing the conflicted files, keeping both intents — never `git checkout <rev> -- <path>`, which silently drops one side — commit the merge on its own, and run the checks again.
 
 ---
 
 ## Step 5 — Report
 
-The report is the whole of the user's involvement, so it carries what a checkpoint would have: per PR, one line per thread — reviewer, file, verdict, and the commit or the reason it's still open — then what was left unaddressed and why. Link the pushed commits so any verdict can be overruled from the diff. Name any PR that had no review at all.
+The report is the whole of the user's involvement, so it carries what a checkpoint would have: per PR, one line per thread — reviewer, file, verdict, and the commit or the reason it's still open — then what was left unaddressed and why. Link the pushed commits so any verdict can be overruled from the diff. Name any PR that had no review at all. Before reporting, `git worktree list` shows none of the worktrees you created.
 
 **Every *needs a decision* and *disagree* thread gets spelled out in the report**, not just pointed at — the user should be able to decide without opening GitHub:
 
