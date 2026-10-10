@@ -1,5 +1,19 @@
 # simonsteiner-skills
 
+## 1.3.1
+
+### Patch Changes
+
+- [#24](https://github.com/simonsteiner/skills/pull/24) [`24bc292`](https://github.com/simonsteiner/skills/commit/24bc292f22afff19ceb3b65af03d72815129f36e) Thanks [@simonsteiner](https://github.com/simonsteiner)! - The scripts bundled in `review-prs` and `address-review-findings` now answer `--help` (and `-h`) with their usage, without calling GitHub.
+
+- [#24](https://github.com/simonsteiner/skills/pull/24) [`25b3bee`](https://github.com/simonsteiner/skills/commit/25b3beede266c1013b28cc47fc0a6497e317473b) Thanks [@simonsteiner](https://github.com/simonsteiner)! - `review-prs` and `address-review-findings` no longer switch the main checkout between PRs. `review-prs` reads each PR from a detached worktree it creates and removes (fetched from `pull/<n>/head`, so PRs from forks work too), and creates the worktrees for parallel reviewers. `address-review-findings` fixes a PR in place when the checkout is already on its branch, otherwise in a detached worktree pushed with `git push origin HEAD:<branch>`, which works even when another session has the branch checked out; stack fixes are carried up by merging the pushed lower layer. Both now warn against `git stash` (shared by every worktree), pattern-based deletes, symlinking gitignored inputs into a worktree, and piping `git`/`gh` into `| tail`. Worktree paths are written out literally rather than kept in a shell variable, which doesn't survive between an agent's tool calls.
+
+- [#24](https://github.com/simonsteiner/skills/pull/24) [`963f283`](https://github.com/simonsteiner/skills/commit/963f2839ab6c782c6c92c8c2dc4757baa37eeb2c) Thanks [@simonsteiner](https://github.com/simonsteiner)! - `review-prs` and `address-review-findings` add the lessons of a real run on an 8-PR stack. After the first commit in a worktree they check that only that commit landed and the repo isn't bare, since a hook's tests can inherit `GIT_DIR`. They never skip hooks or rewrite pushed history unasked, and they resolve merge conflicts by editing, never with `git checkout <rev> --`. Sub-agents keep scratch files in their worktree. When a PR under review changes either skill, each runs its bundled scripts from a copy. The report reads CI from `gh pr checks` at report time, includes the per-thread lines, and confirms no worktree was left behind.
+
+- [#24](https://github.com/simonsteiner/skills/pull/24) [`89a1e6d`](https://github.com/simonsteiner/skills/commit/89a1e6dfbd2e2193869fd53c426d1d4f392dbcfa) Thanks [@simonsteiner](https://github.com/simonsteiner)! - `review-prs` and `address-review-findings` now give their bundled scripts' full `<skill-dir>/scripts/…` path in every command, so a copied command no longer resolves inside the repo under review, and declare what they need (`git`, `gh`, plus `jq` for `review-prs`) in a `compatibility` field. `frontend-craft`'s CSS specificity tip no longer calls class selectors "type" and "element" selectors.
+
+- [#24](https://github.com/simonsteiner/skills/pull/24) [`57d4eaf`](https://github.com/simonsteiner/skills/commit/57d4eaf1407ac70235f8c8a801c8564ac38c25ea) Thanks [@simonsteiner](https://github.com/simonsteiner)! - `sync-and-branch` finds the default branch with a bundled `scripts/default-branch.sh` instead of an inline shell sequence. It asks the remote only when the local `origin/HEAD` is missing or names a branch the remote no longer has, which also fixes a renamed default branch being reported under its old name. Syncing a fork always asks upstream (`--refresh`), so an upstream that switched its default branch is followed even when the old branch still exists.
+
 ## 1.3.0
 
 ### Minor Changes
