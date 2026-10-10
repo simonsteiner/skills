@@ -35,9 +35,11 @@ From https://github.com/mgechev/skills-best-practices:
 - every bundled file is mentioned in SKILL.md (an unreferenced file is never read);
   CREDITS.md and evals/ are exempt
 
-From AGENTS.md: disable-model-invocation is `true`, `false`, or absent, and a command
-in a code block runs a bundled script as `<skill-dir>/scripts/…`: agents run it from the
-user's repo, where a bare `scripts/…` names that repo's scripts, not the skill's.
+From AGENTS.md: disable-model-invocation is `true`, `false`, or absent.
+
+Repo convention: a command in a code block runs a bundled script as
+`<skill-dir>/scripts/…` (not `scripts/…` or `./scripts/…`): agents run it from the
+user's repo, where a bare path names that repo's scripts, not the skill's.
 
 lint-skills.py runs check(); tests/tooling/test_authoring_rules.py tests it.
 """
@@ -59,8 +61,9 @@ VAGUE = (
 )
 MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
 UNPINNED = re.compile(r"\b(?:npx|bunx|uvx|pipx run)\s+(?:-{1,2}[\w-]+(?:=\S+)?\s+)*(@?[a-z][\w./-]*(?:[@=]=?\S+)?)")
-FENCED = re.compile(r"^```[^\n]*\n(.*?)^```", re.DOTALL | re.MULTILINE)
-BARE_SCRIPT = re.compile(r"(?<![\w/.>-])(scripts/[\w.-]+)")
+# a fenced block: ``` or ~~~, three or more, indented or not (list items), closed by the same run
+FENCED = re.compile(r"^[ \t]*(`{3,}|~{3,})[^\n]*\n(.*?)^[ \t]*\1", re.DOTALL | re.MULTILINE)
+BARE_SCRIPT = re.compile(r"(?<![\w/.>-])(?:\./)?(scripts/[\w.-]+)")
 CODE = re.compile(r"```.*?```|`[^`\n]+`", re.DOTALL)  # fenced blocks and inline code spans
 PROMPTS = re.compile(r"\bread\s+(?:-\w+\s+)*-p\b|/dev/tty|\binput\(|\bgetpass\b")
 
@@ -167,8 +170,8 @@ def check_skill(s):
         for phrase in VAGUE:
             if phrase in text.lower():
                 problem(md, f'vague instruction "{phrase}"; say what the agent would get wrong instead')
-        for block in FENCED.findall(text):
-            for path in sorted(set(BARE_SCRIPT.findall(block))):
+        for block in FENCED.finditer(text):
+            for path in sorted(set(BARE_SCRIPT.findall(block[2]))):
                 if (folder / path).is_file():
                     problem(md, f"code block runs {path!r}; write <skill-dir>/{path}, agents run it from the user's repo")
         for pkg in UNPINNED.findall("\n".join(CODE.findall(text))):

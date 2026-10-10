@@ -103,15 +103,36 @@ class AuthoringRulesTest(unittest.TestCase):
         self.assertEqual([p for p in self.problems() if "template" in p],
                          ["skills/engineering/a/a-template.md: output template outside assets/"])
 
-    def test_code_blocks_run_bundled_scripts_by_skill_dir(self):
-        folder = self.skill(body="Run [x](scripts/x.sh) from the repo under review.\n\n```bash\n"
-                                 "scripts/x.sh 7 <<'JSON'\nbash scripts/x.sh\n<skill-dir>/scripts/x.sh 7\n"
-                                 "python3 scripts/other.py\n```\n",
-                            files={"scripts/x.sh": "#!/bin/sh\n# --help\n"})
+    def bare_script_problems(self, body, reference=None):
+        files = {"scripts/x.sh": "#!/bin/sh\n# --help\n"}
+        if reference is not None:
+            files["references/r.md"] = reference
+        folder = self.skill(body="Run [x](scripts/x.sh), see [r](references/r.md).\n\n" + body, files=files)
         (folder / "scripts/x.sh").chmod(0o755)
-        self.assertEqual([p for p in self.problems() if "skill-dir" in p],
-                         [("skills/engineering/a/SKILL.md: code block runs 'scripts/x.sh'; "
-                           "write <skill-dir>/scripts/x.sh, agents run it from the user's repo")])
+        return [p.split(": ")[0] for p in self.problems() if "skill-dir" in p]
+
+    def test_code_blocks_run_bundled_scripts_by_skill_dir(self):
+        flagged = {
+            "bare": "```bash\nscripts/x.sh 7\n```\n",
+            "after a command": "```bash\nbash scripts/x.sh\n```\n",
+            "dot-slash": "```bash\n./scripts/x.sh\n```\n",
+            "tilde fence": "~~~bash\nscripts/x.sh\n~~~\n",
+            "indented in a list": "1. Run:\n\n   ```bash\n   scripts/x.sh\n   ```\n",
+            "inside a 4-backtick wrapper": "````markdown\n```bash\nscripts/x.sh\n```\n````\n",
+        }
+        for case, body in flagged.items():
+            with self.subTest(case):
+                self.setUp()
+                self.assertEqual(self.bare_script_problems(body, reference=""), ["skills/engineering/a/SKILL.md"])
+
+    def test_skill_dir_prose_and_other_scripts_arent_flagged(self):
+        body = ("Run scripts/x.sh, or `scripts/x.sh` inline.\n\n```bash\n<skill-dir>/scripts/x.sh 7\n"
+                "\"$SKILL_DIR/scripts/x.sh\"\npython3 scripts/other.py\n```\n")
+        self.assertEqual(self.bare_script_problems(body, reference=""), [])
+
+    def test_bundled_markdown_is_checked_too(self):
+        self.assertEqual(self.bare_script_problems("", reference="```bash\nscripts/x.sh\n```\n"),
+                         ["skills/engineering/a/references/r.md"])
 
     def test_scripts_and_evals_named_template_arent_output_templates(self):
         folder = self.skill(body="Run scripts/render-template.sh.\n",
