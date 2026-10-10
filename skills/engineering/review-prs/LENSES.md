@@ -21,18 +21,7 @@ Anything the repo documents about how code is written: `CLAUDE.md`, `AGENTS.md`,
 
 Applies even when the repo documents nothing. Two rules bind it: a documented repo standard overrides the baseline (suppress a smell the repo endorses), and every smell is a labelled judgement call — "possible Feature Envy" — never a hard violation. Report as **Smell**, quote the hunk.
 
-- **Mysterious Name** — a name that doesn't say what it does or holds → rename; no honest name means murky design.
-- **Duplicated Code** — the same logic shape in more than one hunk or file → extract and call from both.
-- **Feature Envy** — a method using another object's data more than its own → move it onto the data.
-- **Data Clumps** — the same few fields or params travelling together → bundle into one type.
-- **Primitive Obsession** — a primitive standing in for a domain concept → give it a small type.
-- **Repeated Switches** — the same switch or if-cascade on one type recurring → polymorphism or one shared map.
-- **Shotgun Surgery** — one logical change forcing scattered edits → gather what changes together.
-- **Divergent Change** — one file edited for several unrelated reasons → split by reason to change.
-- **Speculative Generality** — abstraction or hooks for needs nobody has → inline until a real need shows.
-- **Message Chains** — `a.b().c().d()` navigation callers shouldn't depend on → hide behind one method.
-- **Middle Man** — a class or function that only delegates → cut it, call the target.
-- **Refused Bequest** — a subclass ignoring most of what it inherits → composition over inheritance.
+Look for these Fowler smells: Mysterious Name, Duplicated Code, Feature Envy, Data Clumps, Primitive Obsession, Repeated Switches, Shotgun Surgery, Divergent Change, Speculative Generality, Message Chains, Middle Man, Refused Bequest. Name the smell and the refactoring it points to.
 
 ## Spec
 
