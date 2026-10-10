@@ -4,6 +4,7 @@
     "./skills/engineering/arch-review",
     "./skills/engineering/address-review-findings",
     "./skills/engineering/conventional-commit",
+    "./skills/engineering/frontend-craft",
     "./skills/engineering/pr-body",
     "./skills/engineering/review-prs",
     "./skills/engineering/sync-and-branch"
