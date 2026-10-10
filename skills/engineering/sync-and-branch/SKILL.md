@@ -12,12 +12,11 @@ Get the work onto a branch based on the latest default branch, without stashing,
 
 ## Find the default branch
 
-Never assume `main`:
+Never assume `main`. [scripts/default-branch.sh](scripts/default-branch.sh) reads the remote's HEAD and asks the remote only when that's missing or stale; run it by its path in this skill's directory:
 
 ```bash
-git remote set-head origin --auto >/dev/null    # only if the next line fails
-default="$(git symbolic-ref --short refs/remotes/origin/HEAD)"; default="${default#origin/}"
 git fetch --prune origin
+default="$(<skill-dir>/scripts/default-branch.sh)"
 ```
 
 ---
@@ -48,7 +47,7 @@ Report the branch, the SHA it's based on, and the files that came along. Don't p
 ```bash
 git remote get-url upstream || git remote add upstream <url>   # ask for the url if missing
 git fetch --prune upstream
-up="$(git remote set-head upstream --auto >/dev/null; git symbolic-ref --short refs/remotes/upstream/HEAD)"; up="${up#upstream/}"
+up="$(<skill-dir>/scripts/default-branch.sh upstream)"
 git log --oneline "upstream/$up..origin/$default"    # what the fork carries on top
 ```
 
