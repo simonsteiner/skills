@@ -26,6 +26,7 @@ scripts/eval-skill.py is the command line; tests/tooling/test_evals.py tests it.
 import io
 import json
 import re
+import shutil
 import statistics
 import subprocess
 import tarfile
@@ -45,7 +46,7 @@ def problems(skill):
     if not isinstance(data, dict):
         return ["evals.json must be an object with \"skills\" and \"evals\""]
     out = []
-    if skill.name not in (data.get("skills") or []):
+    if not isinstance(data.get("skills"), list) or skill.name not in data["skills"]:
         out.append(f'"skills" doesn\'t list {skill.name!r}')
     evals = data.get("evals")
     if not isinstance(evals, list) or not evals:
@@ -61,7 +62,11 @@ def problems(skill):
             out.append(f'eval {i} needs "expected_behavior" as a non-empty list of strings')
         if "setup" in e and not isinstance(e["setup"], str):
             out.append(f'eval {i}: "setup" must be a string')
-        for f in e.get("files", []):
+        files = e.get("files", [])
+        if not isinstance(files, list) or not all(isinstance(f, str) and f for f in files):
+            out.append(f'eval {i}: "files" must be a list of paths')
+            continue
+        for f in files:
             if not (skill.folder / f).is_file():
                 out.append(f"eval {i}: file {f!r} doesn't exist")
     return out
@@ -93,7 +98,7 @@ Execute this task in a fresh context, as a user's agent would.
 - Save to {outputs}/: your final reply to the user as reply.md, plus any files the task produced.
 - When done, write {timing} as {{"total_tokens": <int>, "duration_ms": <int>}}.
 
-Never touch the skills repo itself, other sessions' files, or any real GitHub repo.
+Write nothing in the skills repo except the output paths above, and never touch other sessions' files or any real GitHub repo.
 """
 
 GRADE = """\
@@ -123,7 +128,11 @@ def prepare(repo, skill, baseline=None, root=None):
 
     configs = {"with_skill": str(skill.folder)}
     if baseline:
-        configs["old_skill"] = str(snapshot(repo, skill, baseline, iteration / "old_skill"))
+        try:
+            configs["old_skill"] = str(snapshot(repo, skill, baseline, iteration / "old_skill"))
+        except ValueError:
+            shutil.rmtree(iteration)  # a failed iteration would still take the next number
+            raise
     else:
         configs["without_skill"] = "none — work without any skill"
 
@@ -149,6 +158,27 @@ def _stats(values):
             "stddev": round(statistics.stdev(values), 4) if len(values) > 1 else 0.0}
 
 
+def _read_json(path, iteration, fields):
+    """`path` parsed as an object whose `fields` (dotted) are numbers when present; ValueError names the file."""
+    where = path.relative_to(iteration)
+    try:
+        data = json.loads(path.read_text())
+    except json.JSONDecodeError as e:
+        raise ValueError(f"{where} isn't valid JSON: {e}") from None
+    for field in fields:
+        value, keys = data, field.split(".")
+        while keys and isinstance(value, dict):
+            value = value.get(keys.pop(0))
+        if keys and value is not None:
+            msg = f"{field} sits under something that isn't an object"
+        elif value is not None and (isinstance(value, bool) or not isinstance(value, (int, float))):
+            msg = f"{field} must be a number, not {value!r}"
+        else:
+            continue
+        raise ValueError(f"{where}: {msg}")
+    return data
+
+
 def benchmark(iteration):
     """Aggregate every run's grading.json and timing.json into benchmark.json.
 
@@ -161,13 +191,13 @@ def benchmark(iteration):
 
     by_config = {}
     for run in runs:
-        grading = json.loads((run / "grading.json").read_text())
-        results = grading.get("assertion_results", [])
-        rate = grading.get("summary", {}).get("pass_rate")
+        grading = _read_json(run / "grading.json", iteration, ["summary.pass_rate"])
+        results = grading.get("assertion_results") or []
+        rate = (grading.get("summary") or {}).get("pass_rate")
         if rate is None:
             rate = sum(r.get("passed") is True for r in results) / len(results) if results else 0.0
         timing_path = run / "timing.json"
-        timing = json.loads(timing_path.read_text()) if timing_path.exists() else {}
+        timing = _read_json(timing_path, iteration, ["duration_ms", "total_tokens"]) if timing_path.exists() else {}
         row = by_config.setdefault(run.name, {"pass_rate": [], "time_seconds": [], "tokens": []})
         row["pass_rate"].append(rate)
         if "duration_ms" in timing:

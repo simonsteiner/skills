@@ -4,6 +4,7 @@
 """
 
 import json
+import os
 import subprocess
 import tempfile
 import unittest
@@ -18,8 +19,12 @@ EVALS = {"skills": ["a"], "evals": [
 ]}
 
 
+# A git hook running the suite exports GIT_DIR, GIT_INDEX_FILE, …; they'd point every call at the outer repo.
+ENV = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+
+
 def git(cwd, *args):
-    subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *args], cwd=cwd, check=True,
+    subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *args], cwd=cwd, env=ENV, check=True,
                    capture_output=True)
 
 
@@ -55,6 +60,13 @@ class EvalsTest(unittest.TestCase):
             'eval 1 needs "expected_behavior" as a non-empty list of strings', "eval 2 isn't an object",
             "eval 3: file 'gone.csv' doesn't exist"])
 
+    def test_malformed_skills_and_files_are_problems_not_crashes(self):
+        for files in (None, [3], "data.csv"):
+            with self.subTest(files=files):
+                self.write_evals({"skills": "abc", "evals": [{"query": "q", "expected_behavior": ["x"], "files": files}]})
+                self.assertEqual(evals.problems(self.skill()), [
+                    "\"skills\" doesn't list 'a'", 'eval 1: "files" must be a list of paths'])
+
     def test_prepare_without_baseline(self):
         iteration, runs = evals.prepare(self.repo, self.skill())
         self.assertEqual(iteration, self.repo / ".eval-workspace/a/iteration-1")
@@ -85,6 +97,7 @@ class EvalsTest(unittest.TestCase):
         git(self.repo, "init", "-q")
         with self.assertRaisesRegex(ValueError, "can't read"):
             evals.prepare(self.repo, self.skill(), baseline="nope")
+        self.assertFalse((self.repo / ".eval-workspace/a/iteration-1").exists())
         self.write_evals({"skills": ["a"], "evals": []})
         with self.assertRaisesRegex(ValueError, "non-empty list"):
             evals.prepare(self.repo, self.skill())
@@ -109,6 +122,27 @@ class EvalsTest(unittest.TestCase):
             (task.parent / "grading.json").write_text(json.dumps(
                 {"assertion_results": [{"passed": True}, {"passed": False}, {"passed": True}, {"passed": True}]}))
         self.assertEqual(evals.benchmark(iteration)["run_summary"]["with_skill"]["pass_rate"]["mean"], 0.75)
+
+    def test_a_bad_grading_or_timing_file_is_named(self):
+        cases = [
+            ("grading.json", "{", "grading.json isn't valid JSON"),
+            ("grading.json", {"summary": None}, None),
+            ("grading.json", {"summary": {"pass_rate": "0.5"}}, "grading.json: summary.pass_rate must be a number"),
+            ("timing.json", {"duration_ms": "2s"}, "timing.json: duration_ms must be a number"),
+        ]
+        for name, content, error in cases:
+            with self.subTest(name=name, content=content):
+                self.setUp()
+                iteration, runs = evals.prepare(self.repo, self.skill())
+                for _, _, task in runs:
+                    (task.parent / "grading.json").write_text(json.dumps({"summary": {"pass_rate": 1.0}}))
+                bad = runs[0][2].parent / name
+                bad.write_text(content if isinstance(content, str) else json.dumps(content))
+                if error:
+                    with self.assertRaisesRegex(ValueError, "^eval-1-review-pr-7-please/with_skill/" + error):
+                        evals.benchmark(iteration)
+                else:
+                    self.assertEqual(evals.benchmark(iteration)["run_summary"]["with_skill"]["pass_rate"]["mean"], 0.5)
 
 
 if __name__ == "__main__":
