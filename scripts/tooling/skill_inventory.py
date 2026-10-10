@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """The owned skills: every skills/<bucket>/<name>/SKILL.md in this repo.
 
 The one definition of "owned skill" (GLOSSARY.md) the tooling shares — which buckets
@@ -8,21 +7,15 @@ one (third-party/skills.json) would overwrite in the global store.
 
 A skill's name is its folder's name; lint-skills.py checks the frontmatter `name`
 against it.
-
-    scripts/skill_inventory.py           print "<name><TAB><bucket><TAB><folder>" per owned skill
-    scripts/skill_inventory.py --active  the same, without deprecated/ (what dev-linking installs)
-
-Either form exits 1 and prints the problems to stderr instead when the set has any.
 """
 
 import re
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-import third_party
+from . import third_party
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 PUBLISHED = ("engineering", "productivity", "misc")
 UNPUBLISHED = ("personal", "in-progress", "deprecated")
 
@@ -116,20 +109,3 @@ def inventory(repo=REPO):
             )
     return Inventory(skills, problems)
 
-
-def main(argv, repo=REPO):
-    if argv not in ([], ["--active"]):
-        print("Usage: scripts/skill_inventory.py [--active]", file=sys.stderr)
-        return 2
-    inv = inventory(repo)
-    if inv.problems:
-        print("\n".join(inv.problems), file=sys.stderr)
-        return 1
-    for s in inv.skills:
-        if s.active or not argv:
-            print(f"{s.name}\t{s.bucket}\t{s.folder}")
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))

@@ -32,6 +32,14 @@ _Avoid_: slash command, manual skill
 A skill the model can start on its own when the task matches its description, and the human can too.
 _Avoid_: auto skill
 
+**Bundled script**:
+An executable inside a skill's own `scripts/` folder that the agent runs while using the skill; it ships with the skill.
+_Avoid_: helper, tool
+
+**Tooling**:
+The commands this repo's maintainer runs to lint, link and sync skills, and the code they share; never shipped with a skill.
+_Avoid_: scripts (ambiguous with bundled scripts)
+
 **Sync**:
 Running `scripts/sync-third-party.py` to install or upgrade every curated skill at upstream's latest.
 _Avoid_: update, pull

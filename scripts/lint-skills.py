@@ -26,9 +26,9 @@ https://github.com/mgechev/skills-best-practices):
 From AGENTS.md:
 
 - disable-model-invocation is `true`, `false`, or absent
-- the listing rules in published_rules.py: README.md, bucket READMEs, plugin.json,
+- the listing rules in tooling/published_rules.py: README.md, bucket READMEs, plugin.json,
   and a reason for every curated and archived skill
-- the inventory rules in skill_inventory.py: known buckets, unique names, and no
+- the inventory rules in tooling/skill_inventory.py: known buckets, unique names, and no
   curated skill sharing a name with an owned one
 
     scripts/lint-skills.py      exit 1 and list every problem, or print "ok"
@@ -38,8 +38,8 @@ import re
 import sys
 from pathlib import Path
 
-import published_rules
-from skill_inventory import REPO, inventory
+from tooling import published_rules
+from tooling.skill_inventory import REPO, inventory
 
 problems = []
 

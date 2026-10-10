@@ -23,14 +23,14 @@ every other agent in the manifest on its old copy.
 
 Skills this repo owns (skills/**) are installed a different way — with
 `npx skills add simonsteiner/skills`, or scripts/link-skills.py while developing. The two
-sets must never overlap; scripts/skill_inventory.py enforces that.
+sets must never overlap; scripts/tooling/skill_inventory.py enforces that.
 """
 
 import sys
 from pathlib import Path
 
-import third_party
-from skill_inventory import inventory
+from tooling import third_party
+from tooling.skill_inventory import inventory
 
 USAGE = """\
 Usage: scripts/sync-third-party.py [--check | --list]

@@ -21,4 +21,6 @@ Every `SKILL.md` is either user-invoked (`disable-model-invocation: true`, reach
 
 Skills follow Anthropic's [skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices). Run `scripts/lint-skills.py` after changing a skill; CI runs it too. Fragile, exact operations (API calls, multi-step shell sequences) go in a skill's `scripts/` folder rather than inline in `SKILL.md`.
 
+The repo's own tooling lives in `scripts/`: one executable per command at the top (`lint-skills.py`, `link-skills.py`, `sync-skills.py`, `sync-third-party.py`), and the modules they share in the `scripts/tooling/` package. Tests live in `tests/`, never beside the code: `tests/tooling/` for the package, `tests/skill_scripts/` for scripts bundled in skills. `python3 -m unittest discover -s tests -t .` runs them all.
+
 Every PR that changes something a user of these skills would notice adds a changeset (`npx changeset`, or a `.changeset/<name>.md` with `"simonsteiner-skills": minor|patch` front matter and a prose note). CI writes pending changesets into `CHANGELOG.md` on `main`; don't edit the changelog by hand. See [docs/adr/0006-apply-changesets-on-main-without-a-version-pr.md](./docs/adr/0006-apply-changesets-on-main-without-a-version-pr.md).

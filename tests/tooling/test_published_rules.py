@@ -1,6 +1,6 @@
 """Tests for published_rules.py, against throwaway repos.
 
-    python3 -m unittest discover -s scripts
+    python3 -m unittest discover -s tests -t .
 """
 
 import json
@@ -8,8 +8,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from published_rules import check
-from skill_inventory import inventory
+from tooling.published_rules import check
+from tooling.skill_inventory import inventory
 
 README = """# Skills
 

@@ -8,14 +8,14 @@
   calls for
 - every curated and archived skill in third-party/skills.json, and every source, says why
 
-lint-skills.py runs check(); test_published_rules.py tests it.
+lint-skills.py runs check(); tests/tooling/test_published_rules.py tests it.
 """
 
 import json
 import re
 from dataclasses import dataclass
 
-import third_party
+from . import third_party
 
 GROUPS = ("User-invoked", "Model-invoked")
 

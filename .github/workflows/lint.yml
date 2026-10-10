@@ -17,10 +17,10 @@ jobs:
       - name: Check skills against the authoring rules
         run: python3 scripts/lint-skills.py
 
-      - name: Test the tooling
-        run: |
-          python3 -m unittest discover -s scripts
-          python3 -m unittest discover -s tests
+      # tests/tooling: the scripts/tooling package; tests/skill_scripts: the scripts
+      # bundled in skills, against a fake gh.
+      - name: Test the tooling and the bundled scripts
+        run: python3 -m unittest discover -s tests -t .
 
       # setup-uv publishes no floating major tag.
       - name: Setup uv
