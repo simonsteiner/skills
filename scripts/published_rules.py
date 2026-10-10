@@ -124,6 +124,8 @@ def check(repo, skills):
     for source in manifest.sources if manifest else []:
         if not source.why.strip():
             problems.append(f"third-party/skills.json: source {source.repo} doesn't say why")
+        if source.skills and not source.agents:
+            problems.append(f"third-party/skills.json: source {source.repo} has no agents, nor does the manifest")
         for kind, curated in (("skills", source.skills), ("archived", source.archived)):
             problems += [
                 f"third-party/skills.json: {kind} entry {k.name} from {source.repo} doesn't say why"

@@ -51,7 +51,7 @@ class PublishedRulesTest(unittest.TestCase):
         self.write("skills/engineering/README.md", BUCKET)
         self.write(".claude-plugin/plugin.json", json.dumps(
             {"skills": ["./skills/engineering/u", "./skills/engineering/m"]}))
-        self.write("third-party/skills.json", json.dumps({"agents": [], "sources": [
+        self.write("third-party/skills.json", json.dumps({"agents": ["claude-code"], "sources": [
             {"repo": "o/r", "why": "w", "skills": [{"name": "c", "why": "w"}],
              "archived": [{"name": "a", "why": "w"}]}]}))
 
@@ -139,7 +139,7 @@ class PublishedRulesTest(unittest.TestCase):
         self.assertEqual(self.problems(), ["skills/engineering/README.md:10: m is listed twice"])
 
     def test_every_reason_must_be_text(self):
-        manifest = {"agents": [], "sources": [{"repo": "o/r", "why": None, "skills": [{"name": "c", "why": ""}],
+        manifest = {"agents": ["x"], "sources": [{"repo": "o/r", "why": None, "skills": [{"name": "c", "why": ""}],
                                                "archived": [{"name": "a"}]}]}
         self.write("third-party/skills.json", json.dumps(manifest))
         self.assertEqual(self.problems(), [
@@ -147,6 +147,10 @@ class PublishedRulesTest(unittest.TestCase):
             "third-party/skills.json: skills entry c from o/r doesn't say why",
             "third-party/skills.json: archived entry a from o/r doesn't say why",
         ])
+
+    def test_a_source_needs_agents(self):
+        self.edit("third-party/skills.json", '"agents": ["claude-code"]', '"agents": []')
+        self.assertEqual(self.problems(), ["third-party/skills.json: source o/r has no agents, nor does the manifest"])
 
 
 if __name__ == "__main__":

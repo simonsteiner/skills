@@ -49,7 +49,8 @@ def main(argv):
         print(USAGE)
         return 0
     if tuple(argv) not in modes:
-        print(f"error: unknown argument '{argv[0]}'\n{USAGE}", file=sys.stderr)
+        problem = f"expected at most one argument, got: {' '.join(argv)}" if len(argv) > 1 else f"unknown argument '{argv[0]}'"
+        print(f"error: {problem}\n{USAGE}", file=sys.stderr)
         return 2
     mode = modes[tuple(argv)]
 
@@ -63,6 +64,12 @@ def main(argv):
         print("error: the owned skills are unusable as they stand; fix the problems above first.", file=sys.stderr)
         return 1
     home = third_party.Home(Path.home())
+    # With no --agent the CLI would pick agents itself, and no universal links get made.
+    agentless = [s.repo for s in manifest.sources if s.skills and not s.agents]
+    if agentless and mode != "list":
+        print(f"error: no agents for {', '.join(agentless)} — set `agents` on the source or at the top level "
+              "of third-party/skills.json", file=sys.stderr)
+        return 1
 
     if mode == "list":
         print("\n".join(third_party.listing(manifest)))
