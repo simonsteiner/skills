@@ -19,8 +19,13 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 
 
+def _stdout(msg):
+    # Flushed: the npx calls write straight to the terminal between these lines.
+    print(msg, flush=True)
+
+
 def _stderr(msg):
-    print(msg, file=sys.stderr)
+    print(msg, file=sys.stderr, flush=True)
 
 # The per-agent skill directories the skills.sh CLI wires up, relative to the home
 # directory. Used only to report drift and to link universal agents — installs go
@@ -148,7 +153,7 @@ def install_commands(manifest):
     return commands
 
 
-def sync(manifest, home, run=subprocess.run, log=print, err=_stderr):
+def sync(manifest, home, run=subprocess.run, log=_stdout, err=_stderr):
     """Install every source, then link universal agents. Returns what failed.
 
     A failing source doesn't stop the others, and the links are made either way.
@@ -163,7 +168,7 @@ def sync(manifest, home, run=subprocess.run, log=print, err=_stderr):
     return failed
 
 
-def link(manifest, home, log=print, err=_stderr):
+def link(manifest, home, log=_stdout, err=_stderr):
     """Link each curated skill into the universal agents its source lists. Returns what failed.
 
     Refuses to replace anything that isn't already the link: a real directory there is a
