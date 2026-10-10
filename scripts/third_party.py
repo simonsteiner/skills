@@ -94,7 +94,8 @@ def load(repo=REPO):
     data = json.loads(path.read_text())
     sources = []
     for s in data["sources"]:
-        agents = tuple(s.get("agents", data.get("agents", [])))
+        # Empty when neither the source nor the manifest names agents; lint and the sync refuse it.
+        agents = tuple(s.get("agents", data.get("agents", ())))
 
         def entries(kind, s=s, agents=agents):
             return tuple(Curated(k["name"], s["repo"], agents, text(k.get("why"))) for k in s.get(kind, []))
@@ -167,7 +168,12 @@ def sync(manifest, home, run=subprocess.run, log=_stdout, err=_stderr):
     for s, cmd in install_commands(manifest):
         log(f"==> {s.repo}: {','.join(k.name for k in s.skills)}")
         # stdin from /dev/null: the CLI would otherwise wait on a prompt it can't show.
-        if run(cmd, stdin=subprocess.DEVNULL).returncode != 0:
+        try:
+            ok = run(cmd, stdin=subprocess.DEVNULL).returncode == 0
+        except OSError as e:  # npx missing or not executable
+            err(f"error: cannot run {cmd[0]}: {e.strerror}")
+            ok = False
+        if not ok:
             failed.append(f"install from {s.repo}")
     failed += link(manifest, home, log, err)
     return failed

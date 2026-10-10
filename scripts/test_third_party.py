@@ -151,6 +151,26 @@ class ThirdPartyTest(unittest.TestCase):
         self.assertEqual(failed, ["install from a/one"])
         self.assertTrue((self.home.agent_dir("codex") / "alpha").is_symlink())
 
+    def test_sync_records_an_npx_it_cannot_run(self):
+        self.installed("alpha")
+        errors = []
+
+        def run(cmd, **_):
+            raise FileNotFoundError(2, "No such file or directory", cmd[0])
+
+        failed = sync(self.manifest, self.home, run, self.out.append, errors.append)
+        self.assertEqual(failed, ["install from a/one", "install from b/two"])
+        self.assertIn("error: cannot run npx: No such file or directory", errors)
+        self.assertTrue((self.home.agent_dir("codex") / "alpha").is_symlink())
+
+    def test_a_source_without_agents_anywhere_has_none(self):
+        repo = self.home.root.parent / "bare"
+        (repo / "third-party").mkdir(parents=True)
+        (repo / "third-party/skills.json").write_text(json.dumps(
+            {"sources": [{"repo": "a/b", "why": None, "skills": [{"name": "x"}]}]}))
+        [source] = load(repo).sources
+        self.assertEqual((source.agents, source.why, source.skills[0].why), ((), "", ""))
+
     def test_listing(self):
         lines = third_party.listing(self.manifest)
         self.assertEqual(lines[:4], ["", "a/one — w", f"  {'alpha':<30} w", f"  {'old (archived)':<30} w"])
