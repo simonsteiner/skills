@@ -1,5 +1,11 @@
 # simonsteiner-skills
 
+## 1.2.0
+
+### Minor Changes
+
+- [#16](https://github.com/simonsteiner/skills/pull/16) [`7b25c58`](https://github.com/simonsteiner/skills/commit/7b25c587d49f62f6c02c9eb85d7e159f6c324ba9) Thanks [@simonsteiner](https://github.com/simonsteiner)! - New model-invoked `frontend-craft` skill for designing and building UI with a point of view instead of templated defaults. It picks the surface's mode (Persuade, Operate, Read, Experience), plans a token system and reviews it against the brief before building, builds to a quality floor, and checks the render in bounded passes. It also critiques and audits existing UI and handles bolder, quieter, simpler, and polish requests. Adapted from Anthropic's `frontend-design` and Paul Bakaus's `impeccable`, without impeccable's engine, hooks, or project files.
+
 This repository began as a fork of Matt Pocock's [`mattpocock-skills`](https://github.com/mattpocock/skills). It keeps the structure of the original but maintains its own pared-down set of skills and does not sync with upstream, so this changelog starts fresh from the fork rather than carrying the original's history.
 
 ## 1.1.0
