@@ -22,7 +22,7 @@ sync started inside Claude Code updates the store and Claude Code and silently l
 every other agent in the manifest on its old copy.
 
 Skills this repo owns (skills/**) are installed a different way — with
-`npx skills add simonsteiner/skills`, or scripts/link-skills.sh while developing. The two
+`npx skills add simonsteiner/skills`, or scripts/link-skills.py while developing. The two
 sets must never overlap; scripts/skill_inventory.py enforces that.
 """
 
