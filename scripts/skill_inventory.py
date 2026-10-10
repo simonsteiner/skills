@@ -26,6 +26,18 @@ PUBLISHED = ("engineering", "productivity", "misc")
 UNPUBLISHED = ("personal", "in-progress", "deprecated")
 
 
+def scalar(value):
+    """A top-level value: quotes removed, or a trailing ` # comment` cut from a plain one.
+
+    A block indicator (`>`, `|`, …) starts empty; its indented lines are appended.
+    """
+    quoted = re.match(r"""(['"])(.*)\1\s*(#.*)?$""", value)
+    if quoted:
+        return quoted.group(2)
+    value = re.sub(r"\s+#.*$", "", value).strip()
+    return "" if value in (">", "|", ">-", "|-") else value
+
+
 def frontmatter(text):
     """Top-level keys of a SKILL.md's YAML frontmatter, folded scalars joined.
 
@@ -40,7 +52,7 @@ def frontmatter(text):
         top = re.match(r"([a-z][a-z0-9-]*):\s*(.*)$", line)
         if top:
             key, value = top.groups()
-            fields[key] = "" if value in (">", "|", ">-", "|-") else value.strip().strip("'\"")
+            fields[key] = scalar(value)
         elif key:
             fields[key] = (fields[key] + " " + line.strip()).strip()
     return fields, text[m.end():]
