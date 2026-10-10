@@ -32,7 +32,7 @@ git fetch --quiet --prune origin && git fetch --quiet origin "pull/<n>/head"   #
 tmp="$(mktemp -d)"; git worktree add --quiet --detach "$tmp/pr-<n>" <headRefOid> && echo "$tmp/pr-<n>"
 ```
 
-Shell variables don't survive between tool calls, so write the printed path into every later command literally, never `$wt`: an empty variable makes `cd "$wt"` a silent no-op, and the push that follows sends the main checkout's HEAD. Run every command for that PR from that path, and push with `git push origin HEAD:<headRefName>` (a fork's PR, `isCrossRepository`, pushes to the fork's URL instead, which needs "allow edits by maintainers"). A rejected push means the branch moved: `git fetch origin && git merge --no-edit origin/<headRefName>`, rerun the checks, push again. Once the stack's fixes are carried up, `git worktree remove --force <path> && rmdir <its parent>`.
+Shell variables don't survive between tool calls, so write the printed path into every later command literally, never `$wt`: an empty variable makes `cd "$wt"` a silent no-op, and the push that follows sends the main checkout's HEAD. Run every command for that PR from that path, and push with `git push origin HEAD:<headRefName>` (a fork's PR, `isCrossRepository`, pushes to the fork's URL instead, which needs "allow edits by maintainers"). A rejected push means the branch moved: `git fetch origin && git merge --no-edit origin/<headRefName>` (a fork's PR has no `origin/<headRefName>`: `git fetch origin "pull/<n>/head" && git merge --no-edit FETCH_HEAD`), rerun the checks, push again. Once the stack's fixes are carried up, `git worktree remove --force <path> && rmdir <its parent>`.
 
 A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data). Install or copy what a check needs — never symlink it in, or the link gets committed — or name the check as not run. A running dev server serves the main checkout, not the worktree.
 
@@ -117,7 +117,7 @@ A reply says what changed and where — the commit SHA or the new symbol name �
 cd <upper PR's worktree path> && git fetch origin && git merge --no-edit "origin/<lower-head>" && git push origin HEAD:<upper-head>
 ```
 
-The upper PR has no worktree yet on its first carry: create it with the Step 0 recipe and reuse it for that PR's own Steps 1–4. Merge the lower layer as pushed (`origin/…`), not a local branch another worktree may hold at an older commit.
+The upper PR has no worktree yet on its first carry: create it with the Step 0 recipe and reuse it for that PR's own Steps 1–4. Merge the lower layer as pushed (`origin/…`, or `FETCH_HEAD` after `git fetch origin "pull/<lower-n>/head"` when it's a fork's PR), not a local branch another worktree may hold at an older commit.
 
 A conflict here is the upper PR's code meeting the fix: resolve it on the upper branch, keeping both intents, and run the checks again.
 
