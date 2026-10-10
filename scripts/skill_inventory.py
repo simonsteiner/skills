@@ -118,11 +118,11 @@ def inventory(repo=REPO):
     return Inventory(skills, problems)
 
 
-def main(argv):
+def main(argv, repo=REPO):
     if argv not in ([], ["--active"]):
         print("Usage: scripts/skill_inventory.py [--active]", file=sys.stderr)
         return 2
-    inv = inventory()
+    inv = inventory(repo)
     if inv.problems:
         print("\n".join(inv.problems), file=sys.stderr)
         return 1
