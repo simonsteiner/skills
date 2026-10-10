@@ -32,7 +32,7 @@ def scalar(value):
 
     A block indicator (`>`, `|`, …) starts empty; its indented lines are appended.
     """
-    quoted = re.match(r"""(['"])(.*)\1\s*(#.*)?$""", value)
+    quoted = re.match(r"""(['"])((?:(?!\1).)*)\1\s*(#.*)?$""", value)
     if quoted:
         return quoted.group(2)
     value = re.sub(r"\s+#.*$", "", value).strip()
@@ -117,11 +117,11 @@ def inventory(repo=REPO):
     return Inventory(skills, problems)
 
 
-def main(argv):
+def main(argv, repo=REPO):
     if argv not in ([], ["--active"]):
         print("Usage: scripts/skill_inventory.py [--active]", file=sys.stderr)
         return 2
-    inv = inventory()
+    inv = inventory(repo)
     if inv.problems:
         print("\n".join(inv.problems), file=sys.stderr)
         return 1
