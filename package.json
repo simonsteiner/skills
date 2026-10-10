@@ -10,11 +10,14 @@
   "license": "MIT",
   "scripts": {
     "changeset": "changeset",
-    "version": "changeset version"
+    "version": "changeset version",
+    "prepare": "lefthook install || true"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.7.0",
-    "@changesets/cli": "^2.31.0"
+    "@changesets/cli": "^2.31.0",
+    "lefthook": "^2.2.1",
+    "rumdl": "0.2.79"
   },
   "packageManager": "npm@10.9.4"
 }

@@ -1,0 +1,23 @@
+# Ref: https://github.com/evilmartians/lefthook
+# Installed by `npm install` (the `prepare` script); by hand: npx lefthook install
+
+pre-commit:
+  parallel: true
+  commands:
+    # Whole repo, not just the staged files: the rules cross files (README and
+    # plugin.json entries, links, shared trigger phrases). Same check as CI.
+    lint-skills:
+      glob: "{skills/**,third-party/**,README.md,.claude-plugin/**,scripts/lint-skills.py}"
+      run: python3 scripts/lint-skills.py
+
+    # Same as CI's Shellcheck step.
+    shellcheck:
+      glob: "*.sh"
+      run: shellcheck {staged_files}
+
+    # The only fixer of *.md. Config and excludes in .rumdl.toml; an excluded
+    # staged file is skipped, not an error.
+    rumdl:
+      glob: "*.md"
+      run: npx rumdl check --fix {staged_files}
+      stage_fixed: true
