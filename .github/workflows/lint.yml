@@ -20,8 +20,9 @@ jobs:
       - name: Test the tooling
         run: python3 -m unittest discover -s scripts
 
+      # setup-uv publishes no floating major tag.
       - name: Setup uv
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@v10.3.0
 
       # Same version as lefthook; config in ruff.toml.
       - name: Ruff
