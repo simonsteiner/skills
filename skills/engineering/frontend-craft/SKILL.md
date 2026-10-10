@@ -79,7 +79,7 @@ Read [FLOOR.md](FLOOR.md) immediately before the first UI edit — including sma
 - **Prove, don't claim.** Show the product doing its job with specifics a competitor couldn't paste in. Illustrative data is fine at full fidelity and labelled as such; claims are never invented.
 - **Author the content.** Great surfaces live on carefully made names, entries, covers, and copy. Gradients, glass, and generic icon tiles where real content belongs are the gap wearing chrome. Use real, verified imagery when the brief implies it.
 - **Spend boldness in one place.** One memorable element; everything around it quiet and disciplined. Before finishing, remove one accessory.
-- **Watch CSS specificity.** A type selector like `.section` and an element selector like `.cta` easily cancel each other out, especially on padding and margin between sections.
+- **Watch CSS specificity.** Two class rules of equal specificity, like `.section` and `.cta`, fight over the padding and margin between sections; whichever comes later wins, so set section spacing in one place.
 
 Preserve semantics, accessibility, performance, responsiveness, the project's conventions, and working behaviour.
 

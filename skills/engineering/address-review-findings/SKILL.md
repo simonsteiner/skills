@@ -1,5 +1,6 @@
 ---
 name: address-review-findings
+compatibility: Requires git and an authenticated gh CLI.
 description: >
   Works through the review feedback on GitHub pull requests — one PR, several, or a stack — pulling the unresolved threads, fixing what's real, then replying and resolving. Use when the user wants to address review comments or PR feedback, respond to a reviewer, resolve review threads or conversations, asks what's left on the PR(s), or says the review came back.
 ---
@@ -36,7 +37,7 @@ gh pr view --comments   # review summaries and issue comments — the prose arou
 Inline threads need GraphQL — the REST endpoint doesn't say whether a thread is resolved. Run this skill's script, which pages through every thread and prints the unresolved ones as one JSON object per line:
 
 ```bash
-scripts/unresolved-threads.sh [<pr>]   # default: the current branch's PR
+<skill-dir>/scripts/unresolved-threads.sh [<pr>]   # default: the current branch's PR
 ```
 
 - `id` is the thread ID — it's what replies and resolutions attach to. Keep it with each finding.
@@ -84,7 +85,7 @@ These post to a PR other people are watching, and a reply can't be unsent — so
 Push the commits, then per thread:
 
 ```bash
-scripts/reply-resolve.sh <thread-id> [--resolve] <<'BODY'
+<skill-dir>/scripts/reply-resolve.sh <thread-id> [--resolve] <<'BODY'
 Fixed in abc1234: the export now …
 BODY
 ```

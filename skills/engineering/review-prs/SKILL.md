@@ -1,5 +1,6 @@
 ---
 name: review-prs
+compatibility: Requires git, jq, and an authenticated gh CLI.
 description: >
   Reviews GitHub pull requests that have no real review yet or changed a lot since the last one — one PR, several, or a stack — posts the findings as inline comments, then fixes them and resolves the threads. Also reviews a local diff since a fixed point (commit, branch, tag) against the repo's standards and the originating spec. Use when the user wants open PRs or a branch code-reviewed, says nothing has reviewed their PRs, asks to "review since" a ref, or wants findings commented and fixed in one pass. Does not work through a reviewer's existing comments (address-review-findings) or scan for architecture candidates (arch-review).
 ---
@@ -66,7 +67,7 @@ One review per PR, with a summary and inline comments. Each comment is one findi
 Post with [scripts/post-review.sh](scripts/post-review.sh), the payload on stdin — run it from the repo under review by its path in this skill's directory (`<skill-dir>/scripts/post-review.sh`). It pins the review to the PR's current head as a `COMMENT`, checks every comment's `path` and `line` sits inside a hunk before sending anything (new-file numbers; `"side": "LEFT"` with old-file numbers for a deleted line; `start_line` + `line` for a range, both in one hunk), refuses while you already have a draft review on the PR, and deletes the empty draft a failed post leaves behind.
 
 ```bash
-scripts/post-review.sh <n> <<'JSON'
+<skill-dir>/scripts/post-review.sh <n> <<'JSON'
 {
   "body": "2 findings (1 Bug, 1 Test). Spec: matches #41. Tests and lint pass.",
   "comments": [
