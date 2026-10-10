@@ -14,6 +14,11 @@ set -euo pipefail
 # are listed and the script exits 2: move them into the body and run it again.
 # Prints the review URL and its state. Never leaves a PENDING review behind.
 
+if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
+  sed -n '/^# [A-Z]/,/^$/{/^$/q;s/^# \{0,1\}//p;}' "$0"  # the comment above
+  exit 0
+fi
+
 pr="${1:-}"
 [[ "$pr" =~ ^[0-9]+$ ]] || { echo "error: expected a PR number, got '$pr'" >&2; exit 1; }
 

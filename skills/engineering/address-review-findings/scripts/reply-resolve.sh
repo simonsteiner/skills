@@ -12,6 +12,11 @@ set -euo pipefail
 #
 # Prints the reply URL, then "resolved" when --resolve was given.
 
+if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
+  sed -n '/^# [A-Z]/,/^$/{/^$/q;s/^# \{0,1\}//p;}' "$0"  # the comment above
+  exit 0
+fi
+
 thread="${1:-}"
 resolve="${2:-}"
 [[ "$thread" == PRRT_* ]] || { echo "error: expected a review thread id (PRRT_…), got '$thread'" >&2; exit 1; }

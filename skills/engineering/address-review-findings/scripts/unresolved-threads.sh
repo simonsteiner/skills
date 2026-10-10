@@ -15,6 +15,11 @@ set -euo pipefail
 # A thread whose commentCount exceeds its comments array has more than one page of
 # comments — open its url.
 
+if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
+  sed -n '/^# [A-Z]/,/^$/{/^$/q;s/^# \{0,1\}//p;}' "$0"  # the comment above
+  exit 0
+fi
+
 pr="${1:-$(gh pr view --json number --jq .number)}"
 owner_repo="$(gh repo view --json nameWithOwner --jq .nameWithOwner)"
 owner="${owner_repo%%/*}"
