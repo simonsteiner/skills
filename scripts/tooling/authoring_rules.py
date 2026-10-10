@@ -35,6 +35,9 @@ From https://github.com/mgechev/skills-best-practices:
 - every bundled file is mentioned in SKILL.md (an unreferenced file is never read);
   CREDITS.md and evals/ are exempt
 
+From https://agentskills.io/skill-creation/evaluating-skills: evals/evals.json, when
+present, is valid (tooling/evals.py).
+
 From AGENTS.md: disable-model-invocation is `true`, `false`, or absent, and a command
 in a code block runs a bundled script as `<skill-dir>/scripts/…`: agents run it from the
 user's repo, where a bare `scripts/…` names that repo's scripts, not the skill's.
@@ -45,6 +48,8 @@ lint-skills.py runs check(); tests/tooling/test_authoring_rules.py tests it.
 import os
 import re
 from pathlib import Path
+
+from . import evals
 
 MAX_BODY_LINES = 500
 MAX_BODY_TOKENS = 5000
@@ -92,6 +97,9 @@ def check_skill(s):
 
     def problem(path, msg):
         out.append((path, msg))
+
+    for msg in evals.problems(s):
+        problem(folder / "evals/evals.json", msg)
 
     invocation = fields.get("disable-model-invocation")
     if invocation not in (None, "true", "false"):
