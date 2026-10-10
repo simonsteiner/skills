@@ -103,6 +103,13 @@ class AuthoringRulesTest(unittest.TestCase):
         self.assertEqual([p for p in self.problems() if "template" in p],
                          ["skills/engineering/a/a-template.md: output template outside assets/"])
 
+    def test_scripts_and_evals_named_template_arent_output_templates(self):
+        folder = self.skill(body="Run scripts/render-template.sh.\n",
+                            files={"scripts/render-template.sh": "#!/bin/sh\n# --help\n",
+                                   "evals/template-input.md": "x\n"})
+        (folder / "scripts/render-template.sh").chmod(0o755)
+        self.assertEqual(self.problems(), [])
+
     def test_frontmatter_rules(self):
         cases = {
             "no YAML frontmatter": None,
