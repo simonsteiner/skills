@@ -51,7 +51,7 @@ class PublishedRulesTest(unittest.TestCase):
         self.write("skills/engineering/README.md", BUCKET)
         self.write(".claude-plugin/plugin.json", json.dumps(
             {"skills": ["./skills/engineering/u", "./skills/engineering/m"]}))
-        self.write("third-party/skills.json", json.dumps({"agents": [], "sources": [
+        self.write("third-party/skills.json", json.dumps({"agents": ["claude-code"], "sources": [
             {"repo": "o/r", "why": "w", "skills": [{"name": "c", "why": "w"}],
              "archived": [{"name": "a", "why": "w"}]}]}))
 
@@ -103,7 +103,7 @@ class PublishedRulesTest(unittest.TestCase):
         self.edit("README.md", "## Third", "- **[p](./skills/personal/p/SKILL.md)** — mine.\n\n## Third")
         self.edit(".claude-plugin/plugin.json", '"]}', '", "./skills/personal/p"]}')
         self.assertEqual(self.problems(), [
-            "README.md:13: p links ./skills/personal/p/SKILL.md, which is no skill this file lists",
+            "README.md:13: p is in personal/ but README.md links it",
             ".claude-plugin/plugin.json lists ./skills/personal/p, which is no published skill",
         ])
 
@@ -116,6 +116,41 @@ class PublishedRulesTest(unittest.TestCase):
         self.edit("README.md", "## Third", "#### Model-invoked\n\n- **[x](./skills/misc/x/SKILL.md)** — x.\n\n## Third")
         self.edit(".claude-plugin/plugin.json", '"]}', '", "./skills/misc/x"]}')
         self.assertEqual(self.problems(), ["skills/misc/README.md is missing"])
+
+    def test_any_link_to_an_unpublished_skill_fails(self):
+        self.skill("personal", "p")
+        self.write("skills/personal/README.md", "## Model-invoked\n\n- **[p](./p/SKILL.md)** — mine.\n")
+        self.edit("README.md", "## Third", "See [p](./skills/personal/p/SKILL.md), [it](skills/personal/p/).\n\n## Third")
+        self.assertEqual(self.problems(), ["README.md:13: p is in personal/ but README.md links it"] * 2)
+
+    def test_an_emptied_bucket_readme_is_still_checked(self):
+        self.write("skills/misc/README.md", "## Model-invoked\n\n- **[gone](./gone/SKILL.md)** — moved.\n")
+        self.assertEqual(self.problems(),
+                         ["skills/misc/README.md:3: gone links ./gone/SKILL.md, which is no skill this file lists"])
+
+    def test_entries_in_code_fences_dont_count(self):
+        for fence in ("```", "~~~", "````"):
+            self.edit("README.md", "## Third", f"{fence}md\n- **[zz](./skills/engineering/zz/SKILL.md)** — x.\n{fence}\n\n## Third")
+            self.assertEqual(self.problems(), [], fence)
+            self.write("README.md", README)
+
+    def test_a_skill_listed_twice(self):
+        self.edit("skills/engineering/README.md", "reached for.", "reached for.\n- **[m](./m/SKILL.md)** — again.")
+        self.assertEqual(self.problems(), ["skills/engineering/README.md:10: m is listed twice"])
+
+    def test_every_reason_must_be_text(self):
+        manifest = {"agents": ["x"], "sources": [{"repo": "o/r", "why": None, "skills": [{"name": "c", "why": ""}],
+                                               "archived": [{"name": "a"}]}]}
+        self.write("third-party/skills.json", json.dumps(manifest))
+        self.assertEqual(self.problems(), [
+            "third-party/skills.json: source o/r doesn't say why",
+            "third-party/skills.json: skills entry c from o/r doesn't say why",
+            "third-party/skills.json: archived entry a from o/r doesn't say why",
+        ])
+
+    def test_a_source_needs_agents(self):
+        self.edit("third-party/skills.json", '"agents": ["claude-code"]', '"agents": []')
+        self.assertEqual(self.problems(), ["third-party/skills.json: source o/r has no agents, nor does the manifest"])
 
 
 if __name__ == "__main__":

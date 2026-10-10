@@ -28,18 +28,26 @@ class Entry:
     line: int
 
 
+def prose(text):
+    """(line number, line) for every line outside HTML comments and fenced code blocks."""
+    text = re.sub(r"<!--.*?-->", lambda m: "\n" * m.group().count("\n"), text, flags=re.DOTALL)
+    fence = None
+    for n, line in enumerate(text.split("\n"), 1):
+        marker = re.match(r"\s*(`{3,}|~{3,})", line)
+        if marker and (fence is None or marker.group(1).startswith(fence)):
+            fence = None if fence else marker.group(1)
+            continue
+        if fence is None:
+            yield n, line
+
+
 def entries(text):
     """The skill entries in a Markdown list: `- **[name](target)**` items.
 
     Text inside HTML comments and fenced code blocks is not an entry.
     """
-    text = re.sub(r"<!--.*?-->", lambda m: "\n" * m.group().count("\n"), text, flags=re.DOTALL)
-    found, group, fenced = [], None, False
-    for n, line in enumerate(text.split("\n"), 1):
-        if line.startswith("```"):
-            fenced = not fenced
-        if fenced:
-            continue
+    found, group = [], None
+    for n, line in prose(text):
         heading = re.match(r"#+\s+(.*?)\s*$", line)
         if heading:
             group = heading.group(1) if heading.group(1) in GROUPS else None
@@ -48,6 +56,11 @@ def entries(text):
         if item:
             found.append(Entry(item.group(1), item.group(2), group, n))
     return found
+
+
+def links(text):
+    """(line number, target) for every Markdown link outside comments and code fences."""
+    return [(n, target) for n, line in prose(text) for target in re.findall(r"\]\(([^)\s]+)", line)]
 
 
 def check_list(path, listed, expected, repo):
@@ -79,10 +92,22 @@ def check(repo, skills):
 
     readme = repo / "README.md"
     published = {f"./{s.skill_md.relative_to(repo).as_posix()}": s for s in skills if s.published}
-    listed = [e for e in entries(readme.read_text()) if e.target.startswith("./skills/")]
+    # Any link, not only a list entry, puts an unpublished skill in the README.
+    unpublished = {s.folder.relative_to(repo).as_posix(): s for s in skills if not s.published}
+
+    def unpublished_skill(target):
+        return unpublished.get(re.sub(r"^\./|/SKILL\.md$|/$", "", target))
+
+    for n, target in links(readme.read_text()):
+        if skill := unpublished_skill(target):
+            problems.append(f"README.md:{n}: {skill.name} is in {skill.bucket}/ but README.md links it")
+    listed = [e for e in entries(readme.read_text())
+              if e.target.startswith("./skills/") and not unpublished_skill(e.target)]
     problems += check_list(readme, listed, published, repo)
 
-    for bucket in sorted({s.bucket for s in skills}):
+    # Every bucket with skills, and every bucket README left behind by an emptied bucket.
+    buckets = {s.bucket for s in skills} | {p.parent.name for p in repo.glob("skills/*/README.md")}
+    for bucket in sorted(buckets):
         bucket_readme = repo / "skills" / bucket / "README.md"
         if not bucket_readme.exists():
             problems.append(f"skills/{bucket}/README.md is missing")
@@ -99,6 +124,8 @@ def check(repo, skills):
     for source in manifest.sources if manifest else []:
         if not source.why.strip():
             problems.append(f"third-party/skills.json: source {source.repo} doesn't say why")
+        if source.skills and not source.agents:
+            problems.append(f"third-party/skills.json: source {source.repo} has no agents, nor does the manifest")
         for kind, curated in (("skills", source.skills), ("archived", source.archived)):
             problems += [
                 f"third-party/skills.json: {kind} entry {k.name} from {source.repo} doesn't say why"
