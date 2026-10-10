@@ -43,7 +43,7 @@ Pick the **mode** from the surface, not the product — it decides how far the d
 - **Read** — the visitor understands something: docs, articles, changelogs. The frame carries the identity; the reading column stays calm.
 - **Experience** — the visitor is inside the work: portfolios, galleries. The work leads from the first viewport.
 
-A tool's landing page is Persuade; a fashion house's docs are Read. Read [MODES.md](MODES.md) for what each mode allows before planning.
+A tool's landing page is Persuade; a fashion house's docs are Read. Read [MODES.md](MODES.md) for what each mode allows before planning. Where a mode's rules conflict with the general guidance here or in FLOOR.md — motion and typefaces on an Operate surface, say — the mode wins.
 
 ### 2. Plan a token system
 
