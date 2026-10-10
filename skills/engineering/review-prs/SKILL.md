@@ -21,7 +21,8 @@ Review what nobody has looked at, leave the findings where the author will see t
 - The review posts under the user's account, so it can only be a plain `COMMENT`; a PR's author can't request changes on their own PR.
 - A stack layer's diff is against its **base branch**, not the default branch — otherwise every layer repeats the ones below it.
 - The main checkout may be switched by another session mid-run, so never switch it: read a PR from `gh pr diff`, `git show origin/<head>:<path>`, or a worktree you created (Step 2).
-- Delete only paths you created and hold in a variable (`git worktree remove "$wt"`). Never glob shared locations like `/tmp/tmp.*`: parallel reviewers and other sessions keep their scratch copies there.
+- Delete only exact paths you created and hold in a variable (`git worktree remove --force "$wt"`, `mktemp` scratch files). Never by pattern — not `/tmp/tmp.*`, not a loop over `git worktree list` matching a prefix: parallel reviewers and other sessions keep theirs there.
+- A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data) and a running dev server serves the main checkout. Install or copy what a check needs, never symlink it in, or name the check as not run. Never `git stash` to compare before and after: the stash is shared by every worktree.
 - A command a guard or sandbox refuses stays refused. Don't re-run it through a script file or another wrapper; split it as the error asks, or skip it and say so in the report.
 
 ---

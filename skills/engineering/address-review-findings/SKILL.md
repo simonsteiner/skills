@@ -25,13 +25,20 @@ gh pr list --state open --author @me --json number,title,headRefName,baseRefName
 
 A PR whose base is another PR's head branch is **stacked** on it. Order the set bottom-up — base first — and run Steps 1–4 once per PR in that order. A fix made low in the stack is still missing from every PR above it until Step 4 carries it up.
 
-Work on each PR's branch in a worktree of its own, never by switching the main checkout — another session may be using it. When the current checkout is already on the PR's branch and clean, use it as is. Otherwise:
+Never switch the main checkout — another session may be using it. When the current checkout is already on the PR's branch and clean, work there. Otherwise give the PR a detached worktree at its head, which works even when the branch is checked out in someone else's worktree:
 
 ```bash
-wt="$(mktemp -d)/pr-<n>"; git worktree add --quiet --detach "$wt"; (cd "$wt" && gh pr checkout <n>)
+git fetch --prune origin
+wt="$(mktemp -d)/pr-<n>"; git worktree add --quiet --detach "$wt" "origin/<headRefName>"
 ```
 
-`gh pr checkout` inside the worktree creates or fast-forwards the branch and sets up pushing, forks included. If it fails because the branch is checked out in another worktree, work there instead (`git worktree list`). Run every command for that PR from its worktree, and `git worktree remove "$wt"` once the stack's fixes are carried up. Delete only the worktrees you created.
+Run every command for that PR from `$wt`, and push with `git push origin HEAD:<headRefName>`. A rejected push means the branch moved: `git fetch origin && git merge --no-edit origin/<headRefName>`, rerun the checks, push again. Once the stack's fixes are carried up, `git worktree remove --force "$wt"`.
+
+A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data). Install or copy what a check needs — never symlink it in, or the link gets committed — or name the check as not run. A running dev server serves the main checkout, not the worktree.
+
+- **Never `git stash`.** The stash is shared by every worktree; a pop can take another session's work.
+- **Delete only exact paths you created**, held in a variable (`mktemp` for scratch files too). Never by pattern: not `rm -rf /tmp/tmp.*`, not a loop over `git worktree list` matching a prefix.
+- **Don't pipe `git` or `gh` into `| tail`.** It hides the exit status; a failed checkout or push looks like success.
 
 ---
 
@@ -105,10 +112,10 @@ A reply says what changed and where — the commit SHA or the new symbol name �
 **In a stack, carry the fixes up** before moving to the next PR. Merge each branch into the one stacked on it, bottom-up, and push — merge, not rebase, so reviewers of the upper PRs don't lose their place:
 
 ```bash
-cd "<upper worktree>" && git merge --no-edit <lower-head> && git push
+cd "<upper worktree>" && git fetch origin && git merge --no-edit "origin/<lower-head>" && git push origin HEAD:<upper-head>
 ```
 
-Worktrees share branches, so `<lower-head>` already holds the commits made in the lower layer's worktree.
+Merge the lower layer as pushed (`origin/…`), not a local branch another worktree may hold at an older commit.
 
 A conflict here is the upper PR's code meeting the fix: resolve it on the upper branch, keeping both intents, and run the checks again.
 
