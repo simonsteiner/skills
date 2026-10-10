@@ -21,8 +21,10 @@ Review what nobody has looked at, leave the findings where the author will see t
 - The review posts under the user's account, so it can only be a plain `COMMENT`; a PR's author can't request changes on their own PR.
 - A stack layer's diff is against its **base branch**, not the default branch — otherwise every layer repeats the ones below it.
 - The main checkout may be switched by another session mid-run, so never switch it: read a PR from `gh pr diff`, `git show origin/<head>:<path>`, or a worktree you created (Step 2).
-- Delete only exact paths you created and hold in a variable (`git worktree remove --force "$wt"`, `mktemp` scratch files). Never by pattern — not `/tmp/tmp.*`, not a loop over `git worktree list` matching a prefix: parallel reviewers and other sessions keep theirs there.
+- Shell variables don't survive between tool calls. Write a path `mktemp` printed into every later command literally, never `$wt`: an empty `$wt` makes `cd "$wt"` a silent no-op in the main checkout.
+- Delete only exact paths you created (a worktree and the `mktemp -d` folder around it, `mktemp` scratch files). Never by pattern — not `/tmp/tmp.*`, not a loop over `git worktree list` matching a prefix: parallel reviewers and other sessions keep theirs there.
 - A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data) and a running dev server serves the main checkout. Install or copy what a check needs, never symlink it in, or name the check as not run. Never `git stash` to compare before and after: the stash is shared by every worktree.
+- Don't pipe `git` or `gh` into `| tail`. It hides the exit status; a failed fetch or worktree add looks like success.
 - A command a guard or sandbox refuses stays refused. Don't re-run it through a script file or another wrapper; split it as the error asks, or skip it and say so in the report.
 
 ---
@@ -47,12 +49,13 @@ Per PR (stacks bottom-up, independent PRs one at a time), read its diff against 
 
 ```bash
 git fetch --prune origin
-gh pr view <n> --json title,body,baseRefName,headRefName,closingIssuesReferences
+gh pr view <n> --json title,body,baseRefName,headRefName,headRefOid,closingIssuesReferences
 gh pr diff <n>
-wt="$(mktemp -d)/pr-<n>"; git worktree add --quiet --detach "$wt" "origin/<headRefName>"
+git fetch --quiet origin "pull/<n>/head"   # brings a fork's head too; origin/<headRefName> has only same-repo PRs
+tmp="$(mktemp -d)"; git worktree add --quiet --detach "$tmp/pr-<n>" <headRefOid> && echo "$tmp/pr-<n>"
 ```
 
-Work in `$wt` until the review is posted, then `git worktree remove --force "$wt"`. Fixes happen in Step 4, on the branch itself.
+Work in the printed path until the review is posted, then `git worktree remove --force <path> && rmdir <its parent>`. Fixes happen in Step 4, on the branch itself.
 
 Local mode: pin `git diff <fixed-point>...HEAD`, confirm the ref resolves and the diff isn't empty before anything else.
 
