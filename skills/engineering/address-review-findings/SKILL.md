@@ -39,7 +39,8 @@ A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data). Instal
 - **Never `git stash`.** The stash is shared by every worktree; a pop can take another session's work.
 - **Delete only exact paths you created** (`mktemp` for scratch files too). Never by pattern: not `rm -rf /tmp/tmp.*`, not a loop over `git worktree list` matching a prefix.
 - **Don't pipe `git` or `gh` into `| tail` or `| head`.** It hides the exit status; a failed checkout or push looks like success.
-- **Commits run the repo's hooks**, and tests a hook runs inherit `GIT_DIR` and `GIT_INDEX_FILE`; a test that runs `git` can then act on this repo instead of its fixture. After the first commit in a worktree, check `git log --oneline -3` holds only your commit and `git config core.bare` is `false` before pushing. Never skip hooks with `--no-verify`.
+- **Commits run the repo's hooks**, and tests a hook runs inherit `GIT_DIR` and `GIT_INDEX_FILE`; a test that runs `git` can then act on this repo instead of its fixture. After the first commit in a worktree, check `git log --oneline <headRefOid>..HEAD` lists only your commit (after a carry-up merge, start from the head before the merge) and `git config core.bare` is `false` before pushing. Never skip hooks with `--no-verify`.
+- **When a PR under fix changes this skill**, the installed skill may be a link into that repo, so its scripts change as fixes land. Copy them first and run them from the printed path: `d="$(mktemp -d)" && cp -r <skill-dir>/scripts "$d" && echo "$d/scripts"`; delete that folder with the worktrees.
 - **Never rewrite pushed history**, even to remove commits a run pushed by mistake: undo them with `git revert`, or stop and report what landed. Force-push only when the user asks for it, then fix every reply that cites a dropped SHA.
 
 ---

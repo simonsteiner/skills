@@ -25,7 +25,7 @@ Review what nobody has looked at, leave the findings where the author will see t
 - Delete only exact paths you created (a worktree and the `mktemp -d` folder around it, `mktemp` scratch files). Never by pattern — not `/tmp/tmp.*`, not a loop over `git worktree list` matching a prefix: parallel reviewers and other sessions keep theirs there.
 - A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data) and a running dev server serves the main checkout. Install or copy what a check needs, never symlink it in, or name the check as not run. Never `git stash` to compare before and after: the stash is shared by every worktree.
 - Don't pipe `git` or `gh` into `| tail` or `| head`. It hides the exit status; a failed fetch or worktree add looks like success.
-- When a PR under review changes this skill, the installed skill may be a link into that repo, so its text and scripts change as fixes land mid-run. Read this skill's files at the start and run its scripts from a copy: `cp -r <skill-dir>/scripts "$(mktemp -d)"`.
+- When a PR under review changes this skill, the installed skill may be a link into that repo, so its text and scripts change as fixes land mid-run. Read this skill's files at the start and run its scripts from a copy, using the path it prints: `d="$(mktemp -d)" && cp -r <skill-dir>/scripts "$d" && echo "$d/scripts"`. address-review-findings, which Step 4 hands off to, copies its own scripts the same way.
 - A command a guard or sandbox refuses stays refused. Don't re-run it through a script file or another wrapper; split it as the error asks, or skip it and say so in the report.
 
 ---
@@ -99,6 +99,6 @@ No findings → still post the summary, so the PR stops reading as unreviewed. C
 
 ## Step 5 — Report
 
-Per PR: link, findings by severity, what was fixed (commit), what's still open and why. Include address-review-findings' per-thread lines; they are the record of what each fix answered. Then a **ready to merge** verdict per PR and per stack: open threads, conflicts, a layer still based on an unmerged branch, and CI from `gh pr checks <n>` run now — never a CI status you didn't just read. Before reporting, `git worktree list` shows none of the worktrees you created. Name every PR skipped because its review was recent enough. Local mode: findings per axis, fixed or not, checks run.
+Per PR: link, findings by severity, what was fixed (commit), what's still open and why. Include address-review-findings' per-thread lines; they are the record of what each fix answered. Then a **ready to merge** verdict per PR and per stack: open threads, conflicts, a layer still based on an unmerged branch, and CI from `gh pr checks <n>` run now — never a CI status you didn't just read. Before reporting, `git worktree list` shows none of the worktrees you created, and the scripts copy's folder is deleted. Name every PR skipped because its review was recent enough. Local mode: findings per axis, fixed or not, checks run.
 
 Merging is not part of this skill. Don't rewrite history on a branch under review — fixes are new commits.
