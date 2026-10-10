@@ -7,12 +7,12 @@ pre-commit:
     # Whole repo, not just the staged files: the rules cross files (README and
     # plugin.json entries, links, shared trigger phrases). Same check as CI.
     lint-skills:
-      glob: "{skills/**,third-party/**,README.md,.claude-plugin/**,scripts/**/*.py}"
+      glob: "{skills/**,third-party/**,README.md,.claude-plugin/**,scripts/*.py,scripts/**/*.py}"
       run: python3 scripts/lint-skills.py
 
     # Same as CI: the tooling, and the scripts bundled in skills against a fake gh.
     tests:
-      glob: "{scripts/**/*.py,tests/**/*.py,skills/*/*/scripts/*}"
+      glob: "{scripts/*.py,scripts/**/*.py,tests/*.py,tests/**/*.py,skills/*/*/scripts/*}"
       run: python3 -m unittest discover -s tests -t .
 
     # Same as CI's Ruff step; bump the version in both places.
