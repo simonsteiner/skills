@@ -22,6 +22,7 @@ Both work **with** the skills.sh model rather than as part of it. The right inte
 **Key idea:** One `apm.yml` file declares an agent's dependencies — instructions, skills, prompts, plugins, MCP servers — and `apm install` reproduces the setup everywhere.
 
 **Example apm.yml:**
+
 ```yaml
 name: my-project
 version: 1.0.0
@@ -38,12 +39,14 @@ dependencies:
 **Supported targets:** Copilot, Claude Code, Cursor, OpenCode, Codex, Gemini, Windsurf, Kiro.
 
 **Structure:**
+
 - Root `/apm.yml` and `/apm.lock.yaml` for manifest and lockfile.
 - `/packages/` contains reusable sub-packages (e.g., `apm-issue-autopilot`, `apm-contributor-dashboard`).
 - Each package has its own `apm.yml` and `SKILL.md` files.
 - `.apm/` directory for configuration and extensions.
 
 **First-party skills found:**
+
 - `apm-issue-autopilot` — intake-to-merge issue orchestrator.
 - `batch-bug-shepherd` — batch bug triage and PR shepherding.
 - `shepherd-driver` — single-PR drive-to-merge convergence loop.
@@ -60,12 +63,14 @@ All follow the `SKILL.md` pattern with detailed documentation, boundary contract
 **Purpose:** Analyze a repository and generate agent instruction files tailored to its codebase.
 
 **Key commands:**
+
 - `agentrc readiness` — score a repo's AI-readiness across 9 pillars (style, build, testing, docs, dev-env, code-quality, observability, security, AI tooling).
 - `agentrc instructions` — generate `.github/copilot-instructions.md` from codebase analysis.
 - `agentrc eval` — evaluate whether instructions improve agent responses.
 - `agentrc init` — interactive setup for a repository.
 
 **Generated files:**
+
 - `.github/copilot-instructions.md` — root repo instructions.
 - `.instructions.md` — area-scoped instructions (for monorepos).
 - `AGENTS.md` — lean hub file with links to detailed instruction files.
@@ -74,6 +79,7 @@ All follow the `SKILL.md` pattern with detailed documentation, boundary contract
 - `agentrc.eval.json` — test cases to measure instruction quality.
 
 **Built-in skills (all in `plugin/skills/`):**
+
 - `root-instructions` — generate root `.github/copilot-instructions.md` by analyzing the codebase.
 - `area-instructions` — generate scoped `.instructions.md` for a specific area.
 - `nested-hub` — generate a lean `AGENTS.md` hub file with recommended topics.
@@ -94,6 +100,7 @@ All are **SKILL.md format** with YAML frontmatter (name, description) and Copilo
 APM ships 5+ reusable first-party skills that follow SKILL.md format. You could curate them like you do Cloudflare's:
 
 **Entry in `third-party/skills.json`:**
+
 ```json
 {
   "repo": "microsoft/apm",
@@ -125,6 +132,7 @@ APM ships 5+ reusable first-party skills that follow SKILL.md format. You could 
 ```
 
 **Pros:**
+
 - Follows your existing curation model (referenced, not vendored).
 - No duplication of effort — upstream maintains the source.
 - Leverages skills.sh CLI's existing `apm install` compatibility.
@@ -132,6 +140,7 @@ APM ships 5+ reusable first-party skills that follow SKILL.md format. You could 
 - Comes with eval fixtures showing quality improvements.
 
 **Cons:**
+
 - APM's transitive dependency model is complex (shepherd-driver composes apm-review-panel, etc.). Your sync script would need to handle multi-level paths.
 - APM's skills are **domain-specific** (issue/PR automation) — less breadth than Cloudflare's.
 - Upstream moving fast (v0.10.0 currently) — breakage risk is higher than stable repos.
@@ -143,6 +152,7 @@ APM ships 5+ reusable first-party skills that follow SKILL.md format. You could 
 AgentRC ships 4 built-in skills for instruction generation. All are in `plugin/skills/` with SKILL.md frontmatter:
 
 **Entry in `third-party/skills.json`:**
+
 ```json
 {
   "repo": "microsoft/agentrc",
@@ -174,6 +184,7 @@ AgentRC ships 4 built-in skills for instruction generation. All are in `plugin/s
 ```
 
 **Pros:**
+
 - All 4 skills are **cohesive** (form a workflow: hub → details).
 - No transitive complexity (each is self-contained).
 - SKILL.md frontmatter is clean and lightweight.
@@ -181,6 +192,7 @@ AgentRC ships 4 built-in skills for instruction generation. All are in `plugin/s
 - Smaller repo surface → lower maintenance burden.
 
 **Cons:**
+
 - **Narrower scope**: instruction generation only. Not as broadly applicable as APM or Cloudflare.
 - **Young project** (experimental; breaking changes expected per README).
 - Depends on Copilot SDK (`github/copilot-sdk`) — adds a dependency.
@@ -192,7 +204,8 @@ AgentRC ships 4 built-in skills for instruction generation. All are in `plugin/s
 Rather than curating skills, document how to use APM and agentrc **alongside** your skills:
 
 **New file: `docs/integrations/apm-agentrc-workflow.md`**
-```markdown
+
+````markdown
 # Using your skills with APM and AgentRC
 
 ## The Workflow
@@ -239,14 +252,16 @@ Then:
 apm install
 # Installs skills from simonsteiner/skills + your team's shared context
 ```
-```
+````
 
 **Pros:**
+
 - Low coupling — each tool owns its domain.
 - No maintenance burden (tools are external).
 - Positions skills as **part of a larger ecosystem** rather than competing with APM.
 
 **Cons:**
+
 - No integration (just documentation).
 - Users need to understand three tools instead of one.
 
@@ -256,7 +271,7 @@ apm install
 
 Create a skill that wraps or orchestrates APM/agentrc workflow:
 
-```
+```text
 skills/engineering/repo-readiness-checkpoint/
 ├── SKILL.md                 # Invokes agentrc + apm + your review skills
 ├── assets/agentrc-config.json
@@ -265,10 +280,12 @@ skills/engineering/repo-readiness-checkpoint/
 ```
 
 **Pros:**
+
 - Makes repo preparation **first-class** in your workflow.
 - Users have one entry point instead of juggling multiple tools.
 
 **Cons:**
+
 - **High maintenance cost** — you're wrapping external tools; upstream changes break you.
 - Couples your skills to APM/agentrc versions.
 - Only worthwhile if you have strong opinions about *how* agentrc/apm should run.
@@ -283,6 +300,7 @@ skills/engineering/repo-readiness-checkpoint/
 2. **Add a companion integration guide** in `docs/integrations/apm-agentrc-workflow.md` explaining how to use APM + agentrc to prepare a repo, then install your skills.
 
 This gives you:
+
 - Immediate value from APM's orchestration skills.
 - Clear positioning in a broader ecosystem (you're not competing with APM; you're complementary).
 - A documented workflow that helps users understand the full picture.
@@ -297,7 +315,7 @@ This gives you:
 
 Skills are in `packages/` and `.agents/skills/`. The sync script needs to handle:
 
-```
+```text
 microsoft/apm/packages/batch-bug-shepherd/
   ├── apm.yml
   ├── SKILL.md
@@ -312,7 +330,7 @@ APM uses `apm.yml` for package metadata and declares transitive dependencies. Th
 
 Skills are flat under `plugin/skills/`:
 
-```
+```text
 microsoft/agentrc/plugin/skills/root-instructions/
   ├── SKILL.md  (with YAML frontmatter)
   └── ... (no other files)
@@ -334,7 +352,7 @@ APM publishes `apm.lock.yaml` for full provenance. AgentRC is version-agnostic (
 
 ### microsoft/apm Structure
 
-```
+```text
 apm/
 ├── apm.yml                         # Root manifest declaring skills
 ├── apm.lock.yaml                   # Lockfile (provenance + hashes)
@@ -362,7 +380,7 @@ Key observation: APM uses **local-path dependencies** (`./packages/...` in apm.y
 
 ### microsoft/agentrc Structure
 
-```
+```text
 agentrc/
 ├── plugin/skills/                  # Built-in skills directory
 │   ├── root-instructions/
@@ -405,9 +423,8 @@ Key observation: Skills are resolved via `getBuiltinSkillsDir()` from the Copilo
 
 ## References
 
-- APM README: https://github.com/microsoft/apm/blob/main/README.md
-- APM Manifesto: https://github.com/microsoft/apm/blob/main/MANIFESTO.md
-- AgentRC README: https://github.com/microsoft/agentrc/blob/main/README.md
-- AgentRC Concepts: https://github.com/microsoft/agentrc/blob/main/docs/concepts.md
+- APM README: <https://github.com/microsoft/apm/blob/main/README.md>
+- APM Manifesto: <https://github.com/microsoft/apm/blob/main/MANIFESTO.md>
+- AgentRC README: <https://github.com/microsoft/agentrc/blob/main/README.md>
+- AgentRC Concepts: <https://github.com/microsoft/agentrc/blob/main/docs/concepts.md>
 - Open standards: AGENTS.md, Agent Skills (agentskills.io), MCP
-

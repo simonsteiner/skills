@@ -1,0 +1,26 @@
+# Ref: https://rumdl.dev/ — the Markdown linter lefthook and the VS Code
+# extension (rvben.rumdl) both read this file.
+
+[global]
+# The docs and skills keep long prose, tables and links on one line. A blank
+# line inside a link list splits it into groups on purpose (MD076).
+disable = ["MD013", "MD076"]
+exclude = [
+    # Installed packages, not hand-written.
+    "node_modules/**",
+    # Written by changesets from .changeset/*.md, not by hand.
+    "CHANGELOG.md",
+]
+
+# The arch-review reports collapse sections and break table cells for GitHub.
+[MD033]
+allowed-elements = ["details", "summary", "br"]
+
+[per-file-ignores]
+# Agent instructions, not a document: no title heading.
+"CLAUDE.md" = ["MD041"]
+# Front matter and a prose note; changesets copies the note into CHANGELOG.md.
+".changeset/*.md" = ["MD041"]
+# Templates are copied out verbatim: `<placeholder>` text and links to the
+# headings the filled-in report will have.
+"**/*template*.md" = ["MD033", "MD051"]

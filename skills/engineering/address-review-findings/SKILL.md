@@ -111,9 +111,10 @@ The report is the whole of the user's involvement, so it carries what a checkpoi
 
 > **PR #12 · `src/export.ts:40` — needs a decision**
 > The reviewer wants PDF links to expire after 24h; today they never expire.
+>
 > - **A.** Expire after 24h — matches the reviewer; breaks links already sent by email.
 > - **B.** Keep permanent links — current behaviour; the thread stays open.
-> - **Recommended: A**, with a one-off note to existing users. [thread](url)
+> - **Recommended: A**, with a one-off note to existing users. [thread](https://github.com/acme/app/pull/12#discussion_r1)
 
 A line like "one thread is waiting on your decision" with no question in it is the report failing at its one job.
 

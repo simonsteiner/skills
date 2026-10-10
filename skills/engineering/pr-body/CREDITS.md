@@ -2,8 +2,8 @@
 
 Adapted from two MIT-licensed skills:
 
-- `pr` from https://github.com/mattpocock/skills — the Summary / Evidence / Merge Danger skeleton, the catalogue of views (pseudocode, call tree, component tree, file tree, Mermaid, topic-shaped diffs), and evidence tiers.
-- `show-me` from https://github.com/humanlayer/skills (by Dex Horthy), which `pr` itself credits as its source.
+- `pr` from <https://github.com/mattpocock/skills> — the Summary / Evidence / Merge Danger skeleton, the catalogue of views (pseudocode, call tree, component tree, file tree, Mermaid, topic-shaped diffs), and evidence tiers.
+- `show-me` from <https://github.com/humanlayer/skills> (by Dex Horthy), which `pr` itself credits as its source.
 
 Both licenses follow. They share the same terms; only the copyright line differs.
 

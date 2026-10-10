@@ -16,17 +16,17 @@ Worked examples for the `conventional-commit` skill. Spec: <https://www.conventi
 
 ## Feature, with and without a scope
 
-```
+```text
 feat: add read-only SQL console at /debug-sql
 ```
 
-```
+```text
 feat(auth): add Better Auth email/password login behind a session wall
 ```
 
 ## Fix with a "why" body
 
-```
+```text
 fix: gate walk override on title keywords, never speed alone
 
 a fast walk without a multisport title keyword was being reclassified as Paragliding. Require a keyword match; speed only promotes when paired with a speed-gated keyword
@@ -34,7 +34,7 @@ a fast walk without a multisport title keyword was being reclassified as Paragli
 
 ## Refactor
 
-```
+```text
 refactor: split queries.ts grab-bag into domain query modules
 
 move per-domain SQL into queries/{activities,wellness,load,...}. No behaviour change; callers updated to the new import paths
@@ -42,7 +42,7 @@ move per-domain SQL into queries/{activities,wellness,load,...}. No behaviour ch
 
 ## Fix that closes an issue
 
-```
+```text
 fix(api): handle 429 from intervals.icu with backoff
 
 retry with exponential backoff up to 3 attempts before surfacing a 502
@@ -54,7 +54,7 @@ Fixes #234
 
 With `!` and no footer, the description doubles as the breaking-change description.
 
-```
+```text
 feat(api)!: remove deprecated /login endpoint
 ```
 
@@ -62,7 +62,7 @@ feat(api)!: remove deprecated /login endpoint
 
 `BREAKING-CHANGE:` is accepted as a synonym.
 
-```
+```text
 feat(api): redesign the sync payload structure
 
 BREAKING CHANGE: /api/sync now returns { type, action, payload } instead of { event, data }. Update clients to read the nested shape before upgrading
@@ -70,7 +70,7 @@ BREAKING CHANGE: /api/sync now returns { type, action, payload } instead of { ev
 
 ## Revert
 
-```
+```text
 revert: feat: add export feature
 
 This reverts commit 1234567890abcdef.
@@ -82,7 +82,7 @@ The body here is git's own revert line; keep it as git wrote it.
 
 Issue refs first, then trailers, one per line:
 
-```
+```text
 fix(auth): resolve concurrent login race condition
 
 add a row-level lock so simultaneous logins for one user can't both create a session
@@ -104,10 +104,10 @@ Co-authored-by: Jane Doe <jane@example.com>
 
 A diff mixing a bug fix and an unrelated dependency bump is two commits, each staged by path — the fix first if the bump doesn't depend on it:
 
-```
+```text
 fix(views): correct same-day filter using date(start_date)
 ```
 
-```
+```text
 chore(deps): bump astro to 6.3.4
 ```

@@ -2,8 +2,8 @@
 
 Adapted from two MIT-licensed skills:
 
-- `improve-codebase-architecture` from https://github.com/mattpocock/skills — the scan questions, YAGNI scoping, candidate format, strength scale, the HTML report's layout, diagram patterns and tone rules, carried over into the Markdown template (`report-template.md`, `REPORT.md`), and the vocabulary rules.
-- `thermo-nuclear-code-quality-review` from https://github.com/cursor/plugins (`cursor-team-kit`) — the maintainability lens and the approval bar.
+- `improve-codebase-architecture` from <https://github.com/mattpocock/skills> — the scan questions, YAGNI scoping, candidate format, strength scale, the HTML report's layout, diagram patterns and tone rules, carried over into the Markdown template (`report-template.md`, `REPORT.md`), and the vocabulary rules.
+- `thermo-nuclear-code-quality-review` from <https://github.com/cursor/plugins> (`cursor-team-kit`) — the maintainability lens and the approval bar.
 
 Both licenses follow. They share the same terms; only the copyright line differs.
 

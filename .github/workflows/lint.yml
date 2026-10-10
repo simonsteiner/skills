@@ -19,3 +19,7 @@ jobs:
 
       - name: Shellcheck
         run: shellcheck scripts/*.sh skills/*/*/scripts/*.sh
+
+      # Same version as package.json pins; config in .rumdl.toml.
+      - name: Markdown
+        run: npx --yes rumdl@0.2.79 check .

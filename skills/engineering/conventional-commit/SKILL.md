@@ -6,7 +6,7 @@ description: >
 
 # Conventional Commit
 
-Turn the current worktree into **Conventional Commits v1.0.0**-compliant commits (staged changes; fall back to unstaged tracked changes if nothing is staged). Spec: https://www.conventionalcommits.org/en/v1.0.0/
+Turn the current worktree into **Conventional Commits v1.0.0**-compliant commits (staged changes; fall back to unstaged tracked changes if nothing is staged). Spec: <https://www.conventionalcommits.org/en/v1.0.0/>
 
 **Pick the mode from what was asked:**
 
@@ -77,7 +77,7 @@ If the worktree mixes logically unrelated changes, plan one commit per concern �
 
 **Breaking** — a public contract or behaviour callers rely on changed, on any type: mark it with `!` before the colon, a `BREAKING CHANGE:` footer giving the break and the migration path, or both.
 
-```
+```text
 feat(api)!: require client_id on the auth endpoint
 
 BREAKING CHANGE: /api/auth now rejects requests without client_id. Add client_id to every auth call before upgrading
@@ -132,7 +132,7 @@ If a body came out hard-wrapped, `git commit --amend -F -` it before pushing —
 
 Output the full message in a single code block so it's copy-pasteable:
 
-```
+```text
 feat(scope): short imperative description
 
 - what changed and why
