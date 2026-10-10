@@ -20,7 +20,8 @@ Review what nobody has looked at, leave the findings where the author will see t
 - GitHub rejects the **whole** review if one inline comment's line is outside the diff (HTTP 422). Validate lines before posting.
 - The review posts under the user's account, so it can only be a plain `COMMENT`; a PR's author can't request changes on their own PR.
 - A stack layer's diff is against its **base branch**, not the default branch — otherwise every layer repeats the ones below it.
-- The main checkout may be switched by another session mid-run. Read a PR's files with `git show origin/<branch>:<path>`, or from a worktree you created, never from a checkout you didn't pin.
+- The main checkout may be switched by another session mid-run, so never switch it: read a PR from `gh pr diff`, `git show origin/<head>:<path>`, or a worktree you created (Step 2).
+- Delete only paths you created and hold in a variable (`git worktree remove "$wt"`). Never glob shared locations like `/tmp/tmp.*`: parallel reviewers and other sessions keep their scratch copies there.
 - A command a guard or sandbox refuses stays refused. Don't re-run it through a script file or another wrapper; split it as the error asks, or skip it and say so in the report.
 
 ---
@@ -41,12 +42,16 @@ The set is one PR or many. A PR whose `baseRefName` is another open PR's `headRe
 
 ## Step 2 — Review each PR
 
-Per PR (stacks bottom-up, independent PRs one at a time): `gh pr checkout <n>` (tree must be clean), then read its diff against its base:
+Per PR (stacks bottom-up, independent PRs one at a time), read its diff against its base, and check out its head in a worktree of its own for reading whole files and running checks:
 
 ```bash
-gh pr view <n> --json title,body,baseRefName,closingIssuesReferences
+git fetch --prune origin
+gh pr view <n> --json title,body,baseRefName,headRefName,closingIssuesReferences
 gh pr diff <n>
+wt="$(mktemp -d)/pr-<n>"; git worktree add --quiet --detach "$wt" "origin/<headRefName>"
 ```
+
+Work in `$wt` until the review is posted, then `git worktree remove --force "$wt"`. Fixes happen in Step 4, on the branch itself.
 
 Local mode: pin `git diff <fixed-point>...HEAD`, confirm the ref resolves and the diff isn't empty before anything else.
 
@@ -54,7 +59,7 @@ Read the changed files whole, run the repo's checks — tests, lint, type check,
 
 Don't regenerate committed artifacts or re-run data pipelines to check outputs; a claim only a re-run could verify goes in the summary as not checked.
 
-Several PRs may be reviewed in parallel by sub-agents, each in its own worktree, told to return findings only. Verifying, posting and fixing stay with you.
+Several PRs may be reviewed in parallel by sub-agents. Create each one's worktree yourself and pass the path; tell it to return findings only, edit nothing, and delete nothing — including its worktree, which you remove. Verifying, posting and fixing stay with you.
 
 Spec source, first match: the PR's linked issues and body → a path the user gave → a file under `docs/`, `specs/` or `.scratch/` matching the branch. None found → skip the Spec axis and say so in the summary.
 

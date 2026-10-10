@@ -23,7 +23,15 @@ No PR named → the one for the current branch. "The open PRs", a list of number
 gh pr list --state open --author @me --json number,title,headRefName,baseRefName,isDraft
 ```
 
-A PR whose base is another PR's head branch is **stacked** on it. Order the set bottom-up — base first — and run Steps 1–4 once per PR in that order, checking each out before touching its code (`gh pr checkout <n>`; the tree must be clean between PRs, which it is once Step 4 has pushed). A fix made low in the stack is still missing from every PR above it until Step 4 carries it up.
+A PR whose base is another PR's head branch is **stacked** on it. Order the set bottom-up — base first — and run Steps 1–4 once per PR in that order. A fix made low in the stack is still missing from every PR above it until Step 4 carries it up.
+
+Work on each PR's branch in a worktree of its own, never by switching the main checkout — another session may be using it. When the current checkout is already on the PR's branch and clean, use it as is. Otherwise:
+
+```bash
+wt="$(mktemp -d)/pr-<n>"; git worktree add --quiet --detach "$wt"; (cd "$wt" && gh pr checkout <n>)
+```
+
+`gh pr checkout` inside the worktree creates or fast-forwards the branch and sets up pushing, forks included. If it fails because the branch is checked out in another worktree, work there instead (`git worktree list`). Run every command for that PR from its worktree, and `git worktree remove "$wt"` once the stack's fixes are carried up. Delete only the worktrees you created.
 
 ---
 
@@ -97,8 +105,10 @@ A reply says what changed and where — the commit SHA or the new symbol name �
 **In a stack, carry the fixes up** before moving to the next PR. Merge each branch into the one stacked on it, bottom-up, and push — merge, not rebase, so reviewers of the upper PRs don't lose their place:
 
 ```bash
-git switch <upper-head> && git merge --no-edit <lower-head> && git push
+cd "<upper worktree>" && git merge --no-edit <lower-head> && git push
 ```
+
+Worktrees share branches, so `<lower-head>` already holds the commits made in the lower layer's worktree.
 
 A conflict here is the upper PR's code meeting the fix: resolve it on the upper branch, keeping both intents, and run the checks again.
 
