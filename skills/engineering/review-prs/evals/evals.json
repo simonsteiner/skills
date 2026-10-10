@@ -20,6 +20,7 @@
         "Posts the bug once, on #10, and does not repeat it on #11 or #12",
         "Posts each review through scripts/post-review.sh, not a hand-built gh api call",
         "Fixes the layers one at a time, #10 first, never in parallel",
+        "Reads and fixes each PR in a worktree it created, never switching the main checkout, and removes only those worktrees afterwards",
         "Ends with a ready-to-merge verdict for the stack that notes #11 and #12 still depend on unmerged branches"
       ]
     },

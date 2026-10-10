@@ -1,6 +1,6 @@
 """Tests for skills/engineering/review-prs/scripts/post-review.sh, through a fake gh.
 
-    python3 -m unittest discover -s tests
+    python3 -m unittest discover -s tests -t .
 """
 
 import json
@@ -8,9 +8,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from fake_gh import FakeGh
+from .fake_gh import FakeGh
 
-SCRIPT = Path(__file__).resolve().parent.parent / "skills/engineering/review-prs/scripts/post-review.sh"
+SCRIPT = Path(__file__).resolve().parents[2] / "skills/engineering/review-prs/scripts/post-review.sh"
 REVIEWS = "repos/{owner}/{repo}/pulls/7/reviews"
 
 # Line numbers per hunk:

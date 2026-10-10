@@ -1,5 +1,6 @@
 ---
 name: address-review-findings
+compatibility: Requires git and an authenticated gh CLI.
 description: >
   Works through the review feedback on GitHub pull requests — one PR, several, or a stack — pulling the unresolved threads, fixing what's real, then replying and resolving. Use when the user wants to address review comments or PR feedback, respond to a reviewer, resolve review threads or conversations, asks what's left on the PR(s), or says the review came back.
 ---
@@ -19,24 +20,52 @@ The feedback lives on GitHub, so `gh` must be authenticated (`gh auth status`). 
 No PR named → the one for the current branch. "The open PRs", a list of numbers, or "the stack" → several. Map them first:
 
 ```bash
-gh pr list --state open --author @me --json number,title,headRefName,baseRefName,isDraft
+gh pr list --state open --author @me --json number,title,headRefName,headRefOid,baseRefName,isDraft,isCrossRepository
 ```
 
-A PR whose base is another PR's head branch is **stacked** on it. Order the set bottom-up — base first — and run Steps 1–4 once per PR in that order, checking each out before touching its code (`gh pr checkout <n>`; the tree must be clean between PRs, which it is once Step 4 has pushed). A fix made low in the stack is still missing from every PR above it until Step 4 carries it up.
+A PR whose base is another PR's head branch is **stacked** on it. Order the set bottom-up — base first — and run Steps 1–4 once per PR in that order. A fix made low in the stack is still missing from every PR above it until Step 4 carries it up.
+
+Never switch the main checkout — another session may be using it. When the current checkout is already on the PR's branch and clean, work there. Otherwise give the PR a detached worktree at its head, which works even when the branch is checked out in someone else's worktree:
+
+```bash
+git fetch --quiet --prune origin && git fetch --quiet origin "pull/<n>/head"   # brings a fork's head too
+tmp="$(mktemp -d)"; git worktree add --quiet --detach "$tmp/pr-<n>" <headRefOid> && echo "$tmp/pr-<n>"
+```
+
+Shell variables don't survive between tool calls, so write the printed path into every later command literally, never `$wt`: an empty variable makes `cd "$wt"` a silent no-op, and the push that follows sends the main checkout's HEAD. Run every command for that PR from that path, and push with `git push origin HEAD:<headRefName>` (a fork's PR, `isCrossRepository`, pushes to the fork's URL instead, which needs "allow edits by maintainers"). A rejected push means the branch moved: `git fetch origin && git merge --no-edit origin/<headRefName>` (a fork's PR has no `origin/<headRefName>`: `git fetch origin "pull/<n>/head" && git merge --no-edit FETCH_HEAD`), rerun the checks, push again. Once the stack's fixes are carried up, `git worktree remove --force <path> && rmdir <its parent>`.
+
+A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data). Install or copy what a check needs — never symlink it in, or the link gets committed — or name the check as not run. A running dev server serves the main checkout, not the worktree.
+
+- **Never `git stash`.** The stash is shared by every worktree; a pop can take another session's work.
+- **Delete only exact paths you created** (`mktemp` for scratch files too). Never by pattern: not `rm -rf /tmp/tmp.*`, not a loop over `git worktree list` matching a prefix.
+- **Don't pipe a command whose exit status matters — `git`, `gh`, this skill's scripts — into `| tail`, `| head` or `| wc -l`.** The pipe reports the last command's status, so a failure reads as success or as "0 threads". Capture first, then trim or count: `out="$(<command>)" && printf '%s\n' "$out" | wc -l`.
+- **Commits run the repo's hooks**, and tests a hook runs inherit `GIT_DIR` and `GIT_INDEX_FILE`; a test that runs `git` can then act on this repo instead of its fixture. Never skip hooks with `--no-verify`. Push only in the same command as the commit and these checks, so a failed commit, an extra commit, or a bare repo stops the push instead of printing a warning above it:
+
+  ```bash
+  git commit -F - <<'EOF' && test "$(git config core.bare)" = false && test "$(git rev-list --count <start>..HEAD)" = <commits you made> && git push origin HEAD:<headRefName>
+  …
+  EOF
+  ```
+
+  `<start>` is the PR's head before your work: `<headRefOid>`, or the head before a carry-up merge.
+- **When a PR under fix changes this skill**, the installed skill may be a link into that repo, so its scripts change as fixes land. Copy them first and run them from the printed path: `d="$(mktemp -d)" && cp -r <skill-dir>/scripts "$d" && echo "$d/scripts"`; delete that folder with the worktrees.
+- **Never rewrite pushed history**, even to remove commits a run pushed by mistake: undo them with `git revert`, or stop and report what landed. Force-push only when the user asks for it, then fix every reply that cites a dropped SHA.
 
 ---
 
 ## Step 1 — Pull the PR and its unresolved threads
 
 ```bash
-gh pr view --json number,title,url,headRefName,baseRefName,state,reviewDecision,isDraft
-gh pr view --comments   # review summaries and issue comments — the prose around the threads
+gh pr view <n> --json number,title,url,headRefName,baseRefName,state,reviewDecision,isDraft
+gh pr view <n> --comments   # review summaries and issue comments — the prose around the threads
 ```
+
+Always pass `<n>`: a detached worktree has no current branch for `gh` to find the PR from.
 
 Inline threads need GraphQL — the REST endpoint doesn't say whether a thread is resolved. Run this skill's script, which pages through every thread and prints the unresolved ones as one JSON object per line:
 
 ```bash
-scripts/unresolved-threads.sh [<pr>]   # default: the current branch's PR
+<skill-dir>/scripts/unresolved-threads.sh <n>
 ```
 
 - `id` is the thread ID — it's what replies and resolutions attach to. Keep it with each finding.
@@ -84,7 +113,7 @@ These post to a PR other people are watching, and a reply can't be unsent — so
 Push the commits, then per thread:
 
 ```bash
-scripts/reply-resolve.sh <thread-id> [--resolve] <<'BODY'
+<skill-dir>/scripts/reply-resolve.sh <thread-id> [--resolve] <<'BODY'
 Fixed in abc1234: the export now …
 BODY
 ```
@@ -96,16 +125,18 @@ A reply says what changed and where — the commit SHA or the new symbol name �
 **In a stack, carry the fixes up** before moving to the next PR. Merge each branch into the one stacked on it, bottom-up, and push — merge, not rebase, so reviewers of the upper PRs don't lose their place:
 
 ```bash
-git switch <upper-head> && git merge --no-edit <lower-head> && git push
+cd <upper PR's worktree path> && git fetch origin && git merge --no-edit "origin/<lower-head>" && git push origin HEAD:<upper-head>
 ```
 
-A conflict here is the upper PR's code meeting the fix: resolve it on the upper branch, keeping both intents, and run the checks again.
+The upper PR has no worktree yet on its first carry: create it with the Step 0 recipe and reuse it for that PR's own Steps 1–4. Merge the lower layer as pushed (`origin/…`, or `FETCH_HEAD` after `git fetch origin "pull/<lower-n>/head"` when it's a fork's PR), not a local branch another worktree may hold at an older commit.
+
+A conflict here is the upper PR's code meeting the fix: resolve it on the upper branch by editing the conflicted files, keeping both intents — never `git checkout <rev> -- <path>`, which silently drops one side — commit the merge on its own, and run the checks again.
 
 ---
 
 ## Step 5 — Report
 
-The report is the whole of the user's involvement, so it carries what a checkpoint would have: per PR, one line per thread — reviewer, file, verdict, and the commit or the reason it's still open — then what was left unaddressed and why. Link the pushed commits so any verdict can be overruled from the diff. Name any PR that had no review at all.
+The report is the whole of the user's involvement, so it carries what a checkpoint would have: per PR, one line per thread — reviewer, file, verdict, and the commit or the reason it's still open — then what was left unaddressed and why. Link the pushed commits so any verdict can be overruled from the diff. Name any PR that had no review at all. Before reporting, `git worktree list` shows none of the worktrees you created.
 
 **Every *needs a decision* and *disagree* thread gets spelled out in the report**, not just pointed at — the user should be able to decide without opening GitHub:
 

@@ -45,13 +45,10 @@ git rev-parse --abbrev-ref HEAD
 
 ## Step 2 — Analyse the changes
 
-Before writing, silently answer:
+Before writing, settle two things:
 
-1. **What changed?** — files touched, additions/removals, patterns.
-2. **Why?** — infer intent from the code, file names, branch, and recent log.
-3. **Primary concern?** — if many things changed, pick the single dominant one.
-4. **Scope?** — which module/subsystem is affected.
-5. **Breaking?** — does this change a public contract or behaviour callers rely on?
+- **Primary concern** — infer intent from the code, file names, branch, and recent log; if many things changed, pick the single dominant one.
+- **Breaking?** — does this change a public contract or behaviour callers rely on?
 
 If the worktree mixes logically unrelated changes, plan one commit per concern — in commit mode that's what gets committed (Step 4), in message-only mode it's a message for each. Each commit should be atomic and self-consistent. "Commit in logical chunks" asks for exactly this; a single commit for everything is the wrong answer to it.
 
@@ -147,8 +144,6 @@ For a planned split, one code block per commit, in commit order, each with the p
 
 ## Rules of thumb
 
-- Specific beats vague: `fix(parser): handle empty input in tokenise()` over `fix: bug`.
-- Never invent changes not present in the diff.
 - For very large diffs (>500 lines), summarise by file/module, not line by line.
 - One logical change per commit; never commit known-broken code.
 - The no-hard-wrap rule is the one most often broken by habit. Check the body before committing, not after pushing.

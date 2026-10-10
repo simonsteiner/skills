@@ -1,6 +1,6 @@
 """Tests for dev_links.py, against a throwaway repo and home directory.
 
-    python3 -m unittest discover -s scripts
+    python3 -m unittest discover -s tests -t .
 """
 
 import os
@@ -8,9 +8,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from dev_links import LinkError, check, link
-from skill_inventory import inventory
-from third_party import Home
+from tooling.dev_links import LinkError, check, link
+from tooling.skill_inventory import inventory
+from tooling.third_party import Home
 
 
 class DevLinksTest(unittest.TestCase):

@@ -26,6 +26,8 @@ The goal was a small, owned repo: keep the structure and tooling that are useful
 - `docs/adr/` and `.out-of-scope/` are kept as (otherwise empty) folders, each with a `README.md` documenting what belongs there and keeping the directory tracked in git.
 - Kept `scripts/link-skills.sh` but rewrote it to mirror skills.sh's layout (symlink into the `~/.agents/skills` store, then a relative per-agent symlink into `~/.claude/skills`). It's the dev-mode equivalent of `npx skills add`, so live editing and a published install are interchangeable instead of double-linking the same skill.
 
+> **Note (2026-10-10):** `CLAUDE.md` has since been renamed `AGENTS.md` ([#24](https://github.com/simonsteiner/skills/pull/24)), and `scripts/link-skills.sh` ported to `scripts/link-skills.py` ([#21](https://github.com/simonsteiner/skills/pull/21)). The decisions above stand; only the paths moved.
+
 ## Consequences
 
 - **Upgrades from upstream are now manual and intentional.** Picking up a future improvement from `mattpocock/skills` means deliberately copying it, not merging — which is the point.

@@ -14,9 +14,9 @@ skill, pick one: dev-link OR skills.sh, not both.
 import sys
 from pathlib import Path
 
-import dev_links
-from skill_inventory import REPO, inventory
-from third_party import Home
+from tooling import dev_links
+from tooling.skill_inventory import REPO, inventory
+from tooling.third_party import Home
 
 USAGE = """\
 Usage: scripts/link-skills.py [--check]

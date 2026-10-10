@@ -45,7 +45,7 @@ Call the Skill tool with "codebase-design" before anything else. Use its vocabul
 
 ## Step 2 — Write the report
 
-Copy [report-template.md](report-template.md) to `docs/arch-review/YYYY-MM-DD-<slug>.md` and fill it in following [REPORT.md](REPORT.md): status table, friction map, one card per candidate with a before/after diagram, smaller findings, recommendation. Add it to the top of `docs/arch-review/README.md` (create the index if it's missing).
+Copy [assets/report-template.md](assets/report-template.md) to `docs/arch-review/YYYY-MM-DD-<slug>.md` and fill it in following [REPORT.md](REPORT.md): status table, friction map, one card per candidate with a before/after diagram, smaller findings, recommendation. Add it to the top of `docs/arch-review/README.md` (create the index if it's missing).
 
 - **Candidates** (`C1…`) are deepenings, each with Files, Problem, Solution, Wins, a before/after diagram, strength (`Strong` / `Worth exploring` / `Speculative`), dependency category, and `live defect` when it hides a bug you reproduced.
 - **Smaller findings** (`S1…`) are local maintainability fixes from the second lens — two sentences each.

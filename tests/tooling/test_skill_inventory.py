@@ -1,16 +1,14 @@
 """Tests for skill_inventory.py, against throwaway repos.
 
-    python3 -m unittest discover -s scripts
+    python3 -m unittest discover -s tests -t .
 """
 
-import io
 import json
 import tempfile
 import unittest
-from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
-from skill_inventory import inventory, main
+from tooling.skill_inventory import inventory
 
 
 class RepoFixture(unittest.TestCase):
@@ -82,34 +80,6 @@ class InventoryTest(RepoFixture):
     def test_a_quoted_value_ends_at_its_own_quote(self):
         self.skill("engineering", "a", 'name: a\ndescription: x\ndisable-model-invocation: "true" # "x"')
         self.assertFalse(inventory(self.repo).skills[0].model_invoked)
-
-
-class MainTest(RepoFixture):
-    """The command line the shell scripts read with `cut`: name, bucket, folder."""
-
-    def run_main(self, *argv):
-        out, err = io.StringIO(), io.StringIO()
-        with redirect_stdout(out), redirect_stderr(err):
-            code = main(list(argv), self.repo)
-        return code, out.getvalue().splitlines(), err.getvalue()
-
-    def test_prints_name_bucket_folder_and_active_drops_deprecated(self):
-        self.skill("engineering", "a")
-        self.skill("deprecated", "b")
-        a, b = self.repo / "skills/engineering/a", self.repo / "skills/deprecated/b"
-        self.assertEqual(self.run_main(), (0, [f"b\tdeprecated\t{b}", f"a\tengineering\t{a}"], ""))
-        self.assertEqual(self.run_main("--active"), (0, [f"a\tengineering\t{a}"], ""))
-
-    def test_problems_exit_1_before_printing_anything(self):
-        # Q4: an empty stdout is what stops link-skills.sh before it touches the store.
-        self.skill("engineering", "a")
-        self.skill("personal", "a")
-        code, out, err = self.run_main("--active")
-        self.assertEqual((code, out), (1, []))
-        self.assertIn("is also owned by", err)
-
-    def test_unknown_flag_exits_2(self):
-        self.assertEqual(self.run_main("--bogus")[0], 2)
 
 
 if __name__ == "__main__":

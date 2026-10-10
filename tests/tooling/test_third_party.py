@@ -1,6 +1,6 @@
 """Tests for third_party.py, against a throwaway home directory and manifest.
 
-    python3 -m unittest discover -s scripts
+    python3 -m unittest discover -s tests -t .
 """
 
 import json
@@ -10,8 +10,8 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-import third_party
-from third_party import Home, check, install_commands, link, load, sync
+from tooling import third_party
+from tooling.third_party import Home, check, install_commands, link, load, sync
 
 MANIFEST = {
     "agents": ["claude-code"],
