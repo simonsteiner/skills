@@ -60,7 +60,7 @@ Cloudflare's own skills for the developer platform, all retrieval-first over liv
 
 ## Archived
 
-Curated once, then retired. Each stays in `skills.json` under its source's `archived` list with the reason, so the decision isn't re-litigated; the sync no longer installs it, and `--check` reports an `archived` line while a copy is still installed (`npx skills remove -g <name>` clears it).
+Curated once and then retired, or considered and declined in favour of an owned skill. Each stays in `skills.json` under its source's `archived` list with the reason, so the decision isn't re-litigated; the sync no longer installs it, and `--check` reports an `archived` line while a copy is still installed (`npx skills remove -g <name>` clears it).
 
 - **[improve-codebase-architecture](https://github.com/mattpocock/skills/blob/main/skills/engineering/improve-codebase-architecture/SKILL.md)** (mattpocock/skills) — and
 - **[thermo-nuclear-code-quality-review](https://github.com/cursor/plugins/blob/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review/SKILL.md)** (cursor/plugins) — both replaced by the owned [`arch-review`](../skills/engineering/arch-review/SKILL.md), which combines the first's deepening scan with the second's maintainability rubric and adds the save-and-implement loop neither had. See [ADR 0004](../docs/adr/0004-own-arch-review-instead-of-curating-two-review-skills.md).
