@@ -9,7 +9,8 @@ from pathlib import Path
 
 from .fake_gh import FakeGh
 
-SCRIPTS = sorted((Path(__file__).resolve().parents[2] / "skills").glob("*/*/scripts/*"))
+SCRIPTS = sorted(p for p in (Path(__file__).resolve().parents[2] / "skills").glob("*/*/scripts/*")
+                 if p.is_file() and not p.name.startswith("."))
 
 
 class HelpTest(unittest.TestCase):
