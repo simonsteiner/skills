@@ -20,7 +20,7 @@ The feedback lives on GitHub, so `gh` must be authenticated (`gh auth status`). 
 No PR named → the one for the current branch. "The open PRs", a list of numbers, or "the stack" → several. Map them first:
 
 ```bash
-gh pr list --state open --author @me --json number,title,headRefName,baseRefName,isDraft
+gh pr list --state open --author @me --json number,title,headRefName,headRefOid,baseRefName,isDraft,isCrossRepository
 ```
 
 A PR whose base is another PR's head branch is **stacked** on it. Order the set bottom-up — base first — and run Steps 1–4 once per PR in that order. A fix made low in the stack is still missing from every PR above it until Step 4 carries it up.
@@ -28,16 +28,16 @@ A PR whose base is another PR's head branch is **stacked** on it. Order the set 
 Never switch the main checkout — another session may be using it. When the current checkout is already on the PR's branch and clean, work there. Otherwise give the PR a detached worktree at its head, which works even when the branch is checked out in someone else's worktree:
 
 ```bash
-git fetch --prune origin
-wt="$(mktemp -d)/pr-<n>"; git worktree add --quiet --detach "$wt" "origin/<headRefName>"
+git fetch --quiet --prune origin && git fetch --quiet origin "pull/<n>/head"   # brings a fork's head too
+tmp="$(mktemp -d)"; git worktree add --quiet --detach "$tmp/pr-<n>" <headRefOid> && echo "$tmp/pr-<n>"
 ```
 
-Run every command for that PR from `$wt`, and push with `git push origin HEAD:<headRefName>`. A rejected push means the branch moved: `git fetch origin && git merge --no-edit origin/<headRefName>`, rerun the checks, push again. Once the stack's fixes are carried up, `git worktree remove --force "$wt"`.
+Shell variables don't survive between tool calls, so write the printed path into every later command literally, never `$wt`: an empty variable makes `cd "$wt"` a silent no-op, and the push that follows sends the main checkout's HEAD. Run every command for that PR from that path, and push with `git push origin HEAD:<headRefName>` (a fork's PR, `isCrossRepository`, pushes to the fork's URL instead, which needs "allow edits by maintainers"). A rejected push means the branch moved: `git fetch origin && git merge --no-edit origin/<headRefName>`, rerun the checks, push again. Once the stack's fixes are carried up, `git worktree remove --force <path> && rmdir <its parent>`.
 
 A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data). Install or copy what a check needs — never symlink it in, or the link gets committed — or name the check as not run. A running dev server serves the main checkout, not the worktree.
 
 - **Never `git stash`.** The stash is shared by every worktree; a pop can take another session's work.
-- **Delete only exact paths you created**, held in a variable (`mktemp` for scratch files too). Never by pattern: not `rm -rf /tmp/tmp.*`, not a loop over `git worktree list` matching a prefix.
+- **Delete only exact paths you created** (`mktemp` for scratch files too). Never by pattern: not `rm -rf /tmp/tmp.*`, not a loop over `git worktree list` matching a prefix.
 - **Don't pipe `git` or `gh` into `| tail`.** It hides the exit status; a failed checkout or push looks like success.
 
 ---
@@ -45,14 +45,16 @@ A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data). Instal
 ## Step 1 — Pull the PR and its unresolved threads
 
 ```bash
-gh pr view --json number,title,url,headRefName,baseRefName,state,reviewDecision,isDraft
-gh pr view --comments   # review summaries and issue comments — the prose around the threads
+gh pr view <n> --json number,title,url,headRefName,baseRefName,state,reviewDecision,isDraft
+gh pr view <n> --comments   # review summaries and issue comments — the prose around the threads
 ```
+
+Always pass `<n>`: a detached worktree has no current branch for `gh` to find the PR from.
 
 Inline threads need GraphQL — the REST endpoint doesn't say whether a thread is resolved. Run this skill's script, which pages through every thread and prints the unresolved ones as one JSON object per line:
 
 ```bash
-<skill-dir>/scripts/unresolved-threads.sh [<pr>]   # default: the current branch's PR
+<skill-dir>/scripts/unresolved-threads.sh <n>
 ```
 
 - `id` is the thread ID — it's what replies and resolutions attach to. Keep it with each finding.
@@ -112,10 +114,10 @@ A reply says what changed and where — the commit SHA or the new symbol name �
 **In a stack, carry the fixes up** before moving to the next PR. Merge each branch into the one stacked on it, bottom-up, and push — merge, not rebase, so reviewers of the upper PRs don't lose their place:
 
 ```bash
-cd "<upper worktree>" && git fetch origin && git merge --no-edit "origin/<lower-head>" && git push origin HEAD:<upper-head>
+cd <upper PR's worktree path> && git fetch origin && git merge --no-edit "origin/<lower-head>" && git push origin HEAD:<upper-head>
 ```
 
-Merge the lower layer as pushed (`origin/…`), not a local branch another worktree may hold at an older commit.
+The upper PR has no worktree yet on its first carry: create it with the Step 0 recipe and reuse it for that PR's own Steps 1–4. Merge the lower layer as pushed (`origin/…`), not a local branch another worktree may hold at an older commit.
 
 A conflict here is the upper PR's code meeting the fix: resolve it on the upper branch, keeping both intents, and run the checks again.
 
