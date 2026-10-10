@@ -81,6 +81,11 @@ class Manifest:
         return [k for s in self.sources for k in s.archived]
 
 
+def text(value):
+    """A free-text field: a missing or non-string value reads as empty."""
+    return value if isinstance(value, str) else ""
+
+
 def load(repo=REPO):
     """The manifest under `repo`, or None when it has none."""
     path = repo / "third-party/skills.json"
@@ -92,9 +97,9 @@ def load(repo=REPO):
         agents = tuple(s.get("agents", data.get("agents", [])))
 
         def entries(kind, s=s, agents=agents):
-            return tuple(Curated(k["name"], s["repo"], agents, k.get("why", "")) for k in s.get(kind, []))
+            return tuple(Curated(k["name"], s["repo"], agents, text(k.get("why"))) for k in s.get(kind, []))
 
-        sources.append(Source(s["repo"], s.get("why", ""), agents, entries("skills"), entries("archived")))
+        sources.append(Source(s["repo"], text(s.get("why")), agents, entries("skills"), entries("archived")))
     return Manifest(tuple(sources))
 
 
