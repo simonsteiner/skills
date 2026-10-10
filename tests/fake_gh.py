@@ -4,10 +4,10 @@ The scripts call `gh` by name; FakeGh puts this one first on PATH. It answers fr
 list of rules, logs every call, and fails any call no rule matches, so a test also
 proves what a script did *not* send.
 
-A rule: {"args": [...prefix of argv...], "with": "<arg that must also appear>",
-"stdout": "text" | "json": <value>, "exit": 0, "once": false}. With "json" and a `--jq`
-in argv, the filter runs through the real jq (strings raw, everything else compact JSON, as gh prints them), with the
-caller's environment, so `env.X` filters work as they do under gh.
+A rule: {"args": [...prefix of argv...], "stdout": "text" | "json": <value>, "exit": 0,
+"once": false}. With "json" and a `--jq` in argv, the filter runs through the real jq
+(strings raw, everything else compact JSON, as gh prints them), with the caller's
+environment, so `env.X` filters work as they do under gh.
 """
 
 import json
@@ -54,7 +54,7 @@ def main(argv):
     with open(os.environ["FAKE_GH_LOG"], "a") as log:
         log.write(json.dumps({"args": argv, "stdin": stdin}) + "\n")
     for i, rule in enumerate(rules):
-        if argv[: len(rule["args"])] != rule["args"] or ("with" in rule and rule["with"] not in argv):
+        if argv[: len(rule["args"])] != rule["args"]:
             continue
         if rule.get("once"):
             rules.pop(i)
