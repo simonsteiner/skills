@@ -68,6 +68,13 @@ class InventoryTest(unittest.TestCase):
         self.skill("engineering", "a", "name: a\ndescription: x\ndisable-model-invocation: true")
         self.assertFalse(inventory(self.repo).skills[0].model_invoked)
 
+    def test_trailing_comment_is_not_part_of_the_value(self):
+        # S1 in docs/arch-review/2026-10-08-tooling.md: this read as "true # x", so model-invoked.
+        self.skill("engineering", "a", "name: a\ndescription: 'x # y'\ndisable-model-invocation: true # x")
+        [s] = inventory(self.repo).skills
+        self.assertFalse(s.model_invoked)
+        self.assertEqual(s.fields["description"], "x # y")
+
 
 if __name__ == "__main__":
     unittest.main()

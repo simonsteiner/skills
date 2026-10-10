@@ -25,18 +25,20 @@ https://github.com/mgechev/skills-best-practices):
 
 From CLAUDE.md:
 
-- skills in engineering/, productivity/, misc/ are linked from README.md and listed in
-  .claude-plugin/plugin.json; skills in the other buckets appear in neither
-- no curated third-party skill shares a name with an owned skill
+- disable-model-invocation is `true`, `false`, or absent
+- the listing rules in published_rules.py: README.md, bucket READMEs, plugin.json,
+  and a reason for every curated and archived skill
+- the inventory rules in skill_inventory.py: known buckets, unique names, and no
+  curated skill sharing a name with an owned one
 
     scripts/lint-skills.py      exit 1 and list every problem, or print "ok"
 """
 
-import json
 import re
 import sys
 from pathlib import Path
 
+import published_rules
 from skill_inventory import REPO, inventory
 
 problems = []
@@ -93,6 +95,10 @@ for s in inv.skills:
         problem(skill_md, "no YAML frontmatter")
         continue
 
+    invocation = fields.get("disable-model-invocation")
+    if invocation not in (None, "true", "false"):
+        problem(skill_md, f"disable-model-invocation is {invocation!r}, not true or false")
+
     name = fields.get("name", "")
     if not re.fullmatch(r"[a-z0-9-]{1,64}", name):
         problem(skill_md, f"name {name!r} must be 1-64 lowercase letters, digits, or hyphens")
@@ -133,20 +139,7 @@ for name, s in skills.items():
             problems.append(f'trigger "{phrase}" is in both {seen[key]} and {name}')
         seen.setdefault(key, name)
 
-readme = (REPO / "README.md").read_text()
-plugin = set(json.loads((REPO / ".claude-plugin/plugin.json").read_text())["skills"])
-for name, s in skills.items():
-    path = s.skill_md.relative_to(REPO).as_posix()
-    folder = s.folder.relative_to(REPO).as_posix()
-    linked = f"(./{path})" in readme
-    listed = f"./{folder}" in plugin
-    if s.published:
-        if not linked:
-            problems.append(f"README.md doesn't link {name} to ./{path}")
-        if not listed:
-            problems.append(f".claude-plugin/plugin.json doesn't list ./{folder}")
-    elif linked or listed:
-        problems.append(f"{name} is in {s.bucket}/ but appears in README.md or plugin.json")
+problems.extend(published_rules.check(REPO, inv.skills))
 
 if problems:
     print("\n".join(problems))
