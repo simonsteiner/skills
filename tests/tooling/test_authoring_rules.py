@@ -119,6 +119,8 @@ class AuthoringRulesTest(unittest.TestCase):
             "tilde fence": "~~~bash\nscripts/x.sh\n~~~\n",
             "indented in a list": "1. Run:\n\n   ```bash\n   scripts/x.sh\n   ```\n",
             "inside a 4-backtick wrapper": "````markdown\n```bash\nscripts/x.sh\n```\n````\n",
+            "after a block holding a fence with an info string": ("```text\nexample:\n```bash\n```\n\nprose\n\n"
+                                                                  "```bash\nscripts/x.sh\n```\n"),
         }
         for case, body in flagged.items():
             with self.subTest(case):
