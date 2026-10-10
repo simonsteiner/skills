@@ -5,11 +5,11 @@ set -euo pipefail
 # ones. Run it after pulling, and after adding, moving or removing a skill. All the
 # work happens in the two scripts it calls; --check is passed through to both.
 #
-#   ./scripts/sync-skills.sh          scripts/link-skills.sh, then scripts/sync-third-party.sh
+#   ./scripts/sync-skills.sh          scripts/link-skills.sh, then scripts/sync-third-party.py
 #   ./scripts/sync-skills.sh --check  both scripts' --check
 #
 # Only for the machine where you develop the skills — everywhere else, owned skills
-# come from `npx skills add` and only sync-third-party.sh applies. Run it from a plain
+# come from `npx skills add` and only sync-third-party.py applies. Run it from a plain
 # terminal, and restart your agents afterwards: they read their skill list at startup.
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
@@ -27,5 +27,5 @@ echo "==> owned skills"
 "$REPO/scripts/link-skills.sh" "$@" || status=1
 echo
 echo "==> third-party skills"
-"$REPO/scripts/sync-third-party.sh" "$@" || status=1
+"$REPO/scripts/sync-third-party.py" "$@" || status=1
 exit "$status"

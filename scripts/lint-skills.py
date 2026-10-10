@@ -50,15 +50,15 @@ def problem(path, msg):
 
 def check_guides(skill_md, folder, name, desc, fields, body):
     """Rules from the agentskills.io and mgechev guides."""
-    if re.match(r"(I|You|We)\b", desc) or re.search(r"\b(I can|you can use|I will|I'll)\b", desc, re.I):
+    if re.match(r"(I|You|We)\b", desc) or re.search(r"\b(I can|you can use|I will|I'll)\b", desc, re.IGNORECASE):
         problem(skill_md, "description isn't third person")
-    if fields.get("disable-model-invocation") != "true" and not re.search(r"\bwhen\b", desc, re.I):
+    if fields.get("disable-model-invocation") != "true" and not re.search(r"\bwhen\b", desc, re.IGNORECASE):
         problem(skill_md, "model-invoked description never says when to use it")
 
     files = [f for f in folder.rglob("*") if f.is_file()]
     for f in files:
         rel = f.relative_to(folder)
-        if re.fullmatch(r"(README|CHANGELOG|INSTALL\w*)(\.\w+)?", f.name, re.I):
+        if re.fullmatch(r"(README|CHANGELOG|INSTALL\w*)(\.\w+)?", f.name, re.IGNORECASE):
             problem(f, "documentation file inside a skill folder")
         if len(rel.parts) > 2:
             problem(f, "bundled file is more than one level below the skill folder")
@@ -82,7 +82,7 @@ def check_guides(skill_md, folder, name, desc, fields, body):
     text = body + "".join(f.read_text() for f in files if f.suffix == ".md" and f != skill_md)
     if re.search(r"\b(scripts|references|assets)\\\w", text):
         problem(skill_md, "Windows-style path (use forward slashes)")
-    if re.search(r"\b(before|after|until|as of)\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+20\d\d", text, re.I):
+    if re.search(r"\b(before|after|until|as of)\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+20\d\d", text, re.IGNORECASE):
         problem(skill_md, "time-sensitive instruction; move it to an 'old patterns' section")
 
 

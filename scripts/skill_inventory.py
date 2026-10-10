@@ -15,11 +15,12 @@ against it.
 Either form exits 1 and prints the problems to stderr instead when the set has any.
 """
 
-import json
 import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+import third_party
 
 REPO = Path(__file__).resolve().parent.parent
 PUBLISHED = ("engineering", "productivity", "misc")
@@ -44,7 +45,7 @@ def frontmatter(text):
     Enough YAML for these files — plain `key: value` and `key: >` blocks — without a
     dependency. Nested maps (metadata:) are kept as their raw indented text.
     """
-    m = re.match(r"---\n(.*?)\n---\n", text, re.S)
+    m = re.match(r"---\n(.*?)\n---\n", text, re.DOTALL)
     if not m:
         return None, text
     fields, key = {}, None
@@ -106,15 +107,13 @@ def inventory(repo=REPO):
 
     # A curated and an owned skill would fight over one name in the global store, and
     # whichever synced last would silently win (docs/adr/0002).
-    manifest = repo / "third-party/skills.json"
-    if manifest.exists():
-        for source in json.loads(manifest.read_text())["sources"]:
-            for curated in source.get("skills", []):
-                if curated["name"] in seen:
-                    problems.append(
-                        f"curated skill {curated['name']} from {source['repo']} collides with "
-                        f"the owned skill at {seen[curated['name']]}"
-                    )
+    manifest = third_party.load(repo)
+    for curated in manifest.curated if manifest else []:
+        if curated.name in seen:
+            problems.append(
+                f"curated skill {curated.name} from {curated.repo} collides with "
+                f"the owned skill at {seen[curated.name]}"
+            )
     return Inventory(skills, problems)
 
 

@@ -1,0 +1,5 @@
+# Ref: https://docs.astral.sh/ruff/ — lints the Python tooling under scripts/.
+# Run with `uvx ruff@<version> check scripts`; lefthook and CI pin the version.
+
+# The scripts use 3.10 syntax (`X | None`) and nothing newer.
+target-version = "py310"

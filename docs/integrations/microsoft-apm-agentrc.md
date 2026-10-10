@@ -340,7 +340,7 @@ Path resolution is simpler: just `plugin/skills/root-instructions`, `plugin/skil
 
 ### Lockfile & Version Pinning
 
-APM publishes `apm.lock.yaml` for full provenance. AgentRC is version-agnostic (no lockfile). Your sync script (`scripts/sync-third-party.sh`) should:
+APM publishes `apm.lock.yaml` for full provenance. AgentRC is version-agnostic (no lockfile). Your sync script (`scripts/sync-third-party.py`) should:
 
 1. Pin APM to a specific release (not rolling main branch).
 2. Let AgentRC float (or pin to latest release tag).

@@ -14,7 +14,8 @@ lint-skills.py runs check(); test_published_rules.py tests it.
 import json
 import re
 from dataclasses import dataclass
-from pathlib import Path
+
+import third_party
 
 GROUPS = ("User-invoked", "Model-invoked")
 
@@ -32,7 +33,7 @@ def entries(text):
 
     Text inside HTML comments and fenced code blocks is not an entry.
     """
-    text = re.sub(r"<!--.*?-->", lambda m: "\n" * m.group().count("\n"), text, flags=re.S)
+    text = re.sub(r"<!--.*?-->", lambda m: "\n" * m.group().count("\n"), text, flags=re.DOTALL)
     found, group, fenced = [], None, False
     for n, line in enumerate(text.split("\n"), 1):
         if line.startswith("```"):
@@ -94,13 +95,13 @@ def check(repo, skills):
     problems += [f".claude-plugin/plugin.json doesn't list {f}" for f in sorted(folders - plugin)]
     problems += [f".claude-plugin/plugin.json lists {f}, which is no published skill" for f in sorted(plugin - folders)]
 
-    manifest = repo / "third-party/skills.json"
-    if manifest.exists():
-        for source in json.loads(manifest.read_text())["sources"]:
-            if not str(source.get("why", "")).strip():
-                problems.append(f"third-party/skills.json: source {source['repo']} doesn't say why")
-            for kind in ("skills", "archived"):
-                for k in source.get(kind, []):
-                    if not str(k.get("why", "")).strip():
-                        problems.append(f"third-party/skills.json: {kind} entry {k['name']} from {source['repo']} doesn't say why")
+    manifest = third_party.load(repo)
+    for source in manifest.sources if manifest else []:
+        if not source.why.strip():
+            problems.append(f"third-party/skills.json: source {source.repo} doesn't say why")
+        for kind, curated in (("skills", source.skills), ("archived", source.archived)):
+            problems += [
+                f"third-party/skills.json: {kind} entry {k.name} from {source.repo} doesn't say why"
+                for k in curated if not k.why.strip()
+            ]
     return problems
