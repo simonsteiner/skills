@@ -1,4 +1,4 @@
-"""The CLAUDE.md listing rules for owned skills, checked against the files that list them.
+"""The AGENTS.md listing rules for owned skills, checked against the files that list them.
 
 - every published skill (engineering/, productivity/, misc/) has one entry in the
   top-level README.md and one in .claude-plugin/plugin.json; nothing else does

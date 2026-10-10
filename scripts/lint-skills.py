@@ -23,7 +23,7 @@ https://github.com/mgechev/skills-best-practices):
 - bundled Markdown doesn't link to other bundled Markdown (references stay one level deep)
 - no Windows-style paths, no time-sensitive "before <Month> <year>" instructions
 
-From CLAUDE.md:
+From AGENTS.md:
 
 - disable-model-invocation is `true`, `false`, or absent
 - the listing rules in published_rules.py: README.md, bucket READMEs, plugin.json,

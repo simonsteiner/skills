@@ -100,7 +100,7 @@ def inventory(repo=REPO):
         skills.append(skill)
         where = skill_md.relative_to(repo).as_posix()
         if skill.bucket not in PUBLISHED + UNPUBLISHED:
-            problems.append(f"{where}: bucket {skill.bucket!r} is not one of the buckets in CLAUDE.md")
+            problems.append(f"{where}: bucket {skill.bucket!r} is not one of the buckets in AGENTS.md")
         if skill.name in seen:
             problems.append(f"{where}: skill name {skill.name!r} is also owned by {seen[skill.name]}")
         seen.setdefault(skill.name, where)
