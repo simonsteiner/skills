@@ -102,6 +102,16 @@ class AuthoringRulesTest(unittest.TestCase):
         self.assertEqual([p for p in self.problems() if "template" in p],
                          ["skills/engineering/a/a-template.md: output template outside assets/"])
 
+    def test_code_blocks_run_bundled_scripts_by_skill_dir(self):
+        folder = self.skill(body="Run [x](scripts/x.sh) from the repo under review.\n\n```bash\n"
+                                 "scripts/x.sh 7 <<'JSON'\nbash scripts/x.sh\n<skill-dir>/scripts/x.sh 7\n"
+                                 "python3 scripts/other.py\n```\n",
+                            files={"scripts/x.sh": "#!/bin/sh\n# --help\n"})
+        (folder / "scripts/x.sh").chmod(0o755)
+        self.assertEqual([p for p in self.problems() if "skill-dir" in p],
+                         [("skills/engineering/a/SKILL.md: code block runs 'scripts/x.sh'; "
+                           "write <skill-dir>/scripts/x.sh, agents run it from the user's repo")])
+
     def test_bundled_script_rules(self):
         folder = self.skill(body="Run scripts/ok.sh and scripts/bad.py.\n", files={
             "scripts/ok.sh": "#!/usr/bin/env bash\n# --help prints this\n",

@@ -35,7 +35,9 @@ From https://github.com/mgechev/skills-best-practices:
 - every bundled file is mentioned in SKILL.md (an unreferenced file is never read);
   CREDITS.md and evals/ are exempt
 
-From AGENTS.md: disable-model-invocation is `true`, `false`, or absent.
+From AGENTS.md: disable-model-invocation is `true`, `false`, or absent, and a command
+in a code block runs a bundled script as `<skill-dir>/scripts/…`: agents run it from the
+user's repo, where a bare `scripts/…` names that repo's scripts, not the skill's.
 
 lint-skills.py runs check(); tests/tooling/test_authoring_rules.py tests it.
 """
@@ -57,6 +59,8 @@ VAGUE = (
 )
 MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
 UNPINNED = re.compile(r"\b(?:npx|bunx|uvx|pipx run)\s+(?:-{1,2}[\w-]+(?:=\S+)?\s+)*(@?[a-z][\w./-]*(?:[@=]=?\S+)?)")
+FENCED = re.compile(r"^```[^\n]*\n(.*?)^```", re.DOTALL | re.MULTILINE)
+BARE_SCRIPT = re.compile(r"(?<![\w/.>-])(scripts/[\w.-]+)")
 PROMPTS = re.compile(r"\bread\s+(?:-\w+\s+)*-p\b|/dev/tty|\binput\(|\bgetpass\b")
 
 
@@ -162,6 +166,10 @@ def check_skill(s):
         for phrase in VAGUE:
             if phrase in text.lower():
                 problem(md, f'vague instruction "{phrase}"; say what the agent would get wrong instead')
+        for block in FENCED.findall(text):
+            for path in sorted(set(BARE_SCRIPT.findall(block))):
+                if (folder / path).is_file():
+                    problem(md, f"code block runs {path!r}; write <skill-dir>/{path}, agents run it from the user's repo")
         for pkg in UNPINNED.findall(text):
             if not re.search(r".@|==", pkg):
                 problem(md, f"unpinned one-off command for {pkg!r}; pin a version (pkg@1.2.3)")
