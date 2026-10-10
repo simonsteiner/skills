@@ -101,8 +101,8 @@ def link(skills, home, repo, log=print):
 
 
 def replace(path, target):
-    if path.is_symlink():
-        path.unlink()
-    elif path.exists():
+    if path.is_dir() and not path.is_symlink():
         shutil.rmtree(path)
+    elif path.exists() or path.is_symlink():
+        path.unlink()
     path.symlink_to(target)

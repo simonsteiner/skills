@@ -30,7 +30,8 @@ def main(argv):
         print(USAGE)
         return 0
     if argv not in ([], ["--check"]):
-        print(f"error: unknown argument '{argv[0]}'\n{USAGE}", file=sys.stderr)
+        problem = f"expected at most one argument, got: {' '.join(argv)}" if len(argv) > 1 else f"unknown argument '{argv[0]}'"
+        print(f"error: {problem}\n{USAGE}", file=sys.stderr)
         return 2
 
     inv = inventory()

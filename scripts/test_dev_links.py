@@ -49,6 +49,13 @@ class DevLinksTest(unittest.TestCase):
         link(self.skills, self.home, self.repo, self.log.append)
         self.assertTrue((self.store / "a").is_symlink())
 
+    def test_replaces_a_plain_file(self):
+        for d in (self.store, self.claude):
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "a").write_text("stray")
+        link(self.skills, self.home, self.repo, self.log.append)
+        self.assertEqual(self.statuses(), ["ok        a", "ok        b"])
+
     def test_prunes_links_to_skills_that_are_gone_and_nothing_else(self):
         link(self.skills, self.home, self.repo, self.log.append)
         (self.store / "gone").symlink_to(self.repo / "skills/engineering/gone")
