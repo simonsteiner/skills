@@ -11,6 +11,9 @@ jobs:
   changelog:
     name: Apply changesets
     runs-on: ubuntu-latest
+    # `npm ci` installs the lefthook hooks via `prepare`; keep them off the bot's commit.
+    env:
+      LEFTHOOK: 0
     permissions:
       contents: write
     steps:
