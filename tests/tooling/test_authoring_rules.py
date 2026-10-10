@@ -92,9 +92,15 @@ class AuthoringRulesTest(unittest.TestCase):
 
     def test_long_reference_needs_contents_but_skill_md_and_templates_dont(self):
         long = "x\n" * 101
-        self.skill(body=long + "[R](R.md) [t](t-template.md)\n", files={"R.md": long, "t-template.md": long})
+        self.skill(body=long + "[R](R.md) [t](assets/t-template.md)\n", files={"R.md": long, "assets/t-template.md": long})
         self.assertEqual([p for p in self.problems() if "Contents" in p],
                          ["skills/engineering/a/R.md: over 100 lines without a '## Contents' list"])
+
+    def test_templates_sit_in_assets(self):
+        self.skill(body="[a](a-template.md) [b](assets/b-template.md)\n",
+                   files={"a-template.md": "x\n", "assets/b-template.md": "x\n"})
+        self.assertEqual([p for p in self.problems() if "template" in p],
+                         ["skills/engineering/a/a-template.md: output template outside assets/"])
 
     def test_bundled_script_rules(self):
         folder = self.skill(body="Run scripts/ok.sh and scripts/bad.py.\n", files={

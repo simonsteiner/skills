@@ -8,7 +8,8 @@ https://agentskills.io/skill-creation/using-scripts):
   hyphen; matches its folder
 - description: non-empty, at most 1024 chars; compatibility, when present, 1-500 chars
 - SKILL.md body under 500 lines and about 5,000 tokens
-- bundled files sit at most one level below the skill folder (scripts/, references/, …)
+- bundled files sit at most one level below the skill folder (scripts/, references/, …),
+  and output templates (`*template*` files) sit in assets/
 - every relative link in SKILL.md resolves, and bundled Markdown doesn't link to other
   bundled Markdown (references stay one level deep)
 - no vague filler ("handle errors appropriately", "follow best practices"): say what
@@ -128,6 +129,8 @@ def check_skill(s):
             problem(f, "documentation file inside a skill folder")
         if len(rel.parts) > 2:
             problem(f, "bundled file is more than one level below the skill folder")
+        if "template" in f.name and rel.parts[0] != "assets":
+            problem(f, "output template outside assets/")
         if rel.parts[0] == "scripts":
             out.extend(check_script(f))
         if rel.parts[0] == "evals":
