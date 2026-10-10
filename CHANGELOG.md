@@ -1,5 +1,21 @@
 # simonsteiner-skills
 
+## 1.3.0
+
+### Minor Changes
+
+- [#18](https://github.com/simonsteiner/skills/pull/18) [`0a978f8`](https://github.com/simonsteiner/skills/commit/0a978f88caed16177e30cd967d1ef94da79fae07) Thanks [@simonsteiner](https://github.com/simonsteiner)! - `scripts/link-skills.sh` and `scripts/sync-skills.sh` are now `scripts/link-skills.py` and `scripts/sync-skills.py`, with the same flags and the same links. The repo's own tooling is now all Python.
+
+- [#18](https://github.com/simonsteiner/skills/pull/18) [`e23cb5c`](https://github.com/simonsteiner/skills/commit/e23cb5c8e4add5ef6cd3f7bc881c8cbd44fccc5c) Thanks [@simonsteiner](https://github.com/simonsteiner)! - `scripts/sync-third-party.sh` is now `scripts/sync-third-party.py`, with the same `--check` and `--list` modes. A source that fails to install no longer stops the sync: the other sources still install, the universal-agent links are still made, and the failures are listed at the end. `--check` now also exits 1 when a retired skill is still installed or an agent's copy is out of date, not just when a curated skill is missing or comes from the wrong repo; uncurated and unmanaged installs are still only reported. The Python tooling is linted with ruff (`uvx ruff check scripts`), which needs [uv](https://docs.astral.sh/uv/).
+
+### Patch Changes
+
+- [#18](https://github.com/simonsteiner/skills/pull/18) [`15ea3a5`](https://github.com/simonsteiner/skills/commit/15ea3a5d09c7471c24503f501cc63312ce76cfa8) Thanks [@simonsteiner](https://github.com/simonsteiner)! - `scripts/lint-skills.py` now checks every listing rule in CLAUDE.md. It fails when the top-level README, a bucket README or `.claude-plugin/plugin.json` is missing a skill or lists one too many, when an entry sits under the wrong User-invoked or Model-invoked heading, when the README links an unpublished skill anywhere, and when a source, curated or archived skill in `third-party/skills.json` gives no reason. A link inside an HTML comment no longer counts as an entry, and `disable-model-invocation: true # comment` is read as `true`.
+
+- [#18](https://github.com/simonsteiner/skills/pull/18) [`357e7b7`](https://github.com/simonsteiner/skills/commit/357e7b79652d37414448d2f3c987d3fb9936e84a) Thanks [@simonsteiner](https://github.com/simonsteiner)! - The repo's tooling now decides what an owned skill is in one place, `scripts/skill_inventory.py`. Two skills with the same name in different buckets, a skill in an unknown bucket, or an owned skill sharing a name with a curated one now fail `scripts/lint-skills.py` and stop `scripts/link-skills.sh` and `scripts/sync-third-party.sh` before they touch the skill store; a duplicate used to pass lint silently. `scripts/list-skills.sh`, which nothing called, is gone.
+
+- [#18](https://github.com/simonsteiner/skills/pull/18) [`ac0452e`](https://github.com/simonsteiner/skills/commit/ac0452e131b420e311816faeb93f04c8038dbafe) Thanks [@simonsteiner](https://github.com/simonsteiner)! - `review-prs` can now comment on deleted lines. Its `post-review.sh` checked every comment against new-file line numbers only, so a `"side": "LEFT"` comment on a removed line or a deleted file was rejected as outside the diff, while a LEFT comment on a line number that existed only on the new side passed and made GitHub reject the whole review. It also failed comments on files whose path holds a space or a non-ASCII character. Each end of a comment is now checked against its own side, within one hunk.
+
 ## 1.2.0
 
 ### Minor Changes
