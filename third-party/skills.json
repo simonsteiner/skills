@@ -161,6 +161,30 @@
           "why": "Never invoked in chat history (Claude transcripts from 30 Aug, prompt history from May, Codex sessions Aug–Sep 2026). `npx skills find` does the same from a terminal."
         }
       ]
+    },
+    {
+      "repo": "anthropics/skills",
+      "why": "Anthropic's public skill collection. Nothing curated right now; frontend-design is archived below.",
+      "skills": [],
+      "archived": [
+        {
+          "name": "frontend-design",
+          "path": "skills/frontend-design",
+          "why": "Never curated: adapted into the owned frontend-craft skill instead (docs/adr/0007), together with impeccable, so one model-invoked skill answers UI requests rather than two near-duplicates. The same SKILL.md also ships as the frontend-design plugin in anthropics/claude-code."
+        }
+      ]
+    },
+    {
+      "repo": "pbakaus/impeccable",
+      "why": "Paul Bakaus's design toolkit, built on frontend-design. Nothing curated; archived below.",
+      "skills": [],
+      "archived": [
+        {
+          "name": "impeccable",
+          "path": ".agents/skills/impeccable",
+          "why": "Never curated: its guidance and review rubrics are adapted into the owned frontend-craft skill (docs/adr/0007). Through skills.sh it would arrive without its hooks or sub-agents, yet still download and run an unpinned native engine every session and write PRODUCT.md/DESIGN.md into projects. For its detector and live mode on one project, install its Claude Code plugin there instead."
+        }
+      ]
     }
   ]
 }

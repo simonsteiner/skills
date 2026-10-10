@@ -67,6 +67,9 @@ Curated once, then retired. Each stays in `skills.json` under its source's `arch
 
 - **[code-review](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md)** (mattpocock/skills) — replaced by the owned [`review-prs`](../skills/engineering/review-prs/SKILL.md), which keeps its Standards and Spec axes and smell baseline, reviews a local fixed point in its local mode, and adds the GitHub loop. See [ADR 0005](../docs/adr/0005-own-review-prs-instead-of-curating-code-review.md).
 
+- **[frontend-design](https://github.com/anthropics/skills/blob/main/skills/frontend-design/SKILL.md)** (anthropics/skills) — and
+- **[impeccable](https://github.com/pbakaus/impeccable)** (pbakaus/impeccable) — never curated; both adapted into the owned [`frontend-craft`](../skills/engineering/frontend-craft/SKILL.md), which keeps the first's process and voice and the second's modes, quality floor, and review rubrics, without impeccable's engine, hooks, or project files. See [ADR 0007](../docs/adr/0007-own-frontend-craft-instead-of-curating-two-design-skills.md).
+
 Archived in October 2026 because chat history (Claude transcripts from late August, prompt history from May, Codex sessions) never once invoked them:
 
 - **mattpocock/skills:** `grill-me` and `grill-with-docs` — the model-invoked `grilling` fires on "grill" phrases by itself, and `domain-modeling` covers the docs half; `prototype`.
