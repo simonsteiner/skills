@@ -19,7 +19,8 @@ REVIEWS = "repos/{owner}/{repo}/pulls/7/reviews"
 #   new.ts     new 1-2 (added file; no old side)
 #   gone.ts    old 1-2 (deleted file; no new side)
 #   sp ace.ts  line 5 both sides (git ends a header path holding a space with a tab)
-#   ümlaut.ts, ta<TAB>b.ts  line 1 both sides (git C-quotes these, octal for non-ASCII)
+#   ümlaut.ts, ta<TAB>b.ts, x<CR>y.ts, x<LF>y.ts  line 1 both sides (git C-quotes these, octal for non-ASCII)
+#   renamed.ts (from old.ts)  old 10-11, new 10-11
 DIFF = """\
 diff --git a/src/a.ts b/src/a.ts
 index 1111111..2222222 100644
@@ -58,6 +59,28 @@ diff --git a/sp ace.ts b/sp ace.ts
 diff --git "a/\\303\\274mlaut.ts" "b/\\303\\274mlaut.ts"
 --- "a/\\303\\274mlaut.ts"
 +++ "b/\\303\\274mlaut.ts"
+@@ -1 +1 @@
+-old
++new
+diff --git a/old.ts b/renamed.ts
+similarity index 80%
+rename from old.ts
+rename to renamed.ts
+--- a/old.ts
++++ b/renamed.ts
+@@ -10,2 +10,2 @@
+ keep
+-was
++now
+diff --git "a/x\\ny.ts" "b/x\\ny.ts"
+--- "a/x\\ny.ts"
++++ "b/x\\ny.ts"
+@@ -1 +1 @@
+-old
++new
+diff --git "a/x\\ry.ts" "b/x\\ry.ts"
+--- "a/x\\ry.ts"
++++ "b/x\\ry.ts"
 @@ -1 +1 @@
 -old
 +new
@@ -127,7 +150,7 @@ class PostReviewTest(unittest.TestCase):
 
     def test_right_lines_inside_a_hunk_post(self):
         self.assert_posts(comment("src/a.ts", 11, side="RIGHT"), comment("src/a.ts", 52),
-                          comment("src/a.ts", 10, start_line=10, side="RIGHT"), comment("new.ts", 2))
+                          comment("src/a.ts", 11, start_line=10, side="RIGHT"), comment("new.ts", 2))
 
     def test_right_lines_outside_every_hunk_are_listed(self):
         self.assert_outside(self.post(comment("src/a.ts", 13), comment("src/a.ts", 49, side="RIGHT"),
@@ -142,7 +165,20 @@ class PostReviewTest(unittest.TestCase):
         self.assert_posts(comment("src/a.ts", 51))
 
     def test_paths_as_git_writes_them(self):
-        self.assert_posts(comment("sp ace.ts", 5), comment("ümlaut.ts", 1), comment("ta\tb.ts", 1, side="LEFT"))
+        self.assert_posts(comment("sp ace.ts", 5), comment("ümlaut.ts", 1), comment("ta\tb.ts", 1, side="LEFT"),
+                          comment("x\ry.ts", 1))
+
+    def test_a_path_with_a_newline_reads_as_outside_not_as_a_crash(self):
+        result = self.post(comment("x\ny.ts", 1))
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertEqual(self.posted(), [])
+
+    def test_a_renamed_file_is_addressed_by_its_new_path_on_both_sides(self):
+        self.assert_posts(comment("renamed.ts", 11, side="LEFT"),
+                          comment("renamed.ts", 11, start_line=11, start_side="LEFT", side="RIGHT"))
+
+    def test_a_renamed_file_has_no_comments_under_its_old_path(self):
+        self.assert_outside(self.post(comment("old.ts", 11, side="LEFT")), "old.ts:11")
 
     # Old-file lines (side LEFT)
 

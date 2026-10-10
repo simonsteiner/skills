@@ -25,6 +25,8 @@ jq -e '(.body | type == "string" and length > 0) and ((.comments // []) | type =
 
 # Line ranges of every hunk, one "<side> path first last hunk" per line, fields split
 # by \037 (a path may hold a tab): LEFT for old-file lines, RIGHT for new-file lines.
+# A path holding a newline breaks its record in two; jq drops the pieces, so a comment
+# on such a file reads as outside the diff.
 # A "+++ " line is a path only in a file header; inside a hunk it is an added line.
 # Git ends a path holding a space with a tab, and C-quotes one with a tab, quote,
 # backslash or non-ASCII byte ("b/\303\274.ts"); LC_ALL=C keeps \ooo a single byte.
@@ -39,12 +41,13 @@ hunks="$(gh pr diff "$pr" | LC_ALL=C awk '
         if (c != "\\") { out = out c; continue }
         c = substr(s, ++i, 1)
         if (c ~ /[0-7]/) { out = out sprintf("%c", (c * 64) + (substr(s, i + 1, 1) * 8) + substr(s, i + 2, 1)); i += 2 }
-        else out = out (c == "t" ? "\t" : c == "n" ? "\n" : c)
+        else out = out (c in esc ? esc[c] : c)
       }
       s = out
     }
     return substr(s, 3)
   }
+  BEGIN { esc["a"] = "\a"; esc["b"] = "\b"; esc["f"] = "\f"; esc["n"] = "\n"; esc["r"] = "\r"; esc["t"] = "\t"; esc["v"] = "\v" }
   function side(name, p, range,   r, first, count) {
     split(range, r, ","); first = substr(r[1], 2); count = (r[2] == "" ? 1 : r[2])
     if (p != "" && count > 0) printf "%s\037%s\037%d\037%d\037%d\n", name, p, first, first + count - 1, hunk
@@ -52,12 +55,17 @@ hunks="$(gh pr diff "$pr" | LC_ALL=C awk '
   /^diff --git / { header = 1; next }
   header && /^--- / { old = path(substr($0, 5)); next }
   header && /^\+\+\+ / { new = path(substr($0, 5)); next }
-  /^@@ / { header = 0; hunk++; side("LEFT", old, $2); side("RIGHT", new, $3) }')"
+  # GitHub names a file by its new path on both sides: the old lines of a renamed
+  # file go under the new name, and a deleted file keeps its old one.
+  /^@@ / {
+    header = 0; hunk++; p = (new != "" ? new : old)
+    side("LEFT", old != "" ? p : "", $2); side("RIGHT", new != "" ? p : "", $3)
+  }')"
 
 # A comment fits when each end sits inside its side's lines of one hunk: `line` on
-# `side`, and `start_line` on `start_side`, both defaulting to RIGHT.
+# `side` (default RIGHT), and `start_line` on `start_side` (default: `side`).
 outside="$(jq -r --arg hunks "$hunks" '
-  ($hunks | split("\n") | map(select(length > 0) | split("\u001f")
+  ($hunks | split("\n") | map(split("\u001f") | select(length == 5)
     | {side: .[0], path: .[1], first: (.[2] | tonumber), last: (.[3] | tonumber), hunk: .[4]})) as $h
   | def hunks($path; $side; $n): [$h[] | select(.side == $side and .path == $path and .first <= $n and $n <= .last) | .hunk];
   (.comments // [])[]
