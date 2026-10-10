@@ -14,7 +14,7 @@ Use the [skills.sh](https://skills.sh) installer, then pick the skills and codin
 npx skills@latest add simonsteiner/skills
 ```
 
-## Skills
+## Skill catalog
 
 Skills live in buckets under [`skills/`](./skills/) and split on one axis — who can invoke them. **User-invoked** skills run only when you type them; **model-invoked** skills can also be reached automatically when the task fits.
 
