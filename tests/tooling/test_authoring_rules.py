@@ -184,6 +184,10 @@ class AuthoringRulesTest(unittest.TestCase):
         (folder / "scripts/.DS_Store").write_bytes(b"\x00\xff\xfe")
         self.assertProblem("bundled script isn't text")
 
+    def test_invalid_evals_are_reported_against_evals_json(self):
+        self.skill(files={"evals/evals.json": '{"skills": ["a"], "evals": []}'})
+        self.assertEqual(self.problems(), ['skills/engineering/a/evals/evals.json: "evals" must be a non-empty list'])
+
     def test_shared_trigger_between_model_invoked_skills(self):
         self.skill("a", 'name: a\ndescription: Use when the user says "ship it".')
         self.skill("b", 'name: b\ndescription: Use when the user says "Ship it".')
