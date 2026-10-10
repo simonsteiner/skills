@@ -15,6 +15,11 @@ pre-commit:
       glob: "scripts/*.py"
       run: python3 -m unittest discover -s scripts
 
+    # Same as CI: the scripts bundled in skills, run against a fake gh.
+    skill-script-tests:
+      glob: "{tests/*.py,skills/*/*/scripts/*.sh}"
+      run: python3 -m unittest discover -s tests
+
     # Same as CI's Ruff step; bump the version in both places.
     ruff:
       glob: "*.py"
