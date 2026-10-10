@@ -7,8 +7,13 @@ pre-commit:
     # Whole repo, not just the staged files: the rules cross files (README and
     # plugin.json entries, links, shared trigger phrases). Same check as CI.
     lint-skills:
-      glob: "{skills/**,third-party/**,README.md,.claude-plugin/**,scripts/lint-skills.py}"
+      glob: "{skills/**,third-party/**,README.md,.claude-plugin/**,scripts/*.py}"
       run: python3 scripts/lint-skills.py
+
+    # Same as CI's tooling tests.
+    tooling-tests:
+      glob: "scripts/*.py"
+      run: python3 -m unittest discover -s scripts
 
     # Same as CI's Shellcheck step.
     shellcheck:

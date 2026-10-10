@@ -25,7 +25,7 @@ set -euo pipefail
 #
 # Skills this repo owns (skills/**) are installed a different way — with
 # `npx skills add simonsteiner/skills`, or scripts/link-skills.sh while developing.
-# The two sets must never overlap; the collision guard below enforces that.
+# The two sets must never overlap; scripts/skill_inventory.py enforces that.
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 MANIFEST="$REPO/third-party/skills.json"
@@ -149,18 +149,13 @@ link_agent_skills() {
   return "$failed"
 }
 
-# A curated skill and an owned skill would fight over the same name in the global
-# store, and whichever synced last would silently win. Refuse instead.
-owned=""
-while IFS= read -r -d '' skill_md; do
-  own="$(basename "$(dirname "$skill_md")")"
-  owned="${owned:+$owned,}$own"
-  if awk -F'\t' -v n="$own" '$1 == n { found = 1 } END { exit !found }' <<<"$skills"; then
-    echo "error: '$own' is curated in third-party/skills.json but this repo also owns skills/**/$own." >&2
-    echo "Rename one of them, or drop it from the manifest — they cannot both be installed." >&2
-    exit 1
-  fi
-done < <(find "$REPO/skills" -name SKILL.md -not -path '*/node_modules/*' -print0)
+# Every owned skill's name, comma-separated. The inventory refuses a curated skill that
+# shares a name with an owned one: they would fight over the same name in the global
+# store, and whichever synced last would silently win.
+owned="$(python3 "$REPO/scripts/skill_inventory.py" | cut -f1 | paste -sd,)" || {
+  echo "error: the owned skills are unusable as they stand; fix the problems above first." >&2
+  exit 1
+}
 
 case "$mode" in
 list)

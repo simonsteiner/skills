@@ -22,7 +22,7 @@ set -euo pipefail
 #   ./scripts/link-skills.sh          link every owned skill, prune links to removed ones
 #   ./scripts/link-skills.sh --check  report owned skills that aren't linked, and dead links
 
-REPO="$(cd "$(dirname "$0")/.." && pwd)"
+REPO="$(cd "$(dirname "$0")/.." && pwd -P)"
 AGENTS_STORE="$HOME/.agents/skills"
 CLAUDE_DIR="$HOME/.claude/skills"
 
@@ -50,11 +50,9 @@ case "${1-}" in
     ;;
 esac
 
-# Every owned skill directory: each SKILL.md outside deprecated/.
-owned_skills() {
-  find "$REPO/skills" -name SKILL.md -not -path '*/node_modules/*' -not -path '*/deprecated/*' -print0 |
-    xargs -0 -n1 dirname
-}
+# Every owned skill to link, "<name><TAB><folder>": all but deprecated/. The inventory
+# owns what counts as a skill and its name, and fails on duplicate or colliding names.
+inventory="$(python3 "$REPO/scripts/skill_inventory.py" --active | cut -f1,3)"
 
 # Store links into this repo whose skill is gone — deleted, renamed, or moved to
 # deprecated/. Linking only ever adds, so these would otherwise linger.
@@ -64,22 +62,22 @@ dead_links() {
     [ -L "$link" ] || continue
     target="$(readlink "$link")"
     case "$target" in
-      "$REPO"/skills/*) [ -f "$target/SKILL.md" ] && [[ "$target" != */deprecated/* ]] || echo "$link" ;;
+      "$REPO"/skills/*) cut -f2 <<<"$inventory" | grep -qxF "$target" || echo "$link" ;;
     esac
   done
 }
 
 if [ "$mode" = check ]; then
   status=0
-  while IFS= read -r src; do
-    name="$(basename "$src")"
+  while IFS=$'\t' read -r name src; do
+    [ -n "$name" ] || continue
     if [ "$(readlink -f "$CLAUDE_DIR/$name" 2>/dev/null)" = "$src" ]; then
       echo "ok        $name"
     else
       echo "missing   $name (not linked into $CLAUDE_DIR — run $0)"
       status=1
     fi
-  done < <(owned_skills)
+  done <<<"$inventory"
   while IFS= read -r link; do
     echo "dead      $(basename "$link") ($link -> $(readlink "$link") — run $0)"
     status=1
@@ -104,8 +102,8 @@ done
 
 mkdir -p "$AGENTS_STORE" "$CLAUDE_DIR"
 
-while IFS= read -r src; do
-  name="$(basename "$src")"
+while IFS=$'\t' read -r name src; do
+  [ -n "$name" ] || continue
 
   # Canonical store entry -> live symlink into the repo. Replace a real dir left by
   # a prior `npx skills add` so the dev link takes over.
@@ -123,7 +121,7 @@ while IFS= read -r src; do
   ln -sfn "../../.agents/skills/$name" "$claude"
 
   echo "dev-linked $name -> $src"
-done < <(owned_skills)
+done <<<"$inventory"
 
 while IFS= read -r link; do
   name="$(basename "$link")"
