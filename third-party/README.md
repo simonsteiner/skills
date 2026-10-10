@@ -1,16 +1,18 @@
 # Third-party skills
 
-Skills written by other people that I use but don't own. Nothing here is forked, copied, or vendored — [`skills.json`](./skills.json) is a curated list of *which* upstream skills are worth having and *why*, and [`../scripts/sync-third-party.sh`](../scripts/sync-third-party.sh) installs them from their own repos via the [skills.sh](https://skills.sh) CLI.
+Skills written by other people that I use but don't own. Nothing here is forked, copied, or vendored — [`skills.json`](./skills.json) is a curated list of *which* upstream skills are worth having and *why*, and [`../scripts/sync-third-party.py`](../scripts/sync-third-party.py) installs them from their own repos via the [skills.sh](https://skills.sh) CLI.
 
 From the repo root:
 
 ```bash
-./scripts/sync-third-party.sh          # install everything below, at latest
-./scripts/sync-third-party.sh --check  # compare the manifest against what's installed
-./scripts/sync-third-party.sh --list   # print the list with the reason for each
+./scripts/sync-third-party.py          # install everything below, at latest
+./scripts/sync-third-party.py --check  # compare the manifest against what's installed
+./scripts/sync-third-party.py --list   # print the list with the reason for each
 ```
 
 Re-running the sync re-fetches each skill, so **sync is also the upgrade command**. The flip side: there is no version pinning — every sync moves each skill to whatever is on its upstream default branch that day. Read the diff upstream before syncing if that matters.
+
+A source that fails to install doesn't stop the rest: the sync carries on, links what's installed, then lists what failed and exits 1.
 
 **Run the sync from a plain terminal, not from inside a coding-agent session.** The CLI detects the agent it's running under and installs to that agent alone, so a sync started inside Claude Code updates the store and Claude Code and silently leaves every other agent on its old copy.
 
@@ -18,15 +20,15 @@ A source can override the top-level `agents` list — `cloudflare/skills` is cur
 
 The skills.sh CLI treats Codex, GitHub Copilot, Gemini CLI and Antigravity as "universal" agents: a global install writes only the store, `~/.agents/skills`, and never their own directories. So the sync links each curated skill into `~/.codex/skills`, `~/.copilot/skills`, `~/.gemini/skills` and `~/.gemini/antigravity/skills` itself, for the agents its source lists. A real directory already sitting there is a stale copy from another channel; the sync refuses to replace it, and `--check` says so.
 
-What `--check` reports:
+What `--check` reports. The first three rows mean the installs disagree with the manifest and make it exit 1; the rest only report, since another channel's install may be deliberate:
 
 | | |
 |---|---|
-| `missing` / `conflict` | curated but not installed, or installed from a different repo than the manifest names (exit 1) |
-| `uncurated` | installed from a remote source but absent from the manifest |
-| `unmanaged` | sitting in the store or an agent's directory with nothing managing it — another channel's install, or an upstream deletion left behind |
+| `missing` / `conflict` | curated but not installed, or installed from a different repo than the manifest names |
 | `drift` | an agent missed an update: its directory holds an older copy than the store, a universal agent is missing its link, or holds a stale copy instead of a link (move it aside, then sync) |
 | `archived` | a skill the manifest has retired is still installed |
+| `uncurated` | installed from a remote source but absent from the manifest |
+| `unmanaged` | sitting in the store or an agent's directory with nothing managing it — another channel's install, or an upstream deletion left behind |
 | `note` | store copies older than what the agents load. The CLI installs new skills straight into the agent directory and never refreshes an old `~/.agents/skills` entry, so these are leftovers, not a failed sync |
 
 Curated skills are installed globally (`~/.agents/skills`), the same store the skills this repo owns land in, so a curated skill's name must never collide with one under [[`skills/`](../skills/)](../skills/). The sync script refuses to run if it does.

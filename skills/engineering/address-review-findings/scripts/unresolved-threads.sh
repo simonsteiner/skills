@@ -19,8 +19,8 @@ pr="${1:-$(gh pr view --json number --jq .number)}"
 owner_repo="$(gh repo view --json nameWithOwner --jq .nameWithOwner)"
 owner="${owner_repo%%/*}"
 repo="${owner_repo##*/}"
-export ME; ME="$(gh api user --jq .login)"; me="$ME"
-[[ -n "$pr" && -n "$owner" && -n "$repo" && -n "$me" ]] || { echo "error: could not resolve owner/repo/PR/user (pr='$pr')" >&2; exit 1; }
+export ME; ME="$(gh api user --jq .login)"
+[[ -n "$pr" && -n "$owner" && -n "$repo" && -n "$ME" ]] || { echo "error: could not resolve owner/repo/PR/user (pr='$pr')" >&2; exit 1; }
 
 # A failed automated review still shows up in `reviews`; it isn't one. Empty-bodied
 # reviews are real — they just carry inline comments. Only a short body can be a failure

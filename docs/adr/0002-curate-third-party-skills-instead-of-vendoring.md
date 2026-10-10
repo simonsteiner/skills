@@ -17,7 +17,7 @@ Three ways to do that:
 **Option 3. This repo publishes the skills it owns and merely references the ones it doesn't.**
 
 - [`third-party/skills.json`](../../third-party/skills.json) is the source of truth: upstream repo, skill names, and a written reason for each pick. The reason is the point — an unexplained entry is a candidate for deletion.
-- [`scripts/sync-third-party.sh`](../../scripts/sync-third-party.sh) drives the skills.sh CLI from that manifest. No args installs everything at latest; `--check` diffs the manifest against the lock file (reporting both missing and *uncurated* installs); `--list` prints the list with reasons.
+- `scripts/sync-third-party.sh` (since ported to [`scripts/sync-third-party.py`](../../scripts/sync-third-party.py)) drives the skills.sh CLI from that manifest. No args installs everything at latest; `--check` diffs the manifest against the lock file (reporting both missing and *uncurated* installs); `--list` prints the list with reasons.
 - Curated skills stay out of `skills/`, the top-level `README.md` skill list, and `.claude-plugin/plugin.json`. Their annotated list lives in [`third-party/README.md`](../../third-party/README.md), grouped user-invoked / model-invoked like the buckets are.
 - Owned and curated skills share one global store (`~/.agents/skills`), so names must be unique across both sets. The sync script hard-fails on a collision rather than letting whichever synced last silently win.
 

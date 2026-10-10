@@ -33,5 +33,5 @@ A skill the model can start on its own when the task matches its description, an
 _Avoid_: auto skill
 
 **Sync**:
-Running `scripts/sync-third-party.sh` to install or upgrade every curated skill at upstream's latest.
+Running `scripts/sync-third-party.py` to install or upgrade every curated skill at upstream's latest.
 _Avoid_: update, pull

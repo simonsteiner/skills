@@ -38,8 +38,8 @@ Skills live in buckets under [`skills/`](./skills/) and split on one axis — wh
 Skills by other people that I use but don't own are **curated, not forked**. [`third-party/skills.json`](./third-party/skills.json) records which upstream skills are worth having and why; a sync script installs them straight from their own repos, so nothing is copied into this one:
 
 ```bash
-./scripts/sync-third-party.sh          # install (and upgrade) everything curated
-./scripts/sync-third-party.sh --check  # compare the manifest against what's installed
+./scripts/sync-third-party.py          # install (and upgrade) everything curated
+./scripts/sync-third-party.py --check  # compare the manifest against what's installed
 ```
 
 The annotated list is in [`third-party/README.md`](./third-party/README.md).
@@ -49,14 +49,14 @@ The annotated list is in [`third-party/README.md`](./third-party/README.md).
 To hack on a skill with live edits, symlink this repo's skills into your local agent directories:
 
 ```bash
-./scripts/link-skills.sh          # link every owned skill, prune links to removed or deprecated ones
-./scripts/link-skills.sh --check  # report owned skills that aren't linked, and dead links
+./scripts/link-skills.py          # link every owned skill, prune links to removed or deprecated ones
+./scripts/link-skills.py --check  # report owned skills that aren't linked, and dead links
 ```
 
 This is the dev-mode equivalent of `npx skills add`: it links each skill into `~/.agents/skills` (and mirrors it for Claude Code under `~/.claude/skills`), so edits here take effect immediately. Use it on the machine where you develop the skills, and install with skills.sh everywhere else — pick one path per skill, not both.
 
-On that machine, `./scripts/sync-skills.sh` runs `link-skills.sh` and then `sync-third-party.sh` (pass `--check` to check both). Run it after pulling, or after adding, moving or removing a skill, then restart your agents — they read their skill list at startup.
+On that machine, `./scripts/sync-skills.py` runs `link-skills.py` and then `sync-third-party.py` (pass `--check` to check both). Run it after pulling, or after adding, moving or removing a skill, then restart your agents — they read their skill list at startup.
 
-`./scripts/lint-skills.py` checks every skill against Anthropic's [skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices) and the listing rules in `CLAUDE.md`; CI runs it, with shellcheck and the [rumdl](https://rumdl.dev/) Markdown linter (config in `.rumdl.toml`), on every PR. `npm install` sets up [lefthook](https://github.com/evilmartians/lefthook) git hooks that run the same three checks on each commit, with rumdl fixing what it can.
+`./scripts/lint-skills.py` checks every skill against Anthropic's [skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices) and the listing rules in `CLAUDE.md`; CI runs it, with shellcheck for the scripts bundled in skills, the [rumdl](https://rumdl.dev/) Markdown linter (config in `.rumdl.toml`) and [ruff](https://docs.astral.sh/ruff/) for the Python tooling (`uvx ruff check scripts tests`, config in `ruff.toml`; needs [uv](https://docs.astral.sh/uv/)), on every PR. What counts as an owned skill — its bucket, its name, no duplicates and no clash with a curated skill — is decided once, in `scripts/skill_inventory.py`, and everything about `third-party/skills.json` in `scripts/third_party.py`; the other scripts read them, and `python3 -m unittest discover -s scripts` tests them. The scripts bundled in skills are tested from `tests/` against a fake `gh` (`python3 -m unittest discover -s tests`), so no test touches GitHub. `npm install` sets up [lefthook](https://github.com/evilmartians/lefthook) git hooks that run the same checks on each commit, with rumdl fixing what it can.
 
 Repo conventions are in [`CLAUDE.md`](./CLAUDE.md), and design decisions are recorded as ADRs in [`docs/adr/`](./docs/adr/).

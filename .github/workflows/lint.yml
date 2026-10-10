@@ -17,8 +17,21 @@ jobs:
       - name: Check skills against the authoring rules
         run: python3 scripts/lint-skills.py
 
+      - name: Test the tooling
+        run: |
+          python3 -m unittest discover -s scripts
+          python3 -m unittest discover -s tests
+
+      # setup-uv publishes no floating major tag.
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v10.3.0
+
+      # Same version as lefthook; config in ruff.toml.
+      - name: Ruff
+        run: uvx ruff@0.17.0 check scripts tests
+
       - name: Shellcheck
-        run: shellcheck scripts/*.sh skills/*/*/scripts/*.sh
+        run: shellcheck skills/*/*/scripts/*.sh
 
       # Same version as package.json pins; config in .rumdl.toml.
       - name: Markdown

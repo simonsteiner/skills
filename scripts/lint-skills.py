@@ -25,21 +25,21 @@ https://github.com/mgechev/skills-best-practices):
 
 From CLAUDE.md:
 
-- skills in engineering/, productivity/, misc/ are linked from README.md and listed in
-  .claude-plugin/plugin.json; skills in the other buckets appear in neither
-- no curated third-party skill shares a name with an owned skill
+- disable-model-invocation is `true`, `false`, or absent
+- the listing rules in published_rules.py: README.md, bucket READMEs, plugin.json,
+  and a reason for every curated and archived skill
+- the inventory rules in skill_inventory.py: known buckets, unique names, and no
+  curated skill sharing a name with an owned one
 
     scripts/lint-skills.py      exit 1 and list every problem, or print "ok"
 """
 
-import json
 import re
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
-PUBLISHED = {"engineering", "productivity", "misc"}
-UNPUBLISHED = {"personal", "in-progress", "deprecated"}
+import published_rules
+from skill_inventory import REPO, inventory
 
 problems = []
 
@@ -48,37 +48,17 @@ def problem(path, msg):
     problems.append(f"{path.relative_to(REPO)}: {msg}")
 
 
-def frontmatter(text):
-    """Top-level keys of a SKILL.md's YAML frontmatter, folded scalars joined.
-
-    Enough YAML for these files — plain `key: value` and `key: >` blocks — without a
-    dependency. Nested maps (metadata:) are kept as their raw indented text.
-    """
-    m = re.match(r"---\n(.*?)\n---\n", text, re.S)
-    if not m:
-        return None, text
-    fields, key = {}, None
-    for line in m.group(1).split("\n"):
-        top = re.match(r"([a-z][a-z0-9-]*):\s*(.*)$", line)
-        if top:
-            key, value = top.groups()
-            fields[key] = "" if value in (">", "|", ">-", "|-") else value.strip().strip("'\"")
-        elif key:
-            fields[key] = (fields[key] + " " + line.strip()).strip()
-    return fields, text[m.end():]
-
-
 def check_guides(skill_md, folder, name, desc, fields, body):
     """Rules from the agentskills.io and mgechev guides."""
-    if re.match(r"(I|You|We)\b", desc) or re.search(r"\b(I can|you can use|I will|I'll)\b", desc, re.I):
+    if re.match(r"(I|You|We)\b", desc) or re.search(r"\b(I can|you can use|I will|I'll)\b", desc, re.IGNORECASE):
         problem(skill_md, "description isn't third person")
-    if fields.get("disable-model-invocation") != "true" and not re.search(r"\bwhen\b", desc, re.I):
+    if fields.get("disable-model-invocation") != "true" and not re.search(r"\bwhen\b", desc, re.IGNORECASE):
         problem(skill_md, "model-invoked description never says when to use it")
 
     files = [f for f in folder.rglob("*") if f.is_file()]
     for f in files:
         rel = f.relative_to(folder)
-        if re.fullmatch(r"(README|CHANGELOG|INSTALL\w*)(\.\w+)?", f.name, re.I):
+        if re.fullmatch(r"(README|CHANGELOG|INSTALL\w*)(\.\w+)?", f.name, re.IGNORECASE):
             problem(f, "documentation file inside a skill folder")
         if len(rel.parts) > 2:
             problem(f, "bundled file is more than one level below the skill folder")
@@ -102,26 +82,30 @@ def check_guides(skill_md, folder, name, desc, fields, body):
     text = body + "".join(f.read_text() for f in files if f.suffix == ".md" and f != skill_md)
     if re.search(r"\b(scripts|references|assets)\\\w", text):
         problem(skill_md, "Windows-style path (use forward slashes)")
-    if re.search(r"\b(before|after|until|as of)\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+20\d\d", text, re.I):
+    if re.search(r"\b(before|after|until|as of)\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+20\d\d", text, re.IGNORECASE):
         problem(skill_md, "time-sensitive instruction; move it to an 'old patterns' section")
 
 
-skills = {}
-for skill_md in sorted(REPO.glob("skills/*/*/SKILL.md")):
-    folder = skill_md.parent
-    bucket = folder.parent.name
-    fields, body = frontmatter(skill_md.read_text())
+inv = inventory()
+problems.extend(inv.problems)
+skills = {s.name: s for s in inv.skills}
+for s in inv.skills:
+    skill_md, folder, fields, body = s.skill_md, s.folder, s.fields, s.body
     if fields is None:
         problem(skill_md, "no YAML frontmatter")
         continue
+
+    invocation = fields.get("disable-model-invocation")
+    if invocation not in (None, "true", "false"):
+        problem(skill_md, f"disable-model-invocation is {invocation!r}, not true or false")
 
     name = fields.get("name", "")
     if not re.fullmatch(r"[a-z0-9-]{1,64}", name):
         problem(skill_md, f"name {name!r} must be 1-64 lowercase letters, digits, or hyphens")
     if re.search(r"anthropic|claude", name):
         problem(skill_md, f"name {name!r} contains a reserved word")
-    if name != folder.name:
-        problem(skill_md, f"name {name!r} doesn't match its folder {folder.name!r}")
+    if name != s.name:
+        problem(skill_md, f"name {name!r} doesn't match its folder {s.name!r}")
 
     desc = fields.get("description", "")
     if not desc:
@@ -144,45 +128,18 @@ for skill_md in sorted(REPO.glob("skills/*/*/SKILL.md")):
 
     check_guides(skill_md, folder, name, desc, fields, body)
 
-    skills[name] = {
-        "bucket": bucket,
-        "path": skill_md.relative_to(REPO).as_posix(),
-        "folder": folder.relative_to(REPO).as_posix(),
-        "model_invoked": fields.get("disable-model-invocation") != "true",
-        "description": desc,
-    }
-    if bucket not in PUBLISHED | UNPUBLISHED:
-        problem(skill_md, f"bucket {bucket!r} is not one of the buckets in CLAUDE.md")
-
 # Two model-invoked descriptions quoting the same trigger compete for it.
 seen = {}
 for name, s in skills.items():
-    if not s["model_invoked"]:
+    if not s.model_invoked or not s.fields:
         continue
-    for phrase in re.findall(r'"([^"]+)"', s["description"]):
+    for phrase in re.findall(r'"([^"]+)"', s.fields.get("description", "")):
         key = phrase.lower()
         if key in seen and seen[key] != name:
             problems.append(f'trigger "{phrase}" is in both {seen[key]} and {name}')
         seen.setdefault(key, name)
 
-readme = (REPO / "README.md").read_text()
-plugin = set(json.loads((REPO / ".claude-plugin/plugin.json").read_text())["skills"])
-for name, s in skills.items():
-    linked = f"(./{s['path']})" in readme
-    listed = f"./{s['folder']}" in plugin
-    if s["bucket"] in PUBLISHED:
-        if not linked:
-            problems.append(f"README.md doesn't link {name} to ./{s['path']}")
-        if not listed:
-            problems.append(f".claude-plugin/plugin.json doesn't list ./{s['folder']}")
-    elif linked or listed:
-        problems.append(f"{name} is in {s['bucket']}/ but appears in README.md or plugin.json")
-
-third_party = json.loads((REPO / "third-party/skills.json").read_text())
-for source in third_party["sources"]:
-    for curated in source.get("skills", []):
-        if curated["name"] in skills:
-            problems.append(f"curated skill {curated['name']} from {source['repo']} collides with an owned skill")
+problems.extend(published_rules.check(REPO, inv.skills))
 
 if problems:
     print("\n".join(problems))
