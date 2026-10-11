@@ -7,6 +7,7 @@ Skills I use daily for code work.
 Reachable only when typed (`disable-model-invocation: true`).
 
 - **[arch-review](./arch-review/SKILL.md)** — Scan for deepening and maintainability candidates, save a ranked backlog to `docs/arch-review/`, then implement the batch you confirm as one stacked PR per candidate, with decisions recorded and loose ends audited.
+- **[docs-refactor](./docs-refactor/SKILL.md)** — Give each kind of doc exactly one home, fix doc claims the code contradicts, build a glossary when there is none, and rewrite the agent instructions into a short `AGENTS.md`.
 
 ## Model-invoked
 

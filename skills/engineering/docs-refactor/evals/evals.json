@@ -1,0 +1,38 @@
+{
+  "skills": ["docs-refactor"],
+  "evals": [
+    {
+      "query": "/docs-refactor",
+      "setup": "Node repo with a 340-line CLAUDE.md that includes the file tree, a story about a past outage, and `npm run e2e`, which package.json doesn't define. README.md repeats the setup steps from docs/setup.md. A CONTEXT.md mixes domain terms with env var names. No AGENTS.md, no .env.example; env vars are listed in CLAUDE.md and README.md.",
+      "expected_behavior": [
+        "Works on a new branch and stages the changes without committing",
+        "Moves CLAUDE.md to AGENTS.md with git mv and leaves no CLAUDE.md behind",
+        "Renames CONTEXT.md to GLOSSARY.md and moves the env var names out of it",
+        "Creates .env.example as the only annotated list of env vars, and README.md and docs/setup.md link to it",
+        "Writes an AGENTS.md under 200 lines with no file tree and no outage story",
+        "Reports `npm run e2e` as a claim the code contradicts, with the fix, and leaves it out of the Commands block",
+        "Lists everything dropped from the agent instructions under Not done in the drafted PR body"
+      ]
+    },
+    {
+      "query": "/docs-refactor",
+      "setup": "Python repo using uv with a README.md and docs/ but no GLOSSARY.md and no CONTEXT.md. The docs use 'workspace' and 'project' for the same concept. A CLAUDE.local.md is present and gitignored.",
+      "expected_behavior": [
+        "Calls the domain-modeling skill to build GLOSSARY.md",
+        "Asks the user which of 'workspace' and 'project' is the canonical term instead of picking one silently",
+        "Warns in the report that CLAUDE.local.md stops Claude Code from reading AGENTS.md",
+        "Writes commands that use uv, not pip, including a single-test-file command"
+      ]
+    },
+    {
+      "query": "/docs-refactor",
+      "setup": "Repo whose AGENTS.md says 'Never edit files in src/generated/' and 'Always use 2-space indentation', with a .prettierrc enforcing 2 spaces. docs/reports/2025-q3-audit.md names files that have since moved.",
+      "expected_behavior": [
+        "Drops the indentation rule because Prettier enforces it, and lists it under Not done",
+        "Keeps the generated-files rule under Hard constraints and suggests a hook or permission deny for it in the report",
+        "Leaves docs/reports/2025-q3-audit.md unchanged",
+        "Runs a cold-read check with a fresh sub-agent that reads only AGENTS.md"
+      ]
+    }
+  ]
+}

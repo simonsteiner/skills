@@ -23,6 +23,7 @@ Skills live in buckets under [`skills/`](./skills/) and split on one axis — wh
 #### User-invoked
 
 - **[arch-review](./skills/engineering/arch-review/SKILL.md)** — scan for deepening and maintainability candidates, save a ranked backlog to `docs/arch-review/`, then ship the batch you confirm as stacked PRs.
+- **[docs-refactor](./skills/engineering/docs-refactor/SKILL.md)** — give each kind of doc exactly one home, fix doc claims the code contradicts, and rewrite the agent instructions into a short `AGENTS.md`; staged on a new branch with a report and a PR body.
 
 #### Model-invoked
 
