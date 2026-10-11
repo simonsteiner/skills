@@ -34,9 +34,13 @@ Also record instructions that contradict each other across files: an agent given
 
 ## Step 3 — Glossary
 
-- `CONTEXT.md` exists → `git mv` it to `GLOSSARY.md`.
+First get to one file:
+
+- Only `CONTEXT.md` exists → `git mv` it to `GLOSSARY.md`.
+- Both exist → merge the `CONTEXT.md` terms into `GLOSSARY.md` and `git rm CONTEXT.md`.
 - Neither exists → call the Skill tool with "domain-modeling" and build `GLOSSARY.md` from the domain terms the inventory turned up. Write each term you can settle from the docs and code; ask the user only where two words compete for one concept or the code and docs disagree on its meaning.
-- It exists → keep domain terms only: the term, its definition, the words to avoid. Move file paths, function names, env vars and implementation details out. A detail that is a rule goes to `AGENTS.md`; one the code already shows is dropped.
+
+Then, however `GLOSSARY.md` came about, keep domain terms only: the term, its definition, the words to avoid. Move file paths, function names, env vars and implementation details out. A detail that is a rule goes to `AGENTS.md`; one the code already shows is dropped.
 
 ---
 
@@ -44,7 +48,11 @@ Also record instructions that contradict each other across files: an agent given
 
 Adapt this to what exists. Create a file only when there is content for it.
 
-- **`AGENTS.md`** — rules for changing the code, written in Step 5. If `CLAUDE.md` or `.claude/CLAUDE.md` exists, `git mv` it to `AGENTS.md` and merge the other into it, so one file is left. Claude Code reads `AGENTS.md` only when no `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md` sits in the repo or above it, so warn in the report when a `CLAUDE.local.md` exists.
+- **`AGENTS.md`** — rules for changing the code, written in Step 5. Leave one `AGENTS.md` and no `CLAUDE.md` or `.claude/CLAUDE.md` in the root and in every subfolder that has one:
+  - No `AGENTS.md` there yet → `git mv` the `CLAUDE.md` (or `.claude/CLAUDE.md`) to `AGENTS.md` and merge the other one into it.
+  - `AGENTS.md` already there → merge each `CLAUDE.md` into it, dropping one that only imports `@AGENTS.md`, and `git rm` it.
+
+  Claude Code reads `AGENTS.md` only when no `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md` sits in the working directory or above it, and a subfolder's `AGENTS.md` only when that subfolder has none of its own. So a leftover nested `CLAUDE.md` hides both. Warn in the report when a `CLAUDE.local.md` exists.
 - **`README.md`** — what the project is, a quickstart of at most ten lines, a list of links to the other docs. No setup steps repeated from `docs/setup.md`.
 - **`docs/setup.md`** — local setup step by step, configuration options, troubleshooting.
 - **`docs/deployment.md`** — operating production: release flow, where secrets live (never their values), scaling. Only if the project deploys somewhere.
