@@ -44,6 +44,8 @@ A PR **needs a review** when either holds:
 
 The set is one PR or many. A PR whose `baseRefName` is another open PR's `headRefName` is **stacked** on it: order each stack base first. Independent PRs have no order. PRs named (`#12 #15`) or "the stack" override the filter. Skip drafts unless asked. Nothing needs a review → say so and stop.
 
+If the harness offers a tool to rename the current thread or session (T3 Code's `t3_thread_update` with `rename`), title it after the set once it's settled — `Review #32: gate push on checks`, `Review stack #24–#31: eval runner`. No such tool → skip this.
+
 ## Step 2 — Review each PR
 
 Per PR (stacks bottom-up, independent PRs one at a time), read its diff against its base, and check out its head in a worktree of its own for reading whole files and running checks:
@@ -58,7 +60,7 @@ tmp="$(mktemp -d)"; git worktree add --quiet --detach "$tmp/pr-<n>" <headRefOid>
 
 Work in the printed path until the review is posted, then `git worktree remove --force <path> && rmdir <its parent>`. Fixes happen in Step 4, on the branch itself.
 
-Local mode: pin `git diff <fixed-point>...HEAD`, confirm the ref resolves and the diff isn't empty before anything else.
+Local mode: pin `git diff <fixed-point>...HEAD`, confirm the ref resolves and the diff isn't empty before anything else. If the harness can rename the thread (Step 1), title it `Review since <fixed-point>: <topic>`.
 
 Read the changed files whole, run the repo's checks — tests, lint, type check, what CI runs (a failure the diff caused is a finding) — then read [LENSES.md](LENSES.md) and review on three axes: **Correctness**, **Standards**, **Spec**. On a re-review, review only `<reviewed-oid>..HEAD` and read the existing threads first so you don't repeat one.
 
