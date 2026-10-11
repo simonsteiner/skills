@@ -10,15 +10,11 @@ Give every kind of knowledge exactly one home, make every doc agree with the cod
 
 **Trace every line.** Each rule that ends up in `AGENTS.md` comes from an existing doc, the code, or an answer from the user. Never invent a convention: an agent-written instruction file that guesses spreads its mistakes into every later session.
 
----
-
-## Step 1 — Branch
-
-Call the Skill tool with "sync-and-branch" to cut `docs/refactor-docs` from the fresh default branch. Everything below happens there.
+**Work on a branch.** Already on a feature branch → stay there. On the default branch → call the Skill tool with "sync-and-branch" to cut `docs/refactor-docs` first.
 
 ---
 
-## Step 2 — Inventory
+## Step 1 — Inventory
 
 List every doc and every instruction file:
 
@@ -26,13 +22,13 @@ List every doc and every instruction file:
 - `AGENTS.md`, `CLAUDE.md`, `.claude/CLAUDE.md`, `CLAUDE.local.md` and nested copies in subfolders, `.claude/rules/`
 - `GLOSSARY.md`, `GLOSSARY-MAP.md`, `CONTEXT.md`, `docs/adr/`
 
-For each, note who reads it (agent or human), what it repeats from another doc, and what is stale. Check claims against the code, the project manifest or task runner (`package.json`, `pyproject.toml`, `Makefile`, `justfile`, …), the CI config and the deploy config. A doc that disagrees with the code is a bug: fix the doc and record the claim, the evidence and the fix for the report. When the code looks wrong instead, don't change it; ask.
+For each, note who reads it (agent or human), what it repeats from another doc, and what is stale. Check claims against the code, the project manifest or task runner (`package.json`, `pyproject.toml`, `Makefile`, `justfile`, …), the CI config, the git hook config and the deploy config. A command or hook claim copied from an old doc stays unverified until you have checked it, including when it lands in `AGENTS.md`. A doc that disagrees with the code is a bug: fix the doc and record the claim, the evidence and the fix for the report. When the code looks wrong instead, don't change it; ask.
 
 Also record instructions that contradict each other across files: an agent given both picks one arbitrarily.
 
 ---
 
-## Step 3 — Glossary
+## Step 2 — Glossary
 
 First get to one file:
 
@@ -44,11 +40,11 @@ Then, however `GLOSSARY.md` came about, keep domain terms only: the term, its de
 
 ---
 
-## Step 4 — One home per kind
+## Step 3 — One home per kind
 
 Adapt this to what exists. Create a file only when there is content for it.
 
-- **`AGENTS.md`** — rules for changing the code, written in Step 5. Leave one `AGENTS.md` and no `CLAUDE.md` or `.claude/CLAUDE.md` in the root and in every subfolder that has one:
+- **`AGENTS.md`** — rules for changing the code, written in Step 4. Leave one `AGENTS.md` and no `CLAUDE.md` or `.claude/CLAUDE.md` in the root and in every subfolder that has one:
   - No `AGENTS.md` there yet → `git mv` the `CLAUDE.md` (or `.claude/CLAUDE.md`) to `AGENTS.md` and merge the other one into it.
   - `AGENTS.md` already there → merge each `CLAUDE.md` into it, dropping one that only imports `@AGENTS.md`, and `git rm` it.
 
@@ -57,18 +53,20 @@ Adapt this to what exists. Create a file only when there is content for it.
 - **`docs/setup.md`** — local setup step by step, configuration options, troubleshooting.
 - **`docs/deployment.md`** — operating production: release flow, where secrets live (never their values), scaling. Only if the project deploys somewhere.
 - **`.env.example`** — the only annotated list of env vars. Other docs point to it.
-- **`GLOSSARY.md`** — from Step 3.
+- **`GLOSSARY.md`** — from Step 2.
 - **`docs/adr/`** — hard-to-reverse decisions with their trade-offs. Keep the existing ones.
+- **`docs/reference/`** — external reference material the code is built against: a vendored API spec, reusable queries.
 
 Then:
 
 - Delete obsolete bootstrap prompts and scratch docs that contradict the code; git history keeps them.
-- Leave generated reports and dated historical records alone, even when they mention old file names.
+- Leave generated reports and dated historical records alone, even when they mention old file names. The same goes for folders another tool or skill reads and writes, such as `docs/arch-review/`.
+- List stray non-config files in the root (exports, dumps, scratch output) in the report with a proposed home; tool config the tools look for in the root stays.
 - Update every reference to a renamed or moved file: code comments, CI, lint config, other docs. `git grep` each old path and filename before moving on.
 
 ---
 
-## Step 5 — Write AGENTS.md
+## Step 4 — Write AGENTS.md
 
 `AGENTS.md` is loaded into context on every request. Write it to [AGENTS-FORMAT.md](AGENTS-FORMAT.md), starting from [assets/agents-template.md](assets/agents-template.md). Sort every candidate rule first:
 
@@ -82,7 +80,7 @@ Mark every hard constraint a hook or a permission deny could enforce. Instructio
 
 ---
 
-## Step 6 — Check
+## Step 5 — Check
 
 1. Run the repo's formatters and Markdown linters on every changed doc.
 2. `git grep` every old path one more time; only historical records may still name it.
@@ -90,7 +88,7 @@ Mark every hard constraint a hook or a permission deny could enforce. Instructio
 
 ---
 
-## Step 7 — Stage and report
+## Step 6 — Stage and report
 
 Stage everything with `git add`; don't commit. Then report:
 
@@ -98,6 +96,7 @@ Stage everything with `git add`; don't commit. Then report:
 - **Deleted:** what, and why.
 - **Wrong against the code:** each claim, the evidence, and the fix.
 - **Enforce, don't instruct:** the hard constraints a hook or a permission deny could enforce.
+- **Commits:** a proposed split — the bare `git mv` of each instruction file first, so git still sees the rename after the rewrite, then the one-home moves, then the glossary.
 - **Warnings:** a `CLAUDE.local.md` that hides `AGENTS.md`, contradictions you couldn't settle, questions still open.
 
 Call the Skill tool with "pr-body" and draft the PR body as a refactor. Put everything dropped from the agent instructions under `## Not done`, one line each with its reason, so the user can restore a rule once an agent gets it wrong twice. Print the draft at the end of the report.

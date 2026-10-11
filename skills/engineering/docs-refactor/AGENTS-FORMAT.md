@@ -6,7 +6,7 @@ Every line of `AGENTS.md` is read on every request. Aim for under 150 lines; pas
 
 1. **H1 that names the project** (`# Acme Billing`, never `# AGENTS.md`), then three sentences: the major pieces and how they talk to each other. End with one line pointing to `GLOSSARY.md` and `docs/adr/`.
 2. **Commands** — one fenced block, one command per line with a short trailing `# comment`. Don't pad comments into a column or leave blank lines between groups. Include the single-file forms (one test file, one lint target) next to the full runs. Only commands that exist in the manifest or task runner; run each one you're unsure of.
-3. **Conventions** — "X lives only in Y, never re-implement" bullets, grouped by area under `###` headings. Use nested bullets when one bullet holds several rules. Point to a canonical example as `path/to/file.ts`, never paste the code.
+3. **Conventions** — "X lives only in Y, never re-implement" bullets, grouped by area under `###` headings. Use nested bullets when one bullet holds several rules. Point to a canonical example by its path from the repo root, never paste the code.
 4. **Hard constraints** — what never happens (edit generated files, push schema to prod, send secrets to the client), and what needs the user's approval first (new dependencies, migrations, deleting data).
 5. **Gotchas** — what every new engineer trips on, including dev-environment rules ("the dev server is already running, don't start another").
 6. **Docs** — a bullet list of where each kind of doc lives, with one line on when to read it. Not a table.
