@@ -55,7 +55,16 @@ To hack on a skill with live edits, symlink this repo's skills into your local a
 
 This is the dev-mode equivalent of `npx skills add`: it links each skill into `~/.agents/skills` (and mirrors it for Claude Code under `~/.claude/skills`), so edits here take effect immediately. Use it on the machine where you develop the skills, and install with skills.sh everywhere else — pick one path per skill, not both.
 
-On that machine, `./scripts/sync-skills.py` runs `link-skills.py` and then `sync-third-party.py` (pass `--check` to check both). Run it after pulling, or after adding, moving or removing a skill, then restart your agents — they read their skill list at startup.
+On that machine, `./scripts/sync-skills.py` runs `link-skills.py` and then `sync-third-party.py` (pass `--check` to check both). The links point at this checkout's working tree, so whatever branch is checked out is what your agents run. That decides when a sync is needed:
+
+| What changed | What to do |
+|---|---|
+| An existing skill's body, references or scripts (edited here, or pulled) | Nothing; the next invocation reads the new files |
+| An existing skill's `name` or `description` | Restart your agents; they read the skill list at startup |
+| A skill added, moved, renamed or removed (here, or in a pull) | Sync, then restart |
+| `third-party/skills.json`, or an upstream curated skill you want to pick up | Sync (or just `sync-third-party.py`), then restart |
+
+`sync-skills.py --check` reports whether anything is missing or stale, so when in doubt, run that. T3 Code caches each provider's skill list for its picker, so a new skill can stay missing there until T3 refreshes that list, even after you restart the agent.
 
 `./scripts/lint-skills.py` checks every skill against Anthropic's [skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices), the [Agent Skills spec and best practices](https://agentskills.io/skill-creation/best-practices), and the listing rules in `AGENTS.md`; CI runs it, with shellcheck for the scripts bundled in skills, the [rumdl](https://rumdl.dev/) Markdown linter (config in `.rumdl.toml`) and [ruff](https://docs.astral.sh/ruff/) for the Python tooling (`uvx ruff check scripts tests`, config in `ruff.toml`; needs [uv](https://docs.astral.sh/uv/)), on every PR. What counts as an owned skill — its bucket, its name, no duplicates and no clash with a curated skill — is decided once, in `scripts/tooling/skill_inventory.py`, and everything about `third-party/skills.json` in `scripts/tooling/third_party.py`; the commands at the top of `scripts/` read them. `python3 -m unittest discover -s tests -t .` runs every test: `tests/tooling/` for the `scripts/tooling/` package, and `tests/skill_scripts/` for the scripts bundled in skills, against a fake `gh` so no test touches GitHub. A skill's evals run with `./scripts/eval-skill.py` against the previous version or no skill at all ([docs/evals.md](./docs/evals.md)). `npm install` sets up [lefthook](https://github.com/evilmartians/lefthook) git hooks that run the same checks on each commit, with rumdl fixing what it can.
 

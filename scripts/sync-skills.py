@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Dev-machine convenience: link the owned skills, then sync the curated third-party ones.
 
-Run it after pulling, and after adding, moving or removing a skill. All the work happens
-in the two scripts it calls; --check is passed through to both.
+Run it after adding, moving, renaming or removing a skill (here or in a pull), or to pick up
+third-party changes; edits to an existing skill are already live through the links. All the
+work happens in the two scripts it calls; --check is passed through to both.
 
     scripts/sync-skills.py          scripts/link-skills.py, then scripts/sync-third-party.py
     scripts/sync-skills.py --check  both scripts' --check
