@@ -1,5 +1,11 @@
 # simonsteiner-skills
 
+## 1.3.2
+
+### Patch Changes
+
+- [#34](https://github.com/simonsteiner/skills/pull/34) [`c614933`](https://github.com/simonsteiner/skills/commit/c61493331a453d426acad313415ab5003d581949) Thanks [@simonsteiner](https://github.com/simonsteiner)! - review-prs renames the current thread after the PRs it reviews (e.g. `Review [#32](https://github.com/simonsteiner/skills/issues/32): gate push on checks`) when the harness offers a rename tool, such as T3 Code's `t3_thread_update`, so review threads no longer all share a generic title. New `docs/review-prs.md` explains why a review belongs in a new thread rather than the one that wrote the PR.
+
 ## 1.3.1
 
 ### Patch Changes
