@@ -44,7 +44,7 @@ A PR **needs a review** when either holds:
 
 The set is one PR or many. A PR whose `baseRefName` is another open PR's `headRefName` is **stacked** on it: order each stack base first. Independent PRs have no order. PRs named (`#12 #15`) or "the stack" override the filter. Skip drafts unless asked. Nothing needs a review → say so and stop.
 
-If the harness offers a tool to rename the current thread or session (T3 Code's `t3_thread_update` with `rename`), title it after the set once it's settled — `Review #32: gate push on checks`, `Review stack #24–#31: eval runner`. No such tool → skip this.
+If the harness offers a tool to rename the current thread or session, title it after the set once it's settled — `Review #32: gate push on checks`, `Review stack #24–#31: eval runner`. In T3 Code that's `t3_thread_update` with `{"action": "rename", "title": "<title>"}`; both fields are required. A call that errors gets fixed from the error and retried once; still failing → name it in the report, don't drop it silently. No such tool → skip this.
 
 ## Step 2 — Review each PR
 
