@@ -1,5 +1,11 @@
 # simonsteiner-skills
 
+## 1.3.3
+
+### Patch Changes
+
+- [`2056966`](https://github.com/simonsteiner/skills/commit/205696684009892406cad2e2877eb7f476d4f19b) Thanks [@simonsteiner](https://github.com/simonsteiner)! - review-prs spells out the exact T3 Code rename call (`action` and `title`), retries it once from the error, and reports a rename that still fails instead of skipping it silently.
+
 ## 1.3.2
 
 ### Patch Changes
