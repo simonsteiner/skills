@@ -6,13 +6,18 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   skills:
     name: Skills
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
       - name: Check skills against the authoring rules
         run: python3 scripts/lint-skills.py
@@ -22,9 +27,8 @@ jobs:
       - name: Test the tooling and the bundled scripts
         run: python3 -m unittest discover -s tests -t .
 
-      # setup-uv publishes no floating major tag.
       - name: Setup uv
-        uses: astral-sh/setup-uv@v10.3.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
 
       # Same version as lefthook; config in ruff.toml.
       - name: Ruff
