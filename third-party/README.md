@@ -60,6 +60,14 @@ Cloudflare's own skills for the developer platform, all retrieval-first over liv
 - **[workers-best-practices](https://github.com/cloudflare/skills/blob/main/skills/workers-best-practices/SKILL.md)** — authoring and reviewing Workers against production practices.
 - **[web-perf](https://github.com/cloudflare/skills/blob/main/skills/web-perf/SKILL.md)** — Core Web Vitals and load analysis via Chrome DevTools MCP.
 
+## intercom/2x-skills
+
+Intercom's skills, written for their Claude Code plugins. Only the one that stands alone outside that install is curated; the rest are archived below.
+
+### Model-invoked
+
+- **[secure-github-actions](https://github.com/intercom/2x-skills/blob/main/plugins/security-tools/skills/secure-github-actions/SKILL.md)** — harden workflow YAML against expression injection and supply-chain attacks: SHA-pinned actions, explicit `permissions:`, `pull_request_target` traps.
+
 ## Archived
 
 Curated once and then retired, or considered and declined in favour of an owned skill. Each stays in `skills.json` under its source's `archived` list with the reason, so the decision isn't re-litigated; the sync no longer installs it, and `--check` reports an `archived` line while a copy is still installed (`npx skills remove -g <name>` clears it).
@@ -77,5 +85,7 @@ Archived in October 2026 because chat history (Claude transcripts from late Augu
 - **mattpocock/skills:** `grill-me` and `grill-with-docs` — the model-invoked `grilling` fires on "grill" phrases by itself, and `domain-modeling` covers the docs half; `prototype`.
 - **cloudflare/skills:** `cloudflare-one`, `cloudflare-one-migrations`, `sandbox-stable`, `agents-sdk`, `durable-objects`, `turnstile-spin`, `cloudflare-email-service`. The umbrella `cloudflare` skill still covers each product and points into its docs.
 - **vercel-labs/skills:** `find-skills` — `npx skills find` does the same from a terminal.
+
+- **intercom/2x-skills** (never curated): `attach-github-assets`, replaced by the owned `attach-media`; `create-pr`, whose rules were adapted into [`pr-body`](../skills/engineering/pr-body/SKILL.md); `thermo-nuclear-code-review`, `skill-review`, `fix-flaky-tests`, `audit-memory`, `cc-cost-analysis`, `permissions-analyzer`, `tool-misses` — tied to Intercom's plugin install or stack, or covered by owned skills. Reasons per skill are in `skills.json`.
 
 Re-curating any of them is moving its entry back from `archived` to `skills`.
