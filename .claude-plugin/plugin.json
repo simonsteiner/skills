@@ -6,6 +6,7 @@
     "./skills/engineering/attach-media",
     "./skills/engineering/conventional-commit",
     "./skills/engineering/docs-refactor",
+    "./skills/engineering/download-media",
     "./skills/engineering/frontend-craft",
     "./skills/engineering/pr-body",
     "./skills/engineering/review-prs",
