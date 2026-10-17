@@ -2,6 +2,7 @@
 name: attach-media
 description: >
   Uploads local screenshots, images, GIFs, or screen recordings to GitHub and embeds them in a pull request, issue, or comment — the same attachment drag-and-drop makes in the web UI, no external hosting. Use when the user wants a screenshot or recording in a PR body, issue, or comment, asks to attach or embed an image on GitHub, or when a PR-body or review step has local before/after captures to show.
+compatibility: Requires an authenticated gh CLI (2.99+ for --attach); the fallback script also needs jq.
 ---
 
 # Attach media
@@ -28,7 +29,8 @@ Walkthrough:
 
 ![](./flow.mp4)
 EOF
-cd /tmp/shots && gh pr edit 12 --body-file body.md --attach ./before.png --attach ./after.png --attach ./flow.mp4
+gh pr edit 12 --body-file /tmp/shots/body.md \
+  --attach /tmp/shots/before.png --attach /tmp/shots/after.png --attach /tmp/shots/flow.mp4
 ```
 
 - **Paths** in a `--body-file` resolve from that file's folder, so either write the body next to the captures or reference them by absolute path. With `--body`, they resolve from the working directory.
@@ -52,7 +54,7 @@ When this is a step in writing a PR body, hand the body back to that step with t
 <skill-dir>/scripts/upload.sh [--repo OWNER/REPO] <file>...
 ```
 
-It checks every file before uploading any, then prints one Markdown line per file in argument order: `![name](url)` for an image, a bare URL for a video. Swap in real alt text before placing the line. A 404 means no write access to that repo.
+It checks every file before uploading any, then prints one Markdown line per file in argument order: `![name](url)` for an image, a bare URL for a video. Swap in real alt text before placing the line. A 404 means no write access to that repo. On a failure, the lines already printed are good uploads: rerun with only the failed file.
 
 ## 4. Check it rendered
 
