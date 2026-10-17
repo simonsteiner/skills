@@ -1,5 +1,11 @@
 # simonsteiner-skills
 
+## 1.6.3
+
+### Patch Changes
+
+- [#40](https://github.com/simonsteiner/skills/pull/40) [`3ae34b8`](https://github.com/simonsteiner/skills/commit/3ae34b84bb39a6b9974f92b002b6e2f936dcb3c0) Thanks [@simonsteiner](https://github.com/simonsteiner)! - CI workflows are hardened: actions are pinned by commit SHA (kept current by Dependabot), the lint workflow declares a read-only token and doesn't keep git credentials, and the changelog job, which can push to `main`, installs dependencies without running their install scripts.
+
 ## 1.6.2
 
 ### Patch Changes
