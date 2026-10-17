@@ -11,7 +11,8 @@ jobs:
   changelog:
     name: Apply changesets
     runs-on: ubuntu-latest
-    # `npm ci` installs the lefthook hooks via `prepare`; keep them off the bot's commit.
+    # `--ignore-scripts` already skips lefthook's `prepare`; this keeps any hooks off the
+    # bot's commit should that ever change.
     env:
       LEFTHOOK: 0
     permissions:
@@ -20,7 +21,7 @@ jobs:
       # Check out the current main, not the pushed commit: a run queued behind
       # another would otherwise miss its changelog commit and re-apply its changesets.
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: main
 
@@ -33,13 +34,15 @@ jobs:
 
       - name: Setup Node.js
         if: steps.pending.outputs.found
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
 
+      # No install scripts: this job holds a token that can push to main, and changesets
+      # needs none (the only install script fetches the lefthook binary).
       - name: Install dependencies
         if: steps.pending.outputs.found
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       # Pushes straight to main rather than opening a version PR. A push made with
       # GITHUB_TOKEN doesn't trigger workflows, so this doesn't re-run itself.
