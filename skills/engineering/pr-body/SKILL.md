@@ -12,6 +12,14 @@ Skip preambles beyond the context line, keep prose brief, and use the domain lan
 
 ---
 
+## Before writing
+
+- **Read the diff, not the conversation.** `git diff <base>...HEAD --stat`, then the diff itself: the Summary describes what the branch changes, and the conversation only supplies the why. A file in the diff that nobody discussed this session may be leftover work; name it to the user and ask whether it belongs, before writing around it.
+- **Never invent the why.** It comes from a linked card or issue, or from what the user said. When neither says why, ask one question rather than infer a motive from the diff.
+- **Public repo?** `gh repo view --json visibility --jq .visibility`. On `PUBLIC`, the title, body, branch name and commit messages are readable by anyone and stay cached after a force-push or a closed PR. Keep out internal URLs (dashboards, wikis, private trackers), internal names and codenames, and customer names or IDs; say it in terms an outside contributor would follow. If a commit message already carries one, tell the user before the branch is pushed.
+
+---
+
 ## Pick the kind
 
 From the PR's Conventional Commit type, or what dominates the diff when commits mix:
@@ -146,5 +154,6 @@ Add each only when it applies, after Merge Danger:
 - The first screen tells a reviewer what changed and why, without scrolling.
 - Every Evidence line is something that was actually run or measured.
 - Nothing is left in angle brackets, and no section is there just because the template has it.
+- Every `#N` is a link you meant: GitHub turns `#3` in prose ("the #3 cause") into a link to issue 3. Rephrase, or escape it as `\#3`.
 
 See [CREDITS.md](CREDITS.md) for the upstream skills this adapts.
