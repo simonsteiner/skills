@@ -58,7 +58,7 @@ git fetch --quiet origin "pull/<n>/head"   # brings a fork's head too; origin/<h
 tmp="$(mktemp -d)"; git worktree add --quiet --detach "$tmp/pr-<n>" <headRefOid> && echo "$tmp/pr-<n>"
 ```
 
-When the body or a linked issue shows the change in screenshots or a recording (`github.com/user-attachments/…`), call the Skill tool with "download-media" and check them against the diff.
+When the body or a linked issue shows the change in screenshots or a recording (`github.com/user-attachments/…`), call the Skill tool with "download-media", passing `-o <worktree path>/.scratch/media` so they go when the worktree does, and check them against the diff.
 
 Work in the printed path until the review is posted, then `git worktree remove --force <path> && rmdir <its parent>`. Fixes happen in Step 4, on the branch itself.
 

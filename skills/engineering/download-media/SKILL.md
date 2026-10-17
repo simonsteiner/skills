@@ -2,6 +2,7 @@
 name: download-media
 description: >
   Downloads the screenshots, recordings, and files attached to GitHub issues, pull requests, and comments so they can be looked at — including on private repos, where the attachment URLs 404 without auth. Use when the user points at an issue or PR with a screenshot to look at, says "see the screenshot" or "check the recording", pastes a github.com/user-attachments URL, or when a review comment or bug report carries an image the work depends on.
+compatibility: Requires an authenticated gh CLI; file and ffmpeg are optional.
 ---
 
 # Download media
