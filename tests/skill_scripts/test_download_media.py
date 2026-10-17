@@ -22,6 +22,10 @@ class DownloadTest(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         self.out = Path(tmp.name) / "out"
         self.gh = FakeGh(tmp.name)
+        # A stub `file`, so the extension doesn't depend on the host's libmagic.
+        stub = Path(tmp.name) / "bin" / "file"
+        stub.write_text('#!/bin/sh\nprintf "%s\\n" "${FAKE_FILE_TYPE:-image/svg+xml}"\n')
+        stub.chmod(0o755)
 
     def lines(self, result):
         return [line.split("\t") for line in result.stdout.splitlines()]
@@ -39,6 +43,24 @@ class DownloadTest(unittest.TestCase):
         ])
         self.assertEqual((self.out / "01-82dd8a5f-3ccf-40f2-ac1b-26481e2a0220.svg").read_text(), SVG)
         self.assertEqual([c["args"] for c in self.gh.calls], [["api", ASSET], ["api", FILE], ["api", LEGACY]])
+
+    def test_markdown_around_a_bare_url_is_not_part_of_it(self):
+        self.gh.on("api", ASSET, stdout=SVG).on("api", FILE, stdout="pdf")
+        result = self.gh.run(SCRIPT, "-o", self.out, stdin=f"see `{ASSET}`, and **{FILE}**\n")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual([c["args"] for c in self.gh.calls], [["api", ASSET], ["api", FILE]])
+
+    def test_a_fragment_is_not_part_of_the_name(self):
+        self.gh.on("api", FILE + "#page=2", stdout="pdf")
+        result = self.gh.run(SCRIPT, "-o", self.out, FILE + "#page=2")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.lines(result), [[f"{self.out}/01-report.pdf", FILE + "#page=2"]])
+
+    def test_an_unknown_type_keeps_the_name_without_an_extension(self):
+        self.gh.on("api", ASSET, stdout="bytes")
+        result = self.gh.run(SCRIPT, "-o", self.out, ASSET, env={"FAKE_FILE_TYPE": "application/octet-stream"})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.lines(result), [[f"{self.out}/01-82dd8a5f-3ccf-40f2-ac1b-26481e2a0220", ASSET]])
 
     def test_a_non_attachment_url_is_refused_before_any_call(self):
         result = self.gh.run(SCRIPT, "-o", self.out, ASSET, "https://example.com/x.png")

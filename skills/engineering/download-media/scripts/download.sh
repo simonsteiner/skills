@@ -14,7 +14,8 @@ set -euo pipefail
 # so the gh token never goes anywhere else. A failed download doesn't stop the rest.
 # Exits 1 when any download failed or a URL isn't an attachment, 2 on bad usage.
 
-ATTACHMENT='https://(github\.com/user-attachments/(assets|files)/[^][()<>"'"'"'[:space:]]+|github\.com/[[:alnum:]_.-]+/[[:alnum:]_.-]+/assets/[0-9]+/[[:alnum:]-]+|user-images\.githubusercontent\.com/[^][()<>"'"'"'[:space:]]+)'
+# assets/ ids are UUIDs; files/ and user-images paths stop at Markdown punctuation (`*&).
+ATTACHMENT='https://(github\.com/user-attachments/assets/[[:alnum:]-]+|github\.com/user-attachments/files/[^][()<>"'"'"'`*&[:space:]]+|github\.com/[[:alnum:]_.-]+/[[:alnum:]_.-]+/assets/[0-9]+/[[:alnum:]-]+|user-images\.githubusercontent\.com/[^][()<>"'"'"'`*&[:space:]]+)'
 
 dir=
 urls=()
@@ -30,7 +31,7 @@ done
 
 if [[ ${#urls[@]} -eq 0 ]]; then
   [[ ! -t 0 ]] || { echo "error: no URLs given and nothing on stdin (download.sh --help)" >&2; exit 2; }
-  while IFS= read -r u; do urls+=("$u"); done < <(grep -oE "$ATTACHMENT" | sed -E 's/[.,;:!?]+$//' | awk '!seen[$0]++')
+  while IFS= read -r u; do urls+=("$u"); done < <(grep -oE "$ATTACHMENT" | sed -E 's/[.,;:!?_]+$//' | awk '!seen[$0]++')
   [[ ${#urls[@]} -gt 0 ]] || { echo "no attachment URLs in the input" >&2; exit 0; }
 fi
 for u in "${urls[@]}"; do
@@ -52,7 +53,7 @@ failed=0
 n=0
 for u in "${urls[@]}"; do
   n=$((n + 1))
-  name="${u%%\?*}"; name="${name##*/}"
+  name="${u%%[?#]*}"; name="${name##*/}"
   path="$(printf '%s/%02d-%s' "$dir" "$n" "$name")"
   if ! gh api "$u" >"$path"; then
     rm -f "$path"; echo "error: download failed: $u" >&2; failed=1; continue
