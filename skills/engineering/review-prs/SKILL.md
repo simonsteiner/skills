@@ -58,6 +58,8 @@ git fetch --quiet origin "pull/<n>/head"   # brings a fork's head too; origin/<h
 tmp="$(mktemp -d)"; git worktree add --quiet --detach "$tmp/pr-<n>" <headRefOid> && echo "$tmp/pr-<n>"
 ```
 
+When the body or a linked issue shows the change in screenshots or a recording (`github.com/user-attachments/…`), call the Skill tool with "download-media" and check them against the diff.
+
 Work in the printed path until the review is posted, then `git worktree remove --force <path> && rmdir <its parent>`. Fixes happen in Step 4, on the branch itself.
 
 Local mode: pin `git diff <fixed-point>...HEAD`, confirm the ref resolves and the diff isn't empty before anything else. If the harness can rename the thread (Step 1), title it `Review since <fixed-point>: <topic>`.

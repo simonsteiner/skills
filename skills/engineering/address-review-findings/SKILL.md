@@ -82,6 +82,8 @@ Inline threads need GraphQL — the REST endpoint doesn't say whether a thread i
 
 Open the file at the referenced line **before** deciding. The comment is a claim about the code, not a fact.
 
+A thread that points at a screenshot or recording (`github.com/user-attachments/…`) is part of the claim: call the Skill tool with "download-media" and look at it before deciding.
+
 | Verdict | Meaning | What follows |
 |---------|---------|--------------|
 | fix | the reviewer is right | change the code |
