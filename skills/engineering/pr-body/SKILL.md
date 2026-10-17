@@ -12,6 +12,15 @@ Skip preambles beyond the context line, keep prose brief, and use the domain lan
 
 ---
 
+## Before writing
+
+- **Read the diff, not the conversation.** `git diff origin/<base>...HEAD --stat` after a fetch, plus `git diff --cached --stat` when the work is staged but not committed; then the diff itself: the Summary describes what the branch changes, and the conversation only supplies the why. A file in the diff that nobody discussed this session may be leftover work; name it to the user and ask whether it belongs, before writing around it.
+- **Never invent the why.** It comes from a linked card or issue, or from what the user said. When neither says why, ask one question rather than infer a motive from the diff.
+- **Nobody to ask?** When a calling workflow runs hands-off, its brief or card stands in for the discussion: list a file it doesn't cover under `## Not done` as possibly unrelated, and leave out a why it doesn't give, instead of stopping to ask.
+- **Public repo?** `gh repo view --json visibility --jq .visibility`. On `PUBLIC`, the title, body, branch name and commit messages are readable by anyone and stay cached after a force-push or a closed PR. Keep out internal URLs (dashboards, wikis, private trackers), internal names and codenames, and customer names or IDs; say it in terms an outside contributor would follow. If a commit message or the branch name already carries one, tell the user; once it's pushed, rewriting it is their call.
+
+---
+
 ## Pick the kind
 
 From the PR's Conventional Commit type, or what dominates the diff when commits mix:
@@ -146,5 +155,6 @@ Add each only when it applies, after Merge Danger:
 - The first screen tells a reviewer what changed and why, without scrolling.
 - Every Evidence line is something that was actually run or measured.
 - Nothing is left in angle brackets, and no section is there just because the template has it.
+- Every `#N` is a link you meant: GitHub turns `#3` in prose ("the #3 cause") into a link to issue 3. Rephrase, or escape it as `\#3`.
 
 See [CREDITS.md](CREDITS.md) for the upstream skills this adapts.
