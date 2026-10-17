@@ -1,5 +1,11 @@
 # simonsteiner-skills
 
+## 1.6.1
+
+### Patch Changes
+
+- [#38](https://github.com/simonsteiner/skills/pull/38) [`d9de812`](https://github.com/simonsteiner/skills/commit/d9de81244a52a9f63bacfe19e882094ea46ba5e0) Thanks [@simonsteiner](https://github.com/simonsteiner)! - The third-party sync now installs Intercom's `secure-github-actions`, which hardens GitHub Actions workflow YAML against expression injection and supply-chain attacks. Intercom's other skills are recorded as declined, with reasons, in `third-party/skills.json`.
+
 ## 1.6.0
 
 ### Minor Changes
