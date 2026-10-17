@@ -65,8 +65,33 @@ class UploadTest(unittest.TestCase):
         self.assertEqual((result.returncode, result.stdout), (1, ""))
         self.assertIn("upload failed: ", result.stderr)
 
+    def test_a_file_over_the_size_cap_stops_before_any_call(self):
+        big = self.file("big.png")
+        with big.open("r+b") as f:
+            f.truncate(10 * 1024 * 1024 + 1)
+        result = self.gh.run(SCRIPT, self.file("ok.png"), big)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("over GitHub's 10 MB limit", result.stderr)
+        self.assertEqual(self.gh.calls, [])
+
+    def test_a_later_failure_keeps_the_lines_already_uploaded(self):
+        self.gh.on("api", "repos/{owner}/{repo}", json={"id": 1})
+        self.gh.on("api", "-X", "POST", once=True, json={"url": "https://github.com/user-attachments/assets/a"})
+        self.gh.on("api", "-X", "POST", exit=1)
+        result = self.gh.run(SCRIPT, self.file("a.png"), self.file("b.png"))
+        self.assertEqual((result.returncode, result.stdout), (1, "![a.png](https://github.com/user-attachments/assets/a)\n"))
+        self.assertIn("upload failed: ", result.stderr)
+        self.assertIn("b.png", result.stderr)
+
+    def test_a_response_without_a_url_fails(self):
+        self.gh.on("api", "repos/{owner}/{repo}", json={"id": 1})
+        self.gh.on("api", "-X", "POST", stdout="")
+        result = self.gh.run(SCRIPT, self.file("a.png"))
+        self.assertEqual((result.returncode, result.stdout), (1, ""))
+        self.assertIn("no URL in the response", result.stderr)
+
     def test_bad_usage_exits_2(self):
-        for args in ((), ("--repo",), ("--force", "a.png")):
+        for args in ((), ("--repo",), ("--repo", "", "a.png"), ("--repo", "--help"), ("--force", "a.png")):
             with self.subTest(args=args):
                 self.assertEqual(self.gh.run(SCRIPT, *args).returncode, 2)
                 self.assertEqual(self.gh.calls, [])

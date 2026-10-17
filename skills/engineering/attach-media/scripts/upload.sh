@@ -11,14 +11,14 @@ set -euo pipefail
 # Uses the endpoint the web UI's drag-and-drop uses, through `gh api`, so it needs
 # push access to the repo: a 404 means no access, so pass --repo with your fork.
 # An upload stays private until a body that GitHub can show references its URL.
-# Exits 1 when a file is missing, unsupported, or rejected, 2 on bad usage.
+# Exits 1 when a file is missing, unsupported, too big, or rejected, 2 on bad usage.
 
 repo=
 files=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help) sed -n '/^# [A-Z]/,/^$/{/^$/q;s/^# \{0,1\}//p;}' "$0"; exit 0 ;;  # the comment above
-    --repo) [[ $# -ge 2 ]] || { echo "error: --repo needs OWNER/REPO" >&2; exit 2; }; repo="$2"; shift ;;
+    --repo) [[ $# -ge 2 && -n "$2" && "$2" != -* ]] || { echo "error: --repo needs OWNER/REPO" >&2; exit 2; }; repo="$2"; shift ;;
     -*) echo "error: unknown option $1" >&2; exit 2 ;;
     *) files+=("$1") ;;
   esac
@@ -43,7 +43,10 @@ mime_of() {
 # Check every file before uploading any, so a typo in the last one leaves nothing half-done.
 for f in "${files[@]}"; do
   [[ -f "$f" ]] || { echo "error: no such file: $f" >&2; exit 1; }
-  mime_of "$f" >/dev/null || { echo "error: unsupported type: $f (png jpg jpeg gif webp svg mov mp4 webm)" >&2; exit 1; }
+  mime="$(mime_of "$f")" || { echo "error: unsupported type: $f (png jpg jpeg gif webp svg mov mp4 webm)" >&2; exit 1; }
+  # GitHub's caps: 10 MB for an image, 100 MB for a video (10 MB on free plans).
+  if [[ "$mime" == video/* ]]; then cap=100; else cap=10; fi
+  [[ "$(wc -c <"$f")" -le $((cap * 1024 * 1024)) ]] || { echo "error: over GitHub's ${cap} MB limit: $f" >&2; exit 1; }
 done
 
 target="${repo:-"{owner}/{repo}"}"  # gh fills the placeholders from the current repo
