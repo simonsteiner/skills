@@ -14,6 +14,7 @@ Reachable only when typed (`disable-model-invocation: true`).
 Model- or user-reachable (rich trigger phrasing so the model can reach for them).
 
 - **[address-review-findings](./address-review-findings/SKILL.md)** — Pull the unresolved review threads on one PR or a stack, fix what's real, then reply and resolve.
+- **[attach-media](./attach-media/SKILL.md)** — Upload local screenshots and recordings to GitHub and return Markdown that embeds them in a PR, issue, or comment.
 - **[conventional-commit](./conventional-commit/SKILL.md)** — Write Conventional Commits v1.0.0 messages and make the commits, split into atomic ones when the work spans concerns.
 - **[frontend-craft](./frontend-craft/SKILL.md)** — Design and build UI with a point of view instead of templated defaults — mode, token plan reviewed against the brief, quality floor, bounded checks — and critique, audit, or polish existing UI.
 - **[pr-body](./pr-body/SKILL.md)** — Write a PR body shaped by the kind of change: before → after for a fix, a real run for a feature, unchanged output for a refactor, a few lines for a chore.

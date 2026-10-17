@@ -3,6 +3,7 @@
   "skills": [
     "./skills/engineering/arch-review",
     "./skills/engineering/address-review-findings",
+    "./skills/engineering/attach-media",
     "./skills/engineering/conventional-commit",
     "./skills/engineering/docs-refactor",
     "./skills/engineering/frontend-craft",
