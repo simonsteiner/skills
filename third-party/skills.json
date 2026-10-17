@@ -66,6 +66,64 @@
       ]
     },
     {
+      "repo": "intercom/2x-skills",
+      "why": "Intercom's skills for Claude Code plugins. Only the generic workflow-hardening skill is curated; the rest are tied to Intercom's plugin install (`${CLAUDE_PLUGIN_ROOT}` scripts, companion hooks skills.sh doesn't install), their stack, or already covered by owned skills.",
+      "skills": [
+        {
+          "name": "secure-github-actions",
+          "path": "plugins/security-tools/skills/secure-github-actions",
+          "why": "Hardening rules for workflow YAML: no `${{ }}` in `run:`, actions pinned by SHA, explicit `permissions:`, `pull_request_target` and `GITHUB_ENV` injection traps, scoping claude-code-action. Self-contained (relative references only) and fires on its own description, so its auto-inject hook isn't needed."
+        }
+      ],
+      "archived": [
+        {
+          "name": "attach-github-assets",
+          "path": "plugins/pr-tools/skills/attach-github-assets",
+          "why": "Never curated; replaced by the owned attach-media, which defaults to gh's own `--attach` and keeps a script only for what that can't reach."
+        },
+        {
+          "name": "create-pr",
+          "path": "plugins/pr-tools/skills/create-pr",
+          "why": "Never curated: its fixed Why?/How? body contradicts pr-body's shape-per-change. Its public-repo leak check, unexplained-files warning, `#N` care and never-invent-the-why rules were adapted into pr-body."
+        },
+        {
+          "name": "thermo-nuclear-code-review",
+          "path": "plugins/code-review-tools/skills/thermo-nuclear-code-review",
+          "why": "Never curated: a sibling of the cursor/plugins review skill already declined for the owned arch-review (ADR 0004)."
+        },
+        {
+          "name": "skill-review",
+          "path": "plugins/skill-tools/skills/skill-review",
+          "why": "Never curated: built around Claude Code plugins with a fixed JSON report; scripts/lint-skills.py and evals cover the checkable part here."
+        },
+        {
+          "name": "fix-flaky-tests",
+          "path": "plugins/test-tools/skills/fix-flaky-tests",
+          "why": "Never curated: only its RSpec/Buildkite references are filled in, and diagnosing-bugs covers the method."
+        },
+        {
+          "name": "audit-memory",
+          "path": "plugins/claude-code-tools/skills/audit-memory",
+          "why": "Never curated: covers only Claude's memory store, and stale memories aren't a problem here yet."
+        },
+        {
+          "name": "cc-cost-analysis",
+          "path": "plugins/claude-code-tools/skills/cc-cost-analysis",
+          "why": "Never curated: team-wide spend from OpenTelemetry in Honeycomb; there's no such pipeline for one user."
+        },
+        {
+          "name": "permissions-analyzer",
+          "path": "plugins/claude-code-tools/skills/permissions-analyzer",
+          "why": "Never curated: the built-in /fewer-permission-prompts covers it."
+        },
+        {
+          "name": "tool-misses",
+          "path": "plugins/claude-code-tools/skills/tool-misses",
+          "why": "Never curated: fixes missing tools with Homebrew on macOS, and runs its script through `${CLAUDE_PLUGIN_ROOT}`."
+        }
+      ]
+    },
+    {
       "repo": "mattpocock/skills",
       "why": "The repo this one forked from. These are the skills worth tracking upstream rather than owning — see docs/adr/0001.",
       "skills": [
