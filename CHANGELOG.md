@@ -1,5 +1,11 @@
 # simonsteiner-skills
 
+## 1.6.2
+
+### Patch Changes
+
+- [#39](https://github.com/simonsteiner/skills/pull/39) [`cfec159`](https://github.com/simonsteiner/skills/commit/cfec159501efd7981f8f9b651342c9b404d103b8) Thanks [@simonsteiner](https://github.com/simonsteiner)! - `pr-body` now reads the diff before writing and asks about files nobody discussed, asks for the why instead of inferring one, keeps internal URLs, names, and customer data out of PRs on public repos, and checks that every `#N` is an intended link.
+
 ## 1.6.1
 
 ### Patch Changes
