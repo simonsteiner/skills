@@ -1,5 +1,11 @@
 # simonsteiner-skills
 
+## 1.6.0
+
+### Minor Changes
+
+- [#37](https://github.com/simonsteiner/skills/pull/37) [`c04db96`](https://github.com/simonsteiner/skills/commit/c04db96ebb204e0bcffd6fad6ae27368605bd5f5) Thanks [@simonsteiner](https://github.com/simonsteiner)! - New model-invoked `download-media` skill: downloads the screenshots, recordings, and files attached to issues, PRs, and review comments — private repos included, where the URLs 404 without auth — so the agent can look at them, pulling frames out of recordings with ffmpeg. `address-review-findings` and `review-prs` now call it when a thread or PR body carries media.
+
 ## 1.5.0
 
 ### Minor Changes
