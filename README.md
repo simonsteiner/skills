@@ -28,6 +28,7 @@ Skills live in buckets under [`skills/`](./skills/) and split on one axis — wh
 #### Model-invoked
 
 - **[address-review-findings](./skills/engineering/address-review-findings/SKILL.md)** — work through the unresolved review threads on one PR or a stack, then reply and resolve.
+- **[attach-media](./skills/engineering/attach-media/SKILL.md)** — upload local screenshots and recordings to GitHub and embed them in a PR, issue, or comment, with no external hosting.
 - **[conventional-commit](./skills/engineering/conventional-commit/SKILL.md)** — write Conventional Commits v1.0.0 messages and make the commits, split into atomic ones when the work spans concerns.
 - **[frontend-craft](./skills/engineering/frontend-craft/SKILL.md)** — design and build UI with a point of view instead of templated defaults: pick the surface's mode, plan and self-review a token system, build to a quality floor; also critique, audit, and polish existing UI.
 - **[pr-body](./skills/engineering/pr-body/SKILL.md)** — write a PR body shaped by the kind of change: before → after for a fix, a real run for a feature, unchanged output for a refactor, a few lines for a chore.

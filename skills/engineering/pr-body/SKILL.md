@@ -82,7 +82,7 @@ Pick the smallest view that makes the change clear, and put each decision's reas
 
 ### Evidence
 
-Screenshots for visual changes, when the environment can take them. Otherwise execution: commands, outputs, tests, measurements. Never a vague "tested locally".
+Screenshots for visual changes, when the environment can take them; call the Skill tool with "attach-media" to embed local captures. Otherwise execution: commands, outputs, tests, measurements. Never a vague "tested locally".
 
 **Fix — before → after**, the same input both times:
 
