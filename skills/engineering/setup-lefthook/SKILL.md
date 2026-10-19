@@ -54,11 +54,14 @@ Every project gets a pre-commit job that blocks any staged file over 5,000 token
 
 2. Add the `file-tokens` job from the catalog's "Every project" section. No `glob:`: every file type counts.
 
-It measures the staged content, not the working tree, and skips what no agent writes: lockfiles, minified bundles, source maps, snapshots, binaries, files `.gitattributes` marks `linguist-generated` or `linguist-vendored`, and files whose first lines carry a codegen header (`@generated`, or `DO NOT EDIT` or `auto-generated` in a comment; prose that only mentions generated code doesn't count). Codegen output the script doesn't recognize gets a `.gitattributes` line (`src/api/schema.ts linguist-generated`), never a raised budget.
+It measures the staged content, not the working tree, and skips what no agent writes: lockfiles, minified bundles, source maps, snapshots, tabular and geographic data (`*.csv`, `*.geojson`, `*.jsonl`, …), anything under `vendor/` or `third_party/`, binaries (including PDFs and other non-UTF-8 files), files `.gitattributes` marks `linguist-generated` or `linguist-vendored`, and files whose first lines carry a codegen header (`@generated`, or `DO NOT EDIT` or `auto-generated` in a comment; prose that only mentions generated code doesn't count). Codegen output the script doesn't recognize gets a `.gitattributes` line (`src/api/schema.ts linguist-generated`), never a raised budget.
 
 When it fails, it lists each file with its size and how many files to split it into, then gives the steps: split along the seams (classes, functions, components, `##` sections that change together) into modules named for what they do, update the imports, split the tests the same way, turn long Markdown into an overview linking to parts, move data out of code, and never minify or `--no-verify` to get under.
 
-**Files already over the budget** fail the next commit that touches them, not every commit. Run the script over every tracked file (`git ls-files -z | xargs -0 python3 scripts/hooks/check-file-tokens.py`) and report what's over, so the user knows what's coming. Splitting them is separate work; offer it, don't do it in this change.
+**Files already over the budget** fail the next commit that touches them, not every commit. Run the script over every tracked file (`git ls-files -z | xargs -0 python3 scripts/hooks/check-file-tokens.py`) and sort what's over into two groups:
+
+- **Not written by hand**: pipeline output (transcripts, reports, exported docs), data the script can't tell from authored files (`*.json`, `*.txt`, `*.html` fixtures and examples), vendored code outside a `vendor/` folder, a tool-written `CHANGELOG.md`. Mark them in `.gitattributes` in this change, one pattern per folder rather than per file (`transcripts/** linguist-generated`, `js/lib/** linguist-vendored`), with a comment saying what writes them. Ask when it's unclear whether a person edits a file.
+- **Written by hand**: source, tests and docs. Report them with their sizes, so the user knows what's coming. Splitting them is separate work; offer it, don't do it in this change.
 
 ---
 

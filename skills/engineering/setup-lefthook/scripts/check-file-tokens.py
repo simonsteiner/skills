@@ -10,7 +10,10 @@ the index doesn't have is ignored. Skipped, because no agent writes them by hand
 
 - lockfiles (package-lock.json, pnpm-lock.yaml, *.lock, go.sum, ...)
 - minified bundles, source maps and test snapshots (*.min.js, *.map, *.snap, ...)
-- binary files (a NUL byte in the first 8000 bytes, git's own test)
+- tabular and geographic data (*.csv, *.tsv, *.geojson, *.jsonl, *.gpx, *.kml, ...)
+- anything under a vendor/, third_party/, node_modules/ or bower_components/ folder
+- binary files: a NUL byte in the first 8000 bytes (git's own test), or bytes that
+  aren't UTF-8 (a PDF has no NUL up front but is no text an agent writes)
 - files git attributes mark linguist-generated or linguist-vendored (.gitattributes)
 - files whose first lines carry a codegen header: "@generated", or "DO NOT EDIT" or
   "auto-generated" on a comment line (Markdown: an HTML comment)
@@ -36,6 +39,11 @@ LOCKFILES = {
     ".terraform.lock.hcl", "flake.lock", "Podfile.lock", "pubspec.lock", "composer.lock",
 }
 NOT_AUTHORED = ("*.lock", "*.lockfile", "*.min.js", "*.min.mjs", "*.min.css", "*.map", "*.snap")
+# Data no agent writes by hand. Not *.json, *.txt or *.html: those are often authored, so a
+# data one gets a linguist-generated line in .gitattributes instead.
+DATA = ("*.csv", "*.tsv", "*.geojson", "*.topojson", "*.jsonl", "*.ndjson", "*.gpx", "*.kml")
+VENDOR_DIRS = {"vendor", "third_party", "third-party", "node_modules", "bower_components"}
+SNIFF = 8000
 # A codegen header, not prose that mentions generated code: "@generated" anywhere, or the
 # phrases on a comment line. In Markdown "#" is a heading, so only an HTML comment counts.
 FLAGS = re.IGNORECASE | re.MULTILINE
@@ -75,11 +83,26 @@ def marked_by_attributes(paths):
     return marked
 
 
+def is_binary(blob):
+    head = blob[:SNIFF]
+    if b"\0" in head:
+        return True
+    try:
+        head.decode("utf-8")
+    except UnicodeDecodeError as e:
+        return e.start < len(head) - 3  # not a character the cut at SNIFF split in two
+    return False
+
+
 def skip_reason(path, blob):
     name = os.path.basename(path)
     if name in LOCKFILES or any(fnmatch.fnmatch(name, pattern) for pattern in NOT_AUTHORED):
         return "lockfile or build output"
-    if b"\0" in blob[:8000]:
+    if any(fnmatch.fnmatch(name.lower(), pattern) for pattern in DATA):
+        return "data"
+    if VENDOR_DIRS.intersection(path.split("/")[:-1]):
+        return "vendored"
+    if is_binary(blob):
         return "binary"
     marker = GENERATED_MARKER_MD if name.lower().endswith(MARKDOWN) else GENERATED_MARKER
     if marker.search(b"\n".join(blob.split(b"\n", HEADER_LINES)[:HEADER_LINES])):
@@ -120,9 +143,10 @@ along its seams, aiming for under {target:,} tokens per new file:
 7. Run the tests and type checks, `git add` the new files and the shortened original,
    and commit again.
 
-Exempt: lockfiles, minified bundles, source maps, snapshots, binaries, files marked
-linguist-generated or linguist-vendored in .gitattributes, and files whose first lines
-carry "@generated", or "DO NOT EDIT" or "auto-generated" in a comment."""
+Exempt: lockfiles, minified bundles, source maps, snapshots, CSV/GeoJSON-style data,
+vendor/ and third_party/ folders, binaries, files marked linguist-generated or
+linguist-vendored in .gitattributes, and files whose first lines carry "@generated",
+or "DO NOT EDIT" or "auto-generated" in a comment."""
 
 
 def main(argv):
