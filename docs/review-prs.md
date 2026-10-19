@@ -6,10 +6,10 @@ Notes on getting the most out of [review-prs](../skills/engineering/review-prs/S
 
 Start the review in a **new thread**, even when only one PR is open.
 
-- **Author bias.** With one PR, review-prs reviews it in the calling thread's own context; only several PRs fan out to sub-agents, each starting empty. If that thread wrote the PR, the reviewer already knows what the code was *meant* to do and reads that intent into the diff — exactly the gaps a fresh reader would catch.
+- **Author bias.** A thread that wrote the PR already knows what the code was *meant* to do and reads that intent into the diff — exactly the gaps a fresh reader would catch. Called partway through a thread, review-prs hands the review itself to a fresh sub-agent for that reason, but the calling thread still verifies and fixes the findings. A new thread keeps the bias out of those steps too.
 - **Context budget.** An implementation thread plus a full review (whole files, checks, then address-review-findings) fills the window fast. Once older turns are summarized, details the review depends on get lost.
 
-Staying in the same thread is fine for a quick re-review after you fixed something, or for a follow-up question about a finding just posted. For a PR's first real review, open a new thread.
+Staying in the same thread is fine for a quick re-review after you fixed something, or for a follow-up question about a finding just posted: the sub-agent does the reading. For a PR's first real review, open a new thread.
 
 ## Thread titles
 

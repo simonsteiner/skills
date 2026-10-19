@@ -62,6 +62,15 @@
         "Reviews #21 only and links it to the thread",
         "Opens the report saying #21 was reviewed only because it is this thread's branch, and lists #22 as still needing a review"
       ]
+    },
+    {
+      "query": "/review-prs",
+      "setup": "Existing T3 Code thread that implemented and opened PR #30 earlier in the conversation; #30 is linked to the thread.",
+      "expected_behavior": [
+        "Hands the review of #30 to a fresh sub-agent rather than reviewing in the thread's own context, even though it is a single PR",
+        "Passes the sub-agent the PR number, worktree path, LENSES.md and spec source, but no summary of the conversation",
+        "Keeps every finding whose trigger holds in the code, including ones that contradict what the thread intended"
+      ]
     }
   ]
 }
