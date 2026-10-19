@@ -5,8 +5,8 @@
     check-file-tokens.py --help
 
 Meant for a lefthook pre-commit job, given {staged_files}. Tokens are estimated as
-bytes / 4 of the staged blob (what will be committed, not the working tree). Skipped,
-because no agent writes them by hand:
+bytes / 4 of the staged blob (what will be committed, not the working tree); a path
+the index doesn't have is ignored. Skipped, because no agent writes them by hand:
 
 - lockfiles (package-lock.json, pnpm-lock.yaml, *.lock, go.sum, ...)
 - minified bundles, source maps and test snapshots (*.min.js, *.map, *.snap, ...)
@@ -44,15 +44,13 @@ def git(*args, stdin=None):
 
 
 def staged_blob(path):
-    """The staged content of `path`, or its working-tree content when it isn't in the index."""
+    """The staged content of `path`, or None when the index has no file there.
+
+    Read through git only, never open(): git refuses a path outside the repo, so an
+    argument like ../../.ssh/id_rsa can't make the script read anything but the index.
+    """
     result = git("cat-file", "blob", f":{path}")
-    if result.returncode == 0:
-        return result.stdout
-    try:
-        with open(path, "rb") as f:
-            return f.read()
-    except OSError:
-        return None  # deleted, a submodule, or not a file
+    return result.stdout if result.returncode == 0 else None  # unstaged, deleted, a submodule, outside the repo
 
 
 def marked_by_attributes(paths):

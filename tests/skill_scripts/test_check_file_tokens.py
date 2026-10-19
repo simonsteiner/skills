@@ -120,6 +120,18 @@ class CheckFileTokensTest(unittest.TestCase):
     def test_a_missing_path_is_ignored(self):
         self.assertEqual(self.run_script("gone.py").returncode, 0)
 
+    def test_an_unstaged_file_is_not_read(self):
+        (self.repo / "loose.py").write_text(BIG)
+        self.assertEqual(self.run_script("loose.py").returncode, 0)
+
+    def test_a_path_outside_the_repo_is_not_read(self):
+        outside = self.repo.parent / f"{self.repo.name}-outside.py"
+        outside.write_text(BIG)
+        self.addCleanup(outside.unlink)
+        for path in (f"../{outside.name}", str(outside)):
+            with self.subTest(path=path):
+                self.assertEqual(self.run_script(path).returncode, 0)
+
     def test_rejects_a_nonpositive_limit(self):
         self.assertEqual(self.run_script("a.py", limit=0).returncode, 2)
 
