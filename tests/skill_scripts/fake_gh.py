@@ -4,10 +4,11 @@ The scripts call `gh` by name; FakeGh puts this one first on PATH. It answers fr
 list of rules, logs every call, and fails any call no rule matches, so a test also
 proves what a script did *not* send.
 
-A rule: {"args": [...prefix of argv...], "stdout": "text" | "json": <value>, "exit": 0,
-"once": false}. With "json" and a `--jq` in argv, the filter runs through the real jq
-(strings raw, everything else compact JSON, as gh prints them), with the caller's
-environment, so `env.X` filters work as they do under gh.
+A rule: {"args": [...prefix of argv...], "stdout": "text" | "json": <value> | "pages":
+[<value>, ...], "exit": 0, "once": false}. "pages" stands for a `--paginate` response,
+one JSON value per page. With "json" or "pages" and a `--jq` in argv, the filter runs
+through the real jq on each page (strings raw, everything else compact JSON, as gh
+prints them), with the caller's environment, so `env.X` filters work as they do under gh.
 """
 
 import json
@@ -62,11 +63,13 @@ def main(argv):
             rules.pop(i)
             rules_path.write_text(json.dumps(rules))
         out = rule.get("stdout", "")
-        if "json" in rule:
-            out = json.dumps(rule["json"])
+        if "json" in rule or "pages" in rule:
+            pages = rule["pages"] if "pages" in rule else [rule["json"]]
+            out = "".join(json.dumps(page) for page in pages)
             if "--jq" in argv:
                 jq = argv[argv.index("--jq") + 1]
-                out = subprocess.run(["jq", "-r", "-c", jq], input=out, capture_output=True, text=True, check=True).stdout
+                out = "".join(subprocess.run(["jq", "-r", "-c", jq], input=json.dumps(page), capture_output=True,
+                                             text=True, check=True).stdout for page in pages)
         sys.stdout.write(out)
         return rule.get("exit", 0)
     sys.stderr.write(f"fake gh: no rule for {argv}\n")
