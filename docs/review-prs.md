@@ -20,4 +20,4 @@ A thread started with just the skill call (`$review-prs`, "review open PRs") get
 
 ## A thread that already has a PR
 
-Called in a thread with linked PRs (T3 Code's `list_thread_pull_requests`), review-prs reviews that PR — or that stack — only, instead of every open PR that needs a review. Name other PRs in the call to override it.
+Called in a thread with open linked PRs (T3 Code's `list_thread_pull_requests`), review-prs reviews those PRs — or that stack — only, instead of every open PR that needs a review. Merged or closed links don't count. Name other PRs in the call to override it.
