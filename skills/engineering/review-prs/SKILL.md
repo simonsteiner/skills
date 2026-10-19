@@ -26,11 +26,14 @@ Review what nobody has looked at, leave the findings where the author will see t
 - A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data) and a running dev server serves the main checkout. Install or copy what a check needs, never symlink it in, or name the check as not run. Never `git stash` to compare before and after: the stash is shared by every worktree.
 - Don't pipe a command whose exit status matters — `git`, `gh`, this skill's scripts — into `| tail`, `| head` or `| wc -l`: the pipe reports the last command's status, so a failure reads as success or as "0 threads". Capture first, then trim or count: `out="$(<command>)" && printf '%s\n' "$out" | wc -l`.
 - When a PR under review changes this skill, the installed skill may be a link into that repo, so its text and scripts change as fixes land mid-run. Read this skill's files at the start and run its scripts from a copy, using the path it prints: `d="$(mktemp -d)" && cp -r <skill-dir>/scripts "$d" && echo "$d/scripts"`. address-review-findings, which Step 4 hands off to, copies its own scripts the same way.
+- In a fork checkout with an `upstream` remote, bare `gh pr …` and `repos/{owner}/{repo}` resolve to the upstream repo, so `gh pr view <n>` fails or reads someone else's PR. If `gh repo view --json nameWithOwner` isn't the repo the PRs live on, prefix every `gh` command and script call with `GH_REPO=<owner>/<repo>` (shell variables don't survive between tool calls).
 - A command a guard or sandbox refuses stays refused. Don't re-run it through a script file or another wrapper; split it as the error asks, or skip it and say so in the report.
 
 ---
 
 ## Step 1 — Find what needs a review (PR mode)
+
+**Called in a thread that already has a PR** → review that PR only, whatever its review state, without the listing and filter below. In T3 Code, `list_thread_pull_requests` lists the PRs linked to the current thread and the stacks they chain into: one open PR → that PR; a linked stack → that stack. PRs the user names still win. No such tool, or nothing linked → find the set as below.
 
 ```bash
 gh pr list --state open --limit 100 --json number,title,author,headRefName,baseRefName,headRefOid,isDraft,reviews
@@ -44,7 +47,7 @@ A PR **needs a review** when either holds:
 
 The set is one PR or many. A PR whose `baseRefName` is another open PR's `headRefName` is **stacked** on it: order each stack base first. Independent PRs have no order. PRs named (`#12 #15`) or "the stack" override the filter. Skip drafts unless asked. Nothing needs a review → say so and stop.
 
-If the harness offers a tool to rename the current thread or session, title it after the set once it's settled — `Review #32: gate push on checks`, `Review stack #24–#31: eval runner`. In T3 Code that's `t3_thread_update` with `{"action": "rename", "title": "<title>"}`; both fields are required. A call that errors gets fixed from the error and retried once; still failing → name it in the report, don't drop it silently. No such tool → skip this.
+Once the set is settled, rename the thread or session **only if its title is generic** — one that names no PR and no topic, as a title generated from a bare skill call does ("Review Open Pull Requests", "Code review PRs"). A title that already says what the thread is about stays as it is, even if it isn't phrased as a review — so does one another agent gave the thread when it launched it. New title: `Review #32: gate push on checks`, `Review stack #24–#31: eval runner`. In T3 Code, read the title with `t3_thread_configuration` (gives `threadId`) then `t3_thread_read`, and rename with `t3_thread_update` and `{"action": "rename", "title": "<title>"}`. A rename that errors gets fixed from the error and retried once; still failing → name it in the report. No such tool → skip this.
 
 ## Step 2 — Review each PR
 
@@ -62,13 +65,13 @@ When the body or a linked issue shows the change in screenshots or a recording (
 
 Work in the printed path until the review is posted, then `git worktree remove --force <path> && rmdir <its parent>`. Fixes happen in Step 4, on the branch itself.
 
-Local mode: pin `git diff <fixed-point>...HEAD`, confirm the ref resolves and the diff isn't empty before anything else. If the harness can rename the thread (Step 1), title it `Review since <fixed-point>: <topic>`.
+Local mode: pin `git diff <fixed-point>...HEAD`, confirm the ref resolves and the diff isn't empty before anything else. A generic title (Step 1) becomes `Review since <fixed-point>: <topic>`.
 
-Read the changed files whole, run the repo's checks — tests, lint, type check, what CI runs (a failure the diff caused is a finding) — then read [LENSES.md](LENSES.md) and review on three axes: **Correctness**, **Standards**, **Spec**. On a re-review, review only `<reviewed-oid>..HEAD` and read the existing threads first so you don't repeat one.
+Read the changed files whole, run the repo's checks — tests, lint, type check, what CI runs — and read `gh pr checks <n>` (a failure the diff caused, local or in CI, is a finding in this review, not a follow-up) — then read [LENSES.md](LENSES.md) and review on three axes: **Correctness**, **Standards**, **Spec**. On a re-review, review only `<reviewed-oid>..HEAD` and read the existing threads first so you don't repeat one.
 
 Don't regenerate committed artifacts or re-run data pipelines to check outputs; a claim only a re-run could verify goes in the summary as not checked.
 
-Several PRs may be reviewed in parallel by sub-agents. Create each one's worktree yourself and pass the path; tell it to return findings only, edit nothing, delete nothing — including its worktree, which you remove — and keep every scratch file in `<its worktree path>/.scratch/`, never in `/tmp` or the `mktemp` folder around the worktree, so removing the worktree removes them too. Verifying, posting and fixing stay with you.
+Several PRs may be reviewed in parallel by sub-agents. Create each one's worktree yourself and pass the path; tell it to return findings only, edit nothing, delete nothing — including its worktree, which you remove — and keep every scratch file in `<its worktree path>/.scratch/`, never in `/tmp` or the `mktemp` folder around the worktree, so removing the worktree removes them too. Verifying, posting and fixing stay with you. A sub-agent that comes back cancelled (a harness restart) or without a result gets relaunched once; don't move on to posting or report until every one has returned.
 
 Spec source, first match: the PR's linked issues and body → a path the user gave → a file under `docs/`, `specs/` or `.scratch/` matching the branch. None found → skip the Spec axis and say so in the summary.
 
@@ -97,12 +100,12 @@ No findings → still post the summary, so the PR stops reading as unreviewed. C
 
 ## Step 4 — Fix and resolve
 
-**PR mode:** call the Skill tool with "address-review-findings" for each PR that got comments. It reads the threads just posted, fixes, commits, pushes, replies with the commit, resolves, and carries fixes up a stack. A stack is fixed one layer at a time, bottom-up, each layer's fixes carried up before the next starts — never in parallel; independent PRs may run in parallel. Expect the verdict **fix** nearly every time; if re-reading shows a finding was wrong, reply saying so and resolve it.
+**PR mode:** call the Skill tool with "address-review-findings" for each PR that got comments. It reads the threads just posted, fixes, commits, pushes, replies with the commit, resolves, and carries fixes up a stack. A stack is fixed one layer at a time, bottom-up, each layer's fixes carried up before the next starts — never in parallel; independent PRs may run in parallel. Expect the verdict **fix** nearly every time; if re-reading shows a finding was wrong, reply saying so and resolve it. Once a PR's fixes are pushed, re-read its title and body: a fix that changed what they describe → call the Skill tool with "pr-body" to rewrite the body, and update the title with `gh pr edit <n> --title`.
 
 **Local mode:** fix each real finding, run the repo's checks, then call the Skill tool with "conventional-commit" to commit.
 
 ## Step 5 — Report
 
-Per PR: link, findings by severity, what was fixed (commit), what's still open and why. Include address-review-findings' per-thread lines; they are the record of what each fix answered. Then a **ready to merge** verdict per PR and per stack: open threads, conflicts, a layer still based on an unmerged branch, and CI from `gh pr checks <n>` run now — never a CI status you didn't just read. Before reporting, `git worktree list` shows none of the worktrees you created, and the scripts copy's folder is deleted. Name every PR skipped because its review was recent enough. Local mode: findings per axis, fixed or not, checks run.
+Per PR: link, the range reviewed (`<base-oid>..<head-oid>`, or `<reviewed-oid>..<head-oid>` on a re-review), findings by severity, what was fixed (commit), what's still open and why. Include address-review-findings' per-thread lines; they are the record of what each fix answered. Then a **ready to merge** verdict per PR and per stack: open threads, conflicts, a layer still based on an unmerged branch, and CI from `gh pr checks <n>` run now — never a CI status you didn't just read. Checks still pending → run `gh pr checks <n> --watch` in the background and report when it exits, or report them as pending; never wait with `sleep`. Before reporting, `git worktree list` shows none of the worktrees you created, and the scripts copy's folder is deleted. Name every PR skipped because its review was recent enough. Local mode: findings per axis, fixed or not, checks run.
 
 Merging is not part of this skill. Don't rewrite history on a branch under review — fixes are new commits.

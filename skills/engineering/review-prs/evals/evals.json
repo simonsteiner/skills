@@ -1,5 +1,7 @@
 {
-  "skills": ["review-prs"],
+  "skills": [
+    "review-prs"
+  ],
   "evals": [
     {
       "query": "do a code review on the open PRs, if they haven't got a review yet or enough code changed since. comment any findings and fix them.",
@@ -9,7 +11,8 @@
         "Reviews #3 on the range since the reviewed commit only, after reading its existing threads",
         "Skips #1 and names it in the report as recent enough",
         "Posts one COMMENT review per reviewed PR through the reviews API, not request-changes",
-        "Calls address-review-findings for PRs that got comments and resolves only threads it fixed"
+        "Calls address-review-findings for PRs that got comments and resolves only threads it fixed",
+        "Renames a generic thread title such as 'Review Open Pull Requests' after the reviewed set, when the harness offers a rename tool"
       ]
     },
     {
@@ -42,6 +45,15 @@
         "Puts the bug on its diff line as an inline comment with a bold severity lead",
         "Puts the concern about the untouched function in the review summary, not as an inline comment",
         "Posts the review pinned to the PR's current head commit"
+      ]
+    },
+    {
+      "query": "review the PR",
+      "setup": "T3 Code thread titled 'Add GPX export' with PR #20 linked to it. Two other open PRs, #18 and #19, have no review yet.",
+      "expected_behavior": [
+        "Calls list_thread_pull_requests and reviews #20 only",
+        "Does not review or comment on #18 or #19",
+        "Keeps the thread title 'Add GPX export' because it is not generic"
       ]
     }
   ]

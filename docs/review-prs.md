@@ -16,4 +16,8 @@ Staying in the same thread is fine for a quick re-review after you fixed somethi
 A thread started with just the skill call (`$review-prs`, "review open PRs") gets a generic title from its first message, so every review thread ends up called "Review Open Pull Requests". Two things help:
 
 - **Name the PRs when you call it** — `/review-prs #32` gives the title generator something to work with.
-- **Let the skill rename the thread.** When the harness offers a rename tool (T3 Code's `t3_thread_update`), review-prs titles the thread after the set it settled on, e.g. `Review #32: gate push on checks` or `Review stack #24–#31: eval runner`. Harnesses without one skip the step.
+- **Let the skill rename a generic title.** When the harness offers a rename tool (T3 Code's `t3_thread_update`) and the title names no PR or topic, review-prs titles the thread after the set it settled on, e.g. `Review #32: gate push on checks`. A thread that already has a meaningful title — say, the one that built the PR — keeps it.
+
+## A thread that already has a PR
+
+Called in a thread with linked PRs (T3 Code's `list_thread_pull_requests`), review-prs reviews that PR — or that stack — only, instead of every open PR that needs a review. Name other PRs in the call to override it.
