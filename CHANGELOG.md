@@ -1,5 +1,11 @@
 # simonsteiner-skills
 
+## 1.6.4
+
+### Patch Changes
+
+- [#41](https://github.com/simonsteiner/skills/pull/41) [`227ea26`](https://github.com/simonsteiner/skills/commit/227ea265df956e641bbcdba10649638c97470247) Thanks [@simonsteiner](https://github.com/simonsteiner)! - review-prs: `post-review.sh` no longer fails with "Argument list too long" on a PR with a very large diff. address-review-findings: `unresolved-threads.sh` now honours `GH_REPO`, so it reads a fork's own PR instead of the upstream's.
+
 ## 1.6.3
 
 ### Patch Changes
