@@ -9,7 +9,8 @@
         "Reviews #3 on the range since the reviewed commit only, after reading its existing threads",
         "Skips #1 and names it in the report as recent enough",
         "Posts one COMMENT review per reviewed PR through the reviews API, not request-changes",
-        "Calls address-review-findings for PRs that got comments and resolves only threads it fixed"
+        "Calls address-review-findings for PRs that got comments and resolves only threads it fixed",
+        "Renames a generic thread title such as 'Review Open Pull Requests' after the reviewed set, when the harness offers a rename tool"
       ]
     },
     {
@@ -42,6 +43,33 @@
         "Puts the bug on its diff line as an inline comment with a bold severity lead",
         "Puts the concern about the untouched function in the review summary, not as an inline comment",
         "Posts the review pinned to the PR's current head commit"
+      ]
+    },
+    {
+      "query": "review the PR",
+      "setup": "T3 Code thread titled 'Add GPX export' with PR #20 linked to it. Two other open PRs, #18 and #19, have no review yet.",
+      "expected_behavior": [
+        "Calls list_thread_pull_requests and reviews #20 only",
+        "Does not review or comment on #18 or #19",
+        "Keeps the thread title 'Add GPX export' because it is not generic"
+      ]
+    },
+    {
+      "query": "/review-prs",
+      "setup": "T3 Code thread with no PR linked, on branch feat/gpx-export, which is the head of open PR #21. Open PR #22 on another branch has no review yet.",
+      "expected_behavior": [
+        "Takes the thread's branch from t3_thread_read, after getting the threadId from t3_thread_configuration",
+        "Reviews #21 only and links it to the thread",
+        "Opens the report saying #21 was reviewed only because it is this thread's branch, and lists #22 as still needing a review"
+      ]
+    },
+    {
+      "query": "/review-prs",
+      "setup": "Existing T3 Code thread that implemented and opened PR #30 earlier in the conversation; #30 is linked to the thread. The thread said empty exports return `[]`, but #30's `export.ts` throws on an empty query.",
+      "expected_behavior": [
+        "Hands the review of #30 to a fresh sub-agent rather than reviewing in the thread's own context, even though it is a single PR",
+        "Passes the sub-agent the PR number, worktree path, LENSES.md and spec source, but no summary of the conversation",
+        "Posts the empty-export throw as a finding, even though the thread intended empty exports to return `[]`"
       ]
     }
   ]
