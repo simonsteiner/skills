@@ -12,7 +12,8 @@ the index doesn't have is ignored. Skipped, because no agent writes them by hand
 - minified bundles, source maps and test snapshots (*.min.js, *.map, *.snap, ...)
 - binary files (a NUL byte in the first 8000 bytes, git's own test)
 - files git attributes mark linguist-generated or linguist-vendored (.gitattributes)
-- files whose first lines say "@generated", "DO NOT EDIT" or "auto-generated"
+- files whose first lines carry a codegen header: "@generated", or "DO NOT EDIT" or
+  "auto-generated" on a comment line (Markdown: an HTML comment)
 
 Prints each file over the budget, with instructions for splitting it, on stderr.
 Exits 0 when every file fits, 1 when any is over, 2 on bad usage. Stdlib only.
@@ -35,7 +36,13 @@ LOCKFILES = {
     ".terraform.lock.hcl", "flake.lock", "Podfile.lock", "pubspec.lock", "composer.lock",
 }
 NOT_AUTHORED = ("*.lock", "*.lockfile", "*.min.js", "*.min.mjs", "*.min.css", "*.map", "*.snap")
-GENERATED_MARKER = re.compile(rb"@generated|do not edit|auto-?generated|code generated", re.IGNORECASE)
+# A codegen header, not prose that mentions generated code: "@generated" anywhere, or the
+# phrases on a comment line. In Markdown "#" is a heading, so only an HTML comment counts.
+FLAGS = re.IGNORECASE | re.MULTILINE
+GENERATED_PHRASE = rb".*(?:do not edit|auto-?generated)"
+GENERATED_MARKER = re.compile(rb"@generated|^\s*(?:#|//|/\*|\*|<!--|--|;)" + GENERATED_PHRASE, FLAGS)
+GENERATED_MARKER_MD = re.compile(rb"@generated|^\s*<!--" + GENERATED_PHRASE, FLAGS)
+MARKDOWN = (".md", ".markdown", ".mdx")
 HEADER_LINES = 5
 
 
@@ -74,7 +81,8 @@ def skip_reason(path, blob):
         return "lockfile or build output"
     if b"\0" in blob[:8000]:
         return "binary"
-    if GENERATED_MARKER.search(b"\n".join(blob.split(b"\n", HEADER_LINES)[:HEADER_LINES])):
+    marker = GENERATED_MARKER_MD if name.lower().endswith(MARKDOWN) else GENERATED_MARKER
+    if marker.search(b"\n".join(blob.split(b"\n", HEADER_LINES)[:HEADER_LINES])):
         return "generated-file header"
     return None
 
@@ -114,7 +122,7 @@ along its seams, aiming for under {target:,} tokens per new file:
 
 Exempt: lockfiles, minified bundles, source maps, snapshots, binaries, files marked
 linguist-generated or linguist-vendored in .gitattributes, and files whose first lines
-say "@generated" or "DO NOT EDIT"."""
+carry "@generated", or "DO NOT EDIT" or "auto-generated" in a comment."""
 
 
 def main(argv):

@@ -54,7 +54,7 @@ Every project gets a pre-commit job that blocks any staged file over 5,000 token
 
 2. Add the `file-tokens` job from the catalog's "Every project" section. No `glob:`: every file type counts.
 
-It measures the staged content, not the working tree, and skips what no agent writes: lockfiles, minified bundles, source maps, snapshots, binaries, files `.gitattributes` marks `linguist-generated` or `linguist-vendored`, and files whose first lines say `@generated` or `DO NOT EDIT`. Codegen output the script doesn't recognize gets a `.gitattributes` line (`src/api/schema.ts linguist-generated`), never a raised budget.
+It measures the staged content, not the working tree, and skips what no agent writes: lockfiles, minified bundles, source maps, snapshots, binaries, files `.gitattributes` marks `linguist-generated` or `linguist-vendored`, and files whose first lines carry a codegen header (`@generated`, or `DO NOT EDIT` or `auto-generated` in a comment; prose that only mentions generated code doesn't count). Codegen output the script doesn't recognize gets a `.gitattributes` line (`src/api/schema.ts linguist-generated`), never a raised budget.
 
 When it fails, it lists each file with its size and how many files to split it into, then gives the steps: split along the seams (classes, functions, components, `##` sections that change together) into modules named for what they do, update the imports, split the tests the same way, turn long Markdown into an overview linking to parts, move data out of code, and never minify or `--no-verify` to get under.
 
