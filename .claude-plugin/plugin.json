@@ -10,6 +10,7 @@
     "./skills/engineering/frontend-craft",
     "./skills/engineering/pr-body",
     "./skills/engineering/review-prs",
+    "./skills/engineering/setup-lefthook",
     "./skills/engineering/sync-and-branch"
   ]
 }
