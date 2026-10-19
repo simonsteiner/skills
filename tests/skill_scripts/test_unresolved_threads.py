@@ -34,11 +34,11 @@ class UnresolvedThreadsTest(unittest.TestCase):
         self.gh.on("repo", "view", json={"nameWithOwner": "o/r"})
         self.gh.on("api", "user", json={"login": "me"})
 
-    def run_with(self, reviews, threads, pr=None):
+    def run_with(self, reviews, threads, pr=None, env=None):
         self.gh.on("pr", "view", str(pr or 7), "--json", "reviews", json={"reviews": reviews})
         self.gh.on("api", "graphql", json={"data": {"repository": {"pullRequest": {"reviewThreads": {
             "pageInfo": {"hasNextPage": False, "endCursor": None}, "nodes": threads}}}}})
-        result = self.gh.run(SCRIPT, *([pr] if pr else []))
+        result = self.gh.run(SCRIPT, *([pr] if pr else []), env=env)
         self.assertEqual(result.returncode, 0, result.stderr)
         return result, [json.loads(line) for line in result.stdout.splitlines()]
 
@@ -51,6 +51,15 @@ class UnresolvedThreadsTest(unittest.TestCase):
         self.assertEqual(graphql[graphql.index("-F") + 1], "number=7")
         self.assertIn("owner=o", graphql)
         self.assertIn("repo=r", graphql)
+
+    def test_gh_repo_wins_over_gh_repo_view(self):
+        for gh_repo in ("fork/r2", "github.com/fork/r2"):
+            with self.subTest(gh_repo=gh_repo):
+                self.run_with([review("")], [], env={"GH_REPO": gh_repo})
+                self.assertNotIn(["repo", "view"], [c["args"][:2] for c in self.gh.calls])
+                [graphql] = [c["args"] for c in self.gh.calls if c["args"][:2] == ["api", "graphql"]]
+                self.assertIn("owner=fork", graphql)
+                self.assertIn("repo=r2", graphql)
 
     def test_awaiting_reviewer_only_when_you_answered_someone_else_last(self):
         _, threads = self.run_with([review("")], [thread("A", "bot", "me"), thread("B", "bot", "me", "bot"),

@@ -140,6 +140,15 @@ class PostReviewTest(unittest.TestCase):
             self.assertIn("nothing posted", result.stderr)
             self.assertEqual(self.gh.calls, [])
 
+    def test_a_diff_too_big_for_argv_still_posts(self):
+        # Replacing a vendored library once made jq die with "Argument list too long":
+        # 10k hunks put the hunk list well past the 128 KiB one argument may hold.
+        big = "".join(f"diff --git a/vendor/lib/f{n}.cpp b/vendor/lib/f{n}.cpp\n--- /dev/null\n"
+                      f"+++ b/vendor/lib/f{n}.cpp\n@@ -0,0 +1 @@\n+x\n" for n in range(10000))
+        self.gh.rules = [r for r in self.gh.rules if r["args"][:2] != ["pr", "diff"]]
+        self.gh.on("pr", "diff", "7", stdout=big)
+        self.assert_posts(comment("vendor/lib/f9999.cpp", 1))
+
     def test_pr_must_be_a_number(self):
         self.assertEqual(self.gh.run(SCRIPT, "x", stdin="{}").returncode, 1)
 

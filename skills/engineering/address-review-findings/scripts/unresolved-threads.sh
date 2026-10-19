@@ -8,6 +8,9 @@ set -euo pipefail
 #
 #   unresolved-threads.sh [pr-number]   default: the PR for the current branch
 #
+# Set GH_REPO=owner/repo to target another repo, e.g. a fork whose checkout has an
+# upstream remote and no `gh repo set-default`.
+#
 # stderr warns when the PR has no real review: no reviews, or only ones that report
 # their own failure ("Copilot encountered an error…", rate-limit notices).
 # awaitingReviewer is true when you (the authenticated user) already replied last in a
@@ -21,9 +24,12 @@ if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
 fi
 
 pr="${1:-$(gh pr view --json number --jq .number)}"
-owner_repo="$(gh repo view --json nameWithOwner --jq .nameWithOwner)"
-owner="${owner_repo%%/*}"
+# GH_REPO ([HOST/]OWNER/REPO) wins: `gh pr` honours it but `gh repo view` doesn't, and in
+# a fork with an upstream remote the latter names the upstream.
+owner_repo="${GH_REPO:-$(gh repo view --json nameWithOwner --jq .nameWithOwner)}"
 repo="${owner_repo##*/}"
+owner="${owner_repo%/*}"
+owner="${owner##*/}"
 export ME; ME="$(gh api user --jq .login)"
 [[ -n "$pr" && -n "$owner" && -n "$repo" && -n "$ME" ]] || { echo "error: could not resolve owner/repo/PR/user (pr='$pr')" >&2; exit 1; }
 
