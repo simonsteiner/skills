@@ -53,6 +53,15 @@
         "Does not review or comment on #18 or #19",
         "Keeps the thread title 'Add GPX export' because it is not generic"
       ]
+    },
+    {
+      "query": "/review-prs",
+      "setup": "T3 Code thread with no PR linked, on branch feat/gpx-export, which is the head of open PR #21. Open PR #22 on another branch has no review yet.",
+      "expected_behavior": [
+        "Takes the thread's branch from t3_thread_read, not the main checkout's HEAD",
+        "Reviews #21 only and links it to the thread",
+        "Opens the report saying #21 was reviewed only because it is this thread's branch, and lists #22 as still needing a review"
+      ]
     }
   ]
 }
