@@ -13,6 +13,7 @@ set -euo pipefail
 # comment's line sits inside a hunk of `gh pr diff`. Comments outside the diff
 # are listed and the script exits 2: move them into the body and run it again.
 # Prints the review URL and its state. Never leaves a PENDING review behind.
+# Set GH_REPO=owner/repo to target another repo, e.g. a fork with an upstream remote.
 
 if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
   sed -n '/^# [A-Z]/,/^$/{/^$/q;s/^# \{0,1\}//p;}' "$0"  # the comment above
@@ -35,7 +36,10 @@ jq -e '(.body | type == "string" and length > 0) and ((.comments // []) | type =
 # A "+++ " line is a path only in a file header; inside a hunk it is an added line.
 # Git ends a path holding a space with a tab, and C-quotes one with a tab, quote,
 # backslash or non-ASCII byte ("b/\303\274.ts"); LC_ALL=C keeps \ooo a single byte.
-hunks="$(gh pr diff "$pr" | LC_ALL=C awk '
+# The list goes to a file, never argv: a big diff overflows the argument limit.
+hunks="$(mktemp)"
+trap 'rm -f "$hunks"' EXIT
+gh pr diff "$pr" | LC_ALL=C awk '
   function path(s,   out, c, i) {
     sub(/\t$/, "", s)
     if (s == "/dev/null") return ""
@@ -65,11 +69,11 @@ hunks="$(gh pr diff "$pr" | LC_ALL=C awk '
   /^@@ / {
     header = 0; hunk++; p = (new != "" ? new : old)
     side("LEFT", old != "" ? p : "", $2); side("RIGHT", new != "" ? p : "", $3)
-  }')"
+  }' >"$hunks"
 
 # A comment fits when each end sits inside its side's lines of one hunk: `line` on
 # `side` (default RIGHT), and `start_line` on `start_side` (default: `side`).
-outside="$(jq -r --arg hunks "$hunks" '
+outside="$(jq -r --rawfile hunks "$hunks" '
   ($hunks | split("\n") | map(split("\u001f") | select(length == 5)
     | {side: .[0], path: .[1], first: (.[2] | tonumber), last: (.[3] | tonumber), hunk: .[4]})) as $h
   | def hunks($path; $side; $n): [$h[] | select(.side == $side and .path == $path and .first <= $n and $n <= .last) | .hunk];
