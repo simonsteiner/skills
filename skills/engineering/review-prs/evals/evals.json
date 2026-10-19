@@ -1,7 +1,5 @@
 {
-  "skills": [
-    "review-prs"
-  ],
+  "skills": ["review-prs"],
   "evals": [
     {
       "query": "do a code review on the open PRs, if they haven't got a review yet or enough code changed since. comment any findings and fix them.",
