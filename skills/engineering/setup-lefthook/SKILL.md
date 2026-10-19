@@ -35,7 +35,7 @@ Compose it from the jobs in [references/JOBS.md](references/JOBS.md). These rule
 - **One fixer per file type.** Two fixers rewriting the same file at once undo each other's work. When one tool both fixes and formats, chain both steps in one job (`ruff check --fix … && ruff format …`). Readers (cspell, a type checker) can run beside the fixer.
 - **Every fixer has `stage_fixed: true`**, so its fixes land in the commit instead of being left unstaged.
 - **`{staged_files}` for per-file tools; the whole project for cross-file ones.** mypy, tsc, clippy, a repo-wide linter and tests give different answers on a subset, so they run whole and keep a `glob:` only to decide whether they run at all. The comment says which, and why.
-- **Excludes live in the tool's own config** (`.rumdl.toml`, `cspell.json`'s `ignorePaths`, mypy's `exclude`), so the hook, CI and the editor agree. A lefthook `exclude:` is for a tool that can't express it.
+- **Excludes live in the tool's own config** (`.rumdl.toml`, `cspell.json`'s `ignorePaths`, mypy's `exclude`), so the hook, CI and the editor agree. A tool that applies them only to files it finds itself gets the flag that applies them to named files too (ruff's `--force-exclude`). A lefthook `exclude:` is for a tool that can't express it.
 - **Slow goes to pre-push.** A test suite over ~10 seconds runs in `pre-push`, not on every commit.
 - **One-off runners pin a version**: `uvx tool@1.2.3`, `npx --yes tool@1.2.3`. Project tools run through the project (`uv run`, `npm exec --`), which already pins them.
 - **A comment says why, not what**: where the config lives, why this job runs whole, why it's a separate job. A job whose `run:` line explains itself gets none.

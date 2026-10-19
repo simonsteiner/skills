@@ -24,6 +24,22 @@ The file opens with the reference and the one command that installs the hooks in
 # Install the git hooks with: uv run lefthook install
 ```
 
+Then the hooks. Every job in this catalog is an entry under `commands:`, a map keyed by job name, not lefthook 2's `jobs:` list:
+
+```yaml
+pre-commit:
+  parallel: true
+  commands:
+    ruff:
+      glob: "*.py"
+      run: …
+
+pre-push:
+  commands:
+    test:
+      run: …
+```
+
 | Project | Add lefthook | Install line |
 |---|---|---|
 | uv | `uv add --dev lefthook` | `uv run lefthook install` |
@@ -73,10 +89,11 @@ For a repo carrying vendored or reference code, a diff check that ignores it:
 
 ```yaml
     # One job, not two: two fixers rewriting the same files at once undo each
-    # other's fixes.
+    # other's fixes. --force-exclude: ruff skips its configured excludes only for
+    # files it finds itself, not for files named on the command line.
     ruff:
       glob: "*.py"
-      run: uv run ruff check --fix {staged_files} && uv run ruff format {staged_files}
+      run: uv run ruff check --fix --force-exclude {staged_files} && uv run ruff format --force-exclude {staged_files}
       stage_fixed: true
 
     # The whole project, not the staged files: a file's errors depend on what it
