@@ -12,85 +12,36 @@ from .fake_gh import FakeGh
 
 SCRIPT = Path(__file__).resolve().parents[2] / "skills/engineering/review-prs/scripts/post-review.sh"
 REVIEWS = "repos/{owner}/{repo}/pulls/7/reviews"
+FILES = "repos/{owner}/{repo}/pulls/7/files?per_page=100"
 
-# Line numbers per hunk:
+# Line numbers per hunk, as GitHub's files API lists them (raw paths, a `patch` per file):
 #   src/a.ts   old 100-103, new 10-12  (101-102 deleted, 11 added)
 #              old 200-201, new 50-52  (a "+++ " line added inside the hunk is content, not a header)
 #   new.ts     new 1-2 (added file; no old side)
 #   gone.ts    old 1-2 (deleted file; no new side)
-#   sp ace.ts  line 5 both sides (git ends a header path holding a space with a tab)
-#   ümlaut.ts, ta<TAB>b.ts, x<CR>y.ts, x<LF>y.ts  line 1 both sides (git C-quotes these, octal for non-ASCII)
+#   sp ace.ts, ümlaut.ts, ta<TAB>b.ts, x<CR>y.ts, x<LF>y.ts  line 1 or 5 both sides (paths git would quote)
 #   renamed.ts (from old.ts)  old 10-11, new 10-11
-DIFF = """\
-diff --git a/src/a.ts b/src/a.ts
-index 1111111..2222222 100644
---- a/src/a.ts
-+++ b/src/a.ts
-@@ -100,4 +10,3 @@ function f() {
- keep
--removed one
--removed two
-+added
- keep
-@@ -200,2 +50,3 @@
- keep
-++++ not/a/header
- keep
-diff --git a/new.ts b/new.ts
-new file mode 100644
---- /dev/null
-+++ b/new.ts
-@@ -0,0 +1,2 @@
-+x
-+y
-diff --git a/gone.ts b/gone.ts
-deleted file mode 100644
---- a/gone.ts
-+++ /dev/null
-@@ -1,2 +0,0 @@
--x
--y
-diff --git a/sp ace.ts b/sp ace.ts
---- a/sp ace.ts\t
-+++ b/sp ace.ts\t
-@@ -5 +5 @@
--old
-+new
-diff --git "a/\\303\\274mlaut.ts" "b/\\303\\274mlaut.ts"
---- "a/\\303\\274mlaut.ts"
-+++ "b/\\303\\274mlaut.ts"
-@@ -1 +1 @@
--old
-+new
-diff --git a/old.ts b/renamed.ts
-similarity index 80%
-rename from old.ts
-rename to renamed.ts
---- a/old.ts
-+++ b/renamed.ts
-@@ -10,2 +10,2 @@
- keep
--was
-+now
-diff --git "a/x\\ny.ts" "b/x\\ny.ts"
---- "a/x\\ny.ts"
-+++ "b/x\\ny.ts"
-@@ -1 +1 @@
--old
-+new
-diff --git "a/x\\ry.ts" "b/x\\ry.ts"
---- "a/x\\ry.ts"
-+++ "b/x\\ry.ts"
-@@ -1 +1 @@
--old
-+new
-diff --git "a/ta\\tb.ts" "b/ta\\tb.ts"
---- "a/ta\\tb.ts"
-+++ "b/ta\\tb.ts"
-@@ -1 +1 @@
--old
-+new
-"""
+#   data/t3.json  no `patch`: GitHub shows no diff for it (too large or generated)
+# Two pages, as `--paginate` returns them.
+FILES_PAGES = [
+    [
+        {"filename": "src/a.ts", "status": "modified",
+         "patch": "@@ -100,4 +10,3 @@ function f() {\n keep\n-removed one\n-removed two\n+added\n keep\n"
+                  "@@ -200,2 +50,3 @@\n keep\n++++ not/a/header\n keep"},
+        {"filename": "new.ts", "status": "added", "patch": "@@ -0,0 +1,2 @@\n+x\n+y"},
+        {"filename": "gone.ts", "status": "removed", "patch": "@@ -1,2 +0,0 @@\n-x\n-y"},
+        {"filename": "sp ace.ts", "status": "modified", "patch": "@@ -5 +5 @@\n-old\n+new"},
+        {"filename": "ümlaut.ts", "status": "modified", "patch": "@@ -1 +1 @@\n-old\n+new"},
+    ],
+    [
+        {"filename": "renamed.ts", "previous_filename": "old.ts", "status": "renamed",
+         "patch": "@@ -10,2 +10,2 @@\n keep\n-was\n+now"},
+        {"filename": "x\ny.ts", "status": "modified", "patch": "@@ -1 +1 @@\n-old\n+new"},
+        {"filename": "x\ry.ts", "status": "modified", "patch": "@@ -1 +1 @@\n-old\n+new"},
+        {"filename": "ta\tb.ts", "status": "modified", "patch": "@@ -1 +1 @@\n-old\n+new"},
+        {"filename": "data/t3.json", "status": "modified"},
+    ],
+]
 
 
 def comment(path, line, **extra):
@@ -102,7 +53,7 @@ class PostReviewTest(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.gh = FakeGh(tmp.name)
-        self.gh.on("pr", "diff", "7", stdout=DIFF)
+        self.gh.on("api", FILES, "--paginate", pages=FILES_PAGES)
         self.gh.on("api", "user", json={"login": "me"})
 
     def post(self, *comments, body="1 finding."):
@@ -143,11 +94,39 @@ class PostReviewTest(unittest.TestCase):
     def test_a_diff_too_big_for_argv_still_posts(self):
         # Replacing a vendored library once made jq die with "Argument list too long":
         # 10k hunks put the hunk list well past the 128 KiB one argument may hold.
-        big = "".join(f"diff --git a/vendor/lib/f{n}.cpp b/vendor/lib/f{n}.cpp\n--- /dev/null\n"
-                      f"+++ b/vendor/lib/f{n}.cpp\n@@ -0,0 +1 @@\n+x\n" for n in range(10000))
-        self.gh.rules = [r for r in self.gh.rules if r["args"][:2] != ["pr", "diff"]]
-        self.gh.on("pr", "diff", "7", stdout=big)
+        big = [[{"filename": f"vendor/lib/f{n}.cpp", "status": "added", "patch": "@@ -0,0 +1 @@\n+x"}
+                for n in range(page * 100, page * 100 + 100)] for page in range(100)]
+        self.gh.rules = [r for r in self.gh.rules if r["args"][:2] != ["api", FILES]]
+        self.gh.on("api", FILES, "--paginate", pages=big)
         self.assert_posts(comment("vendor/lib/f9999.cpp", 1))
+
+    def test_a_pr_too_big_for_gh_pr_diff_still_posts(self):
+        # GitHub answers `gh pr diff` with HTTP 406 past 300 files or 20,000 lines, so a
+        # 301-file PR could not be reviewed at all; the files API pages through it.
+        big = [[{"filename": f"gen/f{n}.ts", "status": "added", "patch": "@@ -0,0 +1,100 @@\n" + "+x\n" * 100}
+                for n in range(page * 100, min(page * 100 + 100, 301))] for page in range(4)]
+        self.gh.rules = [r for r in self.gh.rules if r["args"][:2] != ["api", FILES]]
+        self.gh.on("api", FILES, "--paginate", pages=big)
+        self.gh.on("pr", "diff", "7", exit=1,
+                   stdout="HTTP 406: Sorry, the diff exceeded the maximum number of files (300).")
+        self.assert_posts(comment("gen/f300.ts", 100))
+        self.assertFalse([c for c in self.gh.calls if c["args"][:2] == ["pr", "diff"]])
+
+    def test_a_file_github_shows_no_diff_for_is_outside(self):
+        # A large or generated file (data/t3.json) used to pass the `gh pr diff` check, then
+        # GitHub rejected the whole review with 422 "Line could not be resolved".
+        self.assert_outside(self.post(comment("data/t3.json", 1), comment("src/a.ts", 11)), "data/t3.json:1")
+
+    def test_the_3000_file_cap_is_named_when_a_comment_is_outside(self):
+        capped = [[{"filename": f"f{n}.ts", "status": "added", "patch": "@@ -0,0 +1 @@\n+x"}
+                   for n in range(page * 100, page * 100 + 100)] for page in range(30)]
+        self.gh.rules = [r for r in self.gh.rules if r["args"][:2] != ["api", FILES]]
+        self.gh.on("api", FILES, "--paginate", pages=capped)
+        result = self.post(comment("f3000.ts", 1))
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("f3000.ts:1", result.stderr)
+        self.assertIn("only the first 3000 files", result.stderr)
+        self.assertEqual(self.posted(), [])
 
     def test_pr_must_be_a_number(self):
         self.assertEqual(self.gh.run(SCRIPT, "x", stdin="{}").returncode, 1)
@@ -173,14 +152,12 @@ class PostReviewTest(unittest.TestCase):
         # 9f91a46: "++++ not/a/header" was read as a new path, so line 51 fell outside.
         self.assert_posts(comment("src/a.ts", 51))
 
-    def test_paths_as_git_writes_them(self):
+    def test_paths_git_would_quote_match_as_they_are(self):
         self.assert_posts(comment("sp ace.ts", 5), comment("ümlaut.ts", 1), comment("ta\tb.ts", 1, side="LEFT"),
-                          comment("x\ry.ts", 1))
+                          comment("x\ry.ts", 1), comment("x\ny.ts", 1))
 
-    def test_a_path_with_a_newline_reads_as_outside_not_as_a_crash(self):
-        result = self.post(comment("x\ny.ts", 1))
-        self.assertEqual(result.returncode, 2, result.stderr)
-        self.assertEqual(self.posted(), [])
+    def test_paths_match_exactly(self):
+        self.assert_outside(self.post(comment("sp ace.ts\t", 5), comment("a.ts", 11)), "sp ace.ts\t:5", "a.ts:11")
 
     def test_a_renamed_file_is_addressed_by_its_new_path_on_both_sides(self):
         self.assert_posts(comment("renamed.ts", 11, side="LEFT"),
