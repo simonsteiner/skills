@@ -1,5 +1,17 @@
 # simonsteiner-skills
 
+## 1.7.0
+
+### Minor Changes
+
+- [#42](https://github.com/simonsteiner/skills/pull/42) [`e9cbd48`](https://github.com/simonsteiner/skills/commit/e9cbd4861be4fc4adf094a5a95c226db2d1ab7fa) Thanks [@simonsteiner](https://github.com/simonsteiner)! - review-prs, called in a thread that already has a linked PR or stack, reviews only that instead of every open PR that needs a review; with nothing linked, an open PR on the thread's own branch counts, and the report says the review was narrowed. Called partway through a thread, it hands the review to a fresh sub-agent, even for a single PR, so the thread's knowledge of what the code was meant to do doesn't bias it. It now renames the thread only when the title is generic, keeping one that already says what the thread is about.
+
+  It also reads CI before posting so a red job lands in the same review, sets `GH_REPO` in fork checkouts, waits for pending checks with `gh pr checks --watch` instead of `sleep`, relaunches sub-agents a harness restart cancelled, updates the PR's title and body when fixes change what they describe, and states the commit range each review covered.
+
+### Patch Changes
+
+- [#43](https://github.com/simonsteiner/skills/pull/43) [`3456a0e`](https://github.com/simonsteiner/skills/commit/3456a0e4c666365c2aaf805fb2ed2f09c2be45c9) Thanks [@simonsteiner](https://github.com/simonsteiner)! - review-prs: `post-review.sh` now works on PRs too big for `gh pr diff` (over 300 files or 20,000 lines), which GitHub refused with HTTP 406. It reads the hunks from GitHub's PR files API instead. A comment on a file GitHub shows no diff for, such as a large generated file, is now reported as outside the diff before posting. Before, GitHub rejected the whole review with 422 "Line could not be resolved".
+
 ## 1.6.4
 
 ### Patch Changes
