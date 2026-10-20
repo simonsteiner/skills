@@ -12,7 +12,7 @@ pre-commit:
 
     # Same as CI: the tooling, and the scripts bundled in skills against a fake gh.
     tests:
-      glob: "{scripts/*.py,scripts/**/*.py,tests/*.py,tests/**/*.py,skills/*/*/scripts/*}"
+      glob: "{scripts/*.py,scripts/**/*.py,tests/*.py,tests/**/*.py,skills/*/*/scripts/*,.lefthook/**}"
       run: python3 -m unittest discover -s tests -t .
 
     # Same as CI's Ruff step; bump the version in both places.
