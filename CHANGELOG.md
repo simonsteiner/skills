@@ -1,5 +1,11 @@
 # simonsteiner-skills
 
+## 1.8.0
+
+### Minor Changes
+
+- [#44](https://github.com/simonsteiner/skills/pull/44) [`f951dcc`](https://github.com/simonsteiner/skills/commit/f951dcc57f0396ecab792c57c70dbb1f0706ecc6) Thanks [@simonsteiner](https://github.com/simonsteiner)! - Add `setup-lefthook`: sets up lefthook git hooks for a project's stack, following the conventions shared by my existing `lefthook.yml` files, and adds a pre-commit check that blocks any staged agent-written file over 5,000 tokens (bytes / 4), skipping lockfiles and generated code, with step-by-step instructions for splitting the file.
+
 ## 1.7.0
 
 ### Minor Changes
