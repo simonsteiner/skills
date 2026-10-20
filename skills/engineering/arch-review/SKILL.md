@@ -59,7 +59,7 @@ Rank: strength, then live defect, then churn, then dependency order (a candidate
 ## Step 3 — Land the report as the backlog
 
 - **New report:** cut `docs/arch-review-<slug>` from the fresh default branch (`git fetch origin && git switch --no-track -c docs/arch-review-<slug> origin/<default>`), then call the Skill tool with "conventional-commit" to commit the report and index. Push and open a PR. This is the base of the stack — merging it puts the backlog on the default branch for every later session.
-- **Resume:** reconcile the report's status table (its `README.md`; an older single-file report is resumed as it is, not converted) against reality first — `gh pr list --state all --head <branch>` for each open row, and `git branch -a`. Fix rows that lag (a merged PR still marked `pr-open`). The next base is the tip of the highest open branch in the stack, or the default branch if everything merged.
+- **Resume:** reconcile the report's status table (its `README.md`; an older single-file report is resumed as it is, not converted — if it's over the budget, add `<path> linguist-generated` to `.gitattributes` in the first commit that touches it, or the check blocks that commit) against reality first — `gh pr list --state all --head <branch>` for each open row, and `git branch -a`. Fix rows that lag (a merged PR still marked `pr-open`). The next base is the tip of the highest open branch in the stack, or the default branch if everything merged.
 
 `/arch-review report` stops here and reports the PR.
 
@@ -97,7 +97,7 @@ Between phases, check the hand-back — Decisions in the report, checks green, P
 
 Put these in every brief:
 
-- Read your candidate's card file, not the rest of the report (in an older single-file report: `grep -n` its heading, then read that range).
+- Read the overview's `README.md` and your candidate's card file (a batch of smaller findings: their `S` entries, in the overview or `smaller-findings.md`), nothing else in the report (in an older single-file report: `grep -n` the Status table and your candidate's heading, then read those ranges).
 - Read files in ranges (`grep -n`, then `sed -n` or `Read` with offset/limit); never a whole test file or a whole module you aren't rewriting.
 - Trim command output: `… 2>&1 | tail -40` for tests, lint, and typecheck; `git diff --stat` before any full diff.
 - Don't re-read what you already hold; keep notes in the report or the commit, not in the conversation.
