@@ -1,5 +1,11 @@
 # simonsteiner-skills
 
+## 1.9.0
+
+### Minor Changes
+
+- [#45](https://github.com/simonsteiner/skills/pull/45) [`3f04ebf`](https://github.com/simonsteiner/skills/commit/3f04ebf4450d27a6aa302c2cdf09a7c1106b8da9) Thanks [@simonsteiner](https://github.com/simonsteiner)! - `arch-review` now works with the per-file token budget from `setup-lefthook`. It runs the project's `check-file-tokens.py` as its size lens, and gives every file over the budget a row that plans the split along the module's seams. New reports are a folder, an overview `README.md` plus one file per candidate card, so no report file goes over the budget. Older single-file reports are left as they are, and any over the budget are marked `linguist-generated`.
+
 ## 1.8.0
 
 ### Minor Changes
