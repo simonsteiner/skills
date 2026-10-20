@@ -1,0 +1,1 @@
+../../skills/engineering/setup-lefthook/scripts/check-file-tokens.py

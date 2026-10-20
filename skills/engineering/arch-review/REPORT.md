@@ -6,7 +6,7 @@ The look is borrowed from upstream's HTML report: diagrams carry the weight, pro
 
 ## Token budget
 
-Every file in the report stays under the project's token budget: what its `check-file-tokens.py` enforces (5,000 tokens unless `lefthook.yml` passes `--max-tokens`), or 5,000 tokens when it has none. Bytes / 4 is the measure, so 20 KB at the default. A card that runs over has too many files or too long a diagram: trim the diagram to the modules that carry the point. An overview that runs over moves **Smaller findings** to `smaller-findings.md` beside it, and points the jump link and the Status rows' `S` links there (`smaller-findings.md#s1--title`).
+Every file in the report stays under the project's token budget: what its `file-tokens` job enforces (5,000 tokens unless the job passes `--max-tokens`), or 5,000 tokens when it has none. Bytes / 4 is the measure, so 20 KB at the default. A card that runs over has too many files or too long a diagram: trim the diagram to the modules that carry the point. An overview that runs over moves **Smaller findings** to `smaller-findings.md` beside it, and points the jump link and the Status rows' `S` links there (`smaller-findings.md#s1--title`).
 
 Reports written before this layout are single files. They're dated records: leave them as they are, and mark any over the budget `linguist-generated` in `.gitattributes` so the check skips them, rather than splitting them.
 
