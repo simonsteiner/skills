@@ -18,7 +18,7 @@ Repo-wide, weighted to the hot spots — not just a diff.
 - **Spaghetti growth:** special-case conditionals scattered through unrelated flows; one-off booleans, nullable modes, flags threaded through existing paths. Repeated conditionals on the same thing signal a missing model.
 - **Unstated invariants:** casts, `any`/`unknown`, needless optionality, silent fallbacks papering over a contract. These are interface problems — the invariant belongs in the interface.
 - **Wrong module:** feature logic in a shared module; a bespoke helper beside a canonical one doing the same job.
-- **Size as a pointer:** files over ~1,000 lines, especially ones that crossed it recently (`git log --stat`). Look inside: one deep module is fine; several unrelated responsibilities is a candidate.
+- **Size as a pointer:** files over the project's token budget (what its `check-file-tokens.py` lists), or over ~1,000 lines when it has no such check, especially ones that crossed it recently (`git log --stat`). Look inside: several unrelated responsibilities is a candidate. One deep module over the budget is not a deepening; it still needs a split, because the pre-commit check blocks its next commit. That's a smaller finding (or it rides with the candidate touching the file), and it names the files the module splits into along its internal seams, with the interface left where it is. A deep module can span several files behind one interface.
 - **Orchestration:** independent work serialized for no reason; related updates that can leave state half-applied.
 - **Code judo:** is there a reframing that makes whole branches, modes, or modules disappear? Prefer it over tidying them.
 
@@ -29,7 +29,7 @@ A lens-2 issue that spans modules becomes a candidate; one that stays inside a m
 The PR isn't done while any of these hold, unless the report's Departures explain why:
 
 - A visible path to delete complexity was left unused; complexity moved rather than shrank.
-- A file crossed 1,000 lines because of this PR.
+- A file crossed the project's token budget (or 1,000 lines, without one) because of this PR.
 - New ad-hoc branching in an existing flow, or feature checks scattered through shared code.
 - A new pass-through module, a single-adapter seam, or a cast-heavy interface.
 - A near-duplicate of an existing helper, or logic placed outside the module that owns the concept.
