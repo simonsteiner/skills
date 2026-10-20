@@ -1,0 +1,8 @@
+# Loaded by repos that take the shared token-budget script from this repo as a
+# lefthook remote. It ships .lefthook/pre-commit/check-file-tokens.py, a copy of
+# skills/engineering/setup-lefthook/scripts/check-file-tokens.py that a test
+# keeps identical (a symlink checks out as a text file on Windows). The job and
+# its --max-tokens live in each repo's own lefthook.yml. No jobs here: a job
+# defined in a remote fails open when the remote can't be fetched, and a repo
+# can't override it.
+min_version: 2.0.5 # `args:` on script jobs

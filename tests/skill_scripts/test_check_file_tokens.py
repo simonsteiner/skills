@@ -9,7 +9,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-SCRIPT = Path(__file__).resolve().parents[2] / "skills/engineering/setup-lefthook/scripts/check-file-tokens.py"
+ROOT = Path(__file__).resolve().parents[2]
+SCRIPT = ROOT / "skills/engineering/setup-lefthook/scripts/check-file-tokens.py"
+# What the lefthook remote (lefthook/file-tokens.yml) ships to other repos.
+REMOTE_COPY = ROOT / ".lefthook/pre-commit/check-file-tokens.py"
 
 # A git hook running the suite exports GIT_DIR, GIT_INDEX_FILE, …; they'd point every call at the outer repo.
 ENV = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
@@ -174,6 +177,16 @@ class CheckFileTokensTest(unittest.TestCase):
 
     def test_rejects_a_nonpositive_limit(self):
         self.assertEqual(self.run_script("a.py", limit=0).returncode, 2)
+
+
+
+class RemoteCopyTest(unittest.TestCase):
+    def test_the_remote_copy_matches_the_skill_script(self):
+        # A regular file, not a symlink: a clone with core.symlinks=false (Git for Windows) checks a
+        # symlink out as a text file holding its target, and python3 fails on it.
+        self.assertFalse(REMOTE_COPY.is_symlink())
+        self.assertEqual(REMOTE_COPY.read_bytes(), SCRIPT.read_bytes(), "copy the skill script to " + str(REMOTE_COPY))
+        self.assertTrue(os.access(REMOTE_COPY, os.X_OK))
 
 
 if __name__ == "__main__":

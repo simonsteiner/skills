@@ -24,7 +24,7 @@ The file opens with the reference and the one command that installs the hooks in
 # Install the git hooks with: uv run lefthook install
 ```
 
-Then the hooks. Every job in this catalog is an entry under `commands:`, a map keyed by job name, not lefthook 2's `jobs:` list:
+Then the hooks. Every job in this catalog but one is an entry under `commands:`, a map keyed by job name. The exception is the token budget in [Every project](#every-project): it runs a script lefthook fetches from a remote, so it's a `jobs:` entry with a `name:`. A hook can hold both, and lefthook runs both:
 
 ```yaml
 pre-commit:
@@ -63,16 +63,41 @@ The header for a Node project names both ways in:
 
 ## Every project
 
+The token budget's script comes from [simonsteiner/skills](https://github.com/simonsteiner/skills) as a remote, pinned to a tag; the job that runs it, and the budget, stay in the project's file. `min_version` and `remotes:` are top-level keys, beside the hooks:
+
 ```yaml
+min_version: 2.0.5 # `args:` on script jobs
+
+remotes:
+  # The shared token-budget script. A tag, never a commit SHA. Bump `ref` to
+  # update; the next commit fetches it.
+  - git_url: https://github.com/simonsteiner/skills
+    ref: filetokens.v1.0.0
+    configs:
+      - lefthook/file-tokens.yml
+
+pre-commit:
+  parallel: true
+  jobs:
     # Every staged file an agent writes stays under 5,000 tokens (bytes / 4), so
     # an agent can read it whole. Lockfiles, build output, binaries and generated
     # files are skipped; mark more with linguist-generated in .gitattributes.
-    # On failure it prints how to split the file.
-    file-tokens:
-      run: python3 scripts/hooks/check-file-tokens.py --max-tokens 5000 {staged_files}
+    # On failure it prints how to split the file. The script comes from the
+    # remote above; the budget is set here.
+    - name: file-tokens
+      script: check-file-tokens.py
+      runner: python3
+      args: --max-tokens 5000 {staged_files}
+  commands:
+    …
 ```
 
 No `glob`: every file type counts. Lefthook skips a job whose `{staged_files}` comes out empty, so a commit that only deletes files doesn't run it.
+
+- **Look up the latest `filetokens.v*` tag** (`git ls-remote --tags https://github.com/simonsteiner/skills 'filetokens.v*'`) rather than copying the one above.
+- **The job stays here, not in the remote.** A clone that can't fetch the remote then fails the commit with `script does not exist` instead of committing unchecked, and `args:` here decides the budget; a job defined in the remote can't be overridden from `lefthook.yml`.
+- **`ref:` takes a tag with no `-` or `/` in it.** lefthook clones with `--branch`, so a commit SHA fails. When a fetch fails, lefthook falls back to the cached clone, but for a ref with `-` or `/` it can't find it and deletes it instead.
+- **Keep the default `source_dir`** (`.lefthook/`): lefthook looks for a remote's scripts under the project's `source_dir`, so a project that changes it won't find the script. A project's own `.lefthook/pre-commit/` must not hold a script of the same name, or both run.
 
 For a repo carrying vendored or reference code, a diff check that ignores it:
 
