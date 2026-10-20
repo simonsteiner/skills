@@ -72,7 +72,7 @@ remotes:
   # The shared token-budget script. A tag, never a commit SHA. Bump `ref` to
   # update; the next commit fetches it.
   - git_url: https://github.com/simonsteiner/skills
-    ref: file-tokens-v1.0.0
+    ref: filetokens.v1.0.0
     configs:
       - lefthook/file-tokens.yml
 
@@ -94,9 +94,9 @@ pre-commit:
 
 No `glob`: every file type counts. Lefthook skips a job whose `{staged_files}` comes out empty, so a commit that only deletes files doesn't run it.
 
-- **Look up the latest `file-tokens-v*` tag** (`git ls-remote --tags https://github.com/simonsteiner/skills 'file-tokens-v*'`) rather than copying the one above.
+- **Look up the latest `filetokens.v*` tag** (`git ls-remote --tags https://github.com/simonsteiner/skills 'filetokens.v*'`) rather than copying the one above.
 - **The job stays here, not in the remote.** A clone that can't fetch the remote then fails the commit with `script does not exist` instead of committing unchecked, and `args:` here decides the budget; a job defined in the remote can't be overridden from `lefthook.yml`.
-- **`ref:` takes a tag.** lefthook clones with `--branch`, so a commit SHA fails, and with a hyphenated tag its fallback deletes the cached clone.
+- **`ref:` takes a tag with no `-` or `/` in it.** lefthook clones with `--branch`, so a commit SHA fails. When a fetch fails, lefthook falls back to the cached clone, but for a ref with `-` or `/` it can't find it and deletes it instead.
 - **Keep the default `source_dir`** (`.lefthook/`): lefthook looks for a remote's scripts under the project's `source_dir`, so a project that changes it won't find the script. A project's own `.lefthook/pre-commit/` must not hold a script of the same name, or both run.
 
 For a repo carrying vendored or reference code, a diff check that ignores it:
