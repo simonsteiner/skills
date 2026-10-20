@@ -1,29 +1,34 @@
 # Report format
 
-One Markdown file per scan: `docs/arch-review/YYYY-MM-DD-<slug>.md`, built from `assets/report-template.md` (SKILL.md links it). It renders on GitHub — Mermaid diagrams, callouts, collapsible sections — so the report is read where the code is, and agents edit it and git diffs it line by line.
+One folder per scan: `docs/arch-review/YYYY-MM-DD-<slug>/`, holding `README.md` (the overview, from `assets/report-template.md`) and one `C<n>-<card-slug>.md` per candidate (from `assets/card-template.md`; SKILL.md links both). A folder, not one file, so that every file stays under the project's token budget: an agent reads the overview and the one card it works on, never the whole scan. It renders on GitHub — Mermaid diagrams, callouts, collapsible sections — so the report is read where the code is, and agents edit it and git diffs it line by line.
 
-The look is borrowed from upstream's HTML report: diagrams carry the weight, prose is sparse, every candidate is a card with the same shape. The index `docs/arch-review/README.md` lists reports newest first: date, linked headline, open row count.
+The look is borrowed from upstream's HTML report: diagrams carry the weight, prose is sparse, every candidate is a card with the same shape. The index `docs/arch-review/README.md` lists reports newest first: date, headline linked to the report's `README.md`, open row count.
+
+## Token budget
+
+Every file in the report stays under the project's token budget: what its `check-file-tokens.py` enforces (5,000 tokens unless `lefthook.yml` passes `--max-tokens`), or 5,000 tokens when it has none. Bytes / 4 is the measure, so 20 KB at the default. A card that runs over has too many files or too long a diagram: trim the diagram to the modules that carry the point. An overview that runs over moves **Smaller findings** to `smaller-findings.md` beside it, and points the jump link and the Status rows' `S` links there (`smaller-findings.md#s1--title`).
+
+Reports written before this layout are single files. They're dated records: leave them as they are, and mark any over the budget `linguist-generated` in `.gitattributes` so the check skips them, rather than splitting them.
 
 ## What changes after the scan
 
-Only three parts: the **Status** table, each candidate's **Decisions**, and **Departures**. Everything else is the dated record of what the scan found — never rewritten. A new scan is a new file.
+Only three parts: the **Status** table and **Departures** in the overview, and each card's **Decisions**. Everything else is the dated record of what the scan found — never rewritten. A new scan is a new folder.
 
-## Sections, in order
+## Overview sections, in order
 
-1. **Header** — repo and headline, then one meta line: date, SHA and branch, scope, glossary file, ADRs read. A jump line to the sections and candidates. The legend sits in a collapsed `<details>`. No introduction paragraph.
-2. **Status** — the backlog at a glance, in rank order: badges, lens, status, planned branch, PR, breaking, notes. Step 4 proposes the batch from it; every later session reads it first.
+1. **Header** — repo and headline, then one meta line: date, SHA and branch, scope, glossary file, ADRs read. A jump line to the sections and the card files. The legend sits in a collapsed `<details>`. No introduction paragraph.
+2. **Status** — the backlog at a glance, in rank order, each ID linking to its card file: badges, lens, status, planned branch, PR, breaking, notes. Step 4 proposes the batch from it; every later session reads it first.
 3. **Where it hurts** — one diagram of the scanned area with the hot modules marked, and one line of evidence for why they're hot.
 4. **Since the last review** — the previous report's open rows and what became of them. Omit on a first scan.
-5. **Candidate cards** — the centrepiece; see below. Separated by `---`.
-6. **Smaller findings** — `S1…`: title, `path:line`, which PR it rides with, two sentences.
-7. **Recommendation** — an `[!IMPORTANT]` callout: the candidate to take first, why in one sentence, the proposed batch (every Strong, in order).
-8. **Departures** — empty at scan time.
+5. **Smaller findings** — `S1…`: title, `path:line`, which PR it rides with, two sentences.
+6. **Recommendation** — an `[!IMPORTANT]` callout: the candidate to take first, why in one sentence, the proposed batch (every Strong, in order).
+7. **Departures** — empty at scan time.
 
 ## Candidate card
 
-If a diagram needs a paragraph to be understood, redraw the diagram.
+One file per candidate, `C<n>-<card-slug>.md` beside the overview — the centrepiece of the report. If a diagram needs a paragraph to be understood, redraw the diagram.
 
-- **Heading** — `## C1 · <title>`, a short title naming the deepening ("Collapse the order intake pipeline").
+- **Heading** — `# C1 · <title>`, a short title naming the deepening ("Collapse the order intake pipeline"), with a `[← Report](README.md)` back link under it.
 - **Badge line** — strength (🟢 Strong · 🟡 Worth exploring · ⚪ Speculative), 🔴 live defect when a bug was reproduced, the dependency category in code font (`in-process`, `local-substitutable`, `ports & adapters`, `mock`), and what it builds on.
 - **Files** — code-font paths with line ranges, on one line.
 - **Before / After** — one Mermaid flowchart with two subgraphs side by side (`flowchart LR`, each subgraph `direction TB`, `before ~~~ after` to keep them apart). It's the only way GitHub puts two diagrams next to each other.

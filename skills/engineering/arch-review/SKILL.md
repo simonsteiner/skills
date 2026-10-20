@@ -37,7 +37,8 @@ Call the Skill tool with "codebase-design" before anything else. Use its vocabul
 ## Step 1 — Scope, then scan
 
 - A direction from the user wins. Otherwise find the hot spots: `git log --since=3.months --name-only --format= | sort | uniq -c | sort -rn | head -40`. Deepening pays off only where change keeps landing — weight those paths first; widen only if churn is scattered.
-- Read the domain glossary (`GLOSSARY.md`; a repo still on `CONTEXT.md` should rename it — say so in the report), the ADRs under `docs/adr/`, and the previous reports in `docs/arch-review/`. Don't re-suggest what an ADR or an earlier `dropped` row already settled, unless the friction is real enough to reopen it — then say which ADR and why.
+- Read the domain glossary (`GLOSSARY.md`; a repo still on `CONTEXT.md` should rename it — say so in the report), the ADRs under `docs/adr/`, and the previous reports in `docs/arch-review/` (a folder each; older reports are single files). Don't re-suggest what an ADR or an earlier `dropped` row already settled, unless the friction is real enough to reopen it — then say which ADR and why.
+- Find the project's token budget: `git ls-files '*check-file-tokens.py'` names the pre-commit check that blocks any staged file over it (5,000 by default; a `--max-tokens <N>` on its job in `lefthook.yml` overrides it). Run it over the scope with the same limit (`git ls-files -z <scope> | xargs -0 python3 <path> --max-tokens <N>`): every file it lists fails the next commit that touches it, so each one gets a row (LENSES.md, "Size as a pointer"). No check in the project → the budget for the report alone is 5,000 tokens.
 - Spawn mid-tier sub-agents to walk the scoped code with both lenses in [LENSES.md](LENSES.md) — one per lens, or one per hot area in a large repo. Give each the scope, the vocabulary, its lens, and the [context rules](#context-rules); ask for evidence (file:line, counts, a failing input) behind every claim, and a findings list under 800 words — not file contents.
 - Apply the deletion test to every suspected shallow module. Verify each sub-agent claim yourself before it becomes a candidate.
 
@@ -45,7 +46,7 @@ Call the Skill tool with "codebase-design" before anything else. Use its vocabul
 
 ## Step 2 — Write the report
 
-Copy [assets/report-template.md](assets/report-template.md) to `docs/arch-review/YYYY-MM-DD-<slug>.md` and fill it in following [REPORT.md](REPORT.md): status table, friction map, one card per candidate with a before/after diagram, smaller findings, recommendation. Add it to the top of `docs/arch-review/README.md` (create the index if it's missing).
+The report is a folder, `docs/arch-review/YYYY-MM-DD-<slug>/`, so no file in it outgrows the token budget an agent can read whole. Copy [assets/report-template.md](assets/report-template.md) to its `README.md` (status table, friction map, smaller findings, recommendation) and [assets/card-template.md](assets/card-template.md) to one `C<n>-<card-slug>.md` per candidate, with its before/after diagram; fill them in following [REPORT.md](REPORT.md). Check every file against the budget (`wc -c`, bytes / 4) before committing. Add the report to the top of `docs/arch-review/README.md` (create the index if it's missing).
 
 - **Candidates** (`C1…`) are deepenings, each with Files, Problem, Solution, Wins, a before/after diagram, strength (`Strong` / `Worth exploring` / `Speculative`), dependency category, and `live defect` when it hides a bug you reproduced.
 - **Smaller findings** (`S1…`) are local maintainability fixes from the second lens — two sentences each.
@@ -58,7 +59,7 @@ Rank: strength, then live defect, then churn, then dependency order (a candidate
 ## Step 3 — Land the report as the backlog
 
 - **New report:** cut `docs/arch-review-<slug>` from the fresh default branch (`git fetch origin && git switch --no-track -c docs/arch-review-<slug> origin/<default>`), then call the Skill tool with "conventional-commit" to commit the report and index. Push and open a PR. This is the base of the stack — merging it puts the backlog on the default branch for every later session.
-- **Resume:** reconcile the report's status table against reality first — `gh pr list --state all --head <branch>` for each open row, and `git branch -a`. Fix rows that lag (a merged PR still marked `pr-open`). The next base is the tip of the highest open branch in the stack, or the default branch if everything merged.
+- **Resume:** reconcile the report's status table (its `README.md`; an older single-file report is resumed as it is, not converted — if it's over the budget, add `<path> linguist-generated` to `.gitattributes` in the first commit that touches it, or the check blocks that commit) against reality first — `gh pr list --state all --head <branch>` for each open row, and `git branch -a`. Fix rows that lag (a merged PR still marked `pr-open`). The next base is the tip of the highest open branch in the stack, or the default branch if everything merged.
 
 `/arch-review report` stops here and reports the PR.
 
@@ -96,7 +97,7 @@ Between phases, check the hand-back — Decisions in the report, checks green, P
 
 Put these in every brief:
 
-- Read your candidate's card, not the report: `grep -n` its heading, then read that range.
+- Read the overview's `README.md` and your candidate's card file (a batch of smaller findings: their `S` entries, in the overview or `smaller-findings.md`), nothing else in the report (in an older single-file report: `grep -n` the Status table and your candidate's heading, then read those ranges).
 - Read files in ranges (`grep -n`, then `sed -n` or `Read` with offset/limit); never a whole test file or a whole module you aren't rewriting.
 - Trim command output: `… 2>&1 | tail -40` for tests, lint, and typecheck; `git diff --stat` before any full diff.
 - Don't re-read what you already hold; keep notes in the report or the commit, not in the conversation.
@@ -110,7 +111,7 @@ Branch `refactor/<candidate-slug>` (the planned name) off the base. Map the cand
 - Work it in rounds. Each round, take every decision whose prerequisites are settled and **answer each one yourself with the recommended option**.
 - Ground every answer in a fact from this tree — a measurement, a grep count, a reproduced failure — not an assertion. Look facts up; never guess them.
 - When the interface shape is genuinely open, use codebase-design's design-it-twice pattern and take your own recommendation.
-- Record every decision in the candidate's **Decisions** block in the report: `Q<n> — question → answer, because <fact>`. Call the Skill tool with "conventional-commit" to commit the Decisions on the candidate branch.
+- Record every decision in the **Decisions** block of the candidate's card: `Q<n> — question → answer, because <fact>`. Call the Skill tool with "conventional-commit" to commit the Decisions on the candidate branch.
 - **One-way doors stop the candidate, not the run:** data migrations, published wire or file formats, deletion of user data. Mark the row `blocked` with the question in Notes and move on to the next candidate.
 - A new domain term, or a sharpened one: call the Skill tool with "domain-modeling" and update the glossary inline. Dropping a candidate for a load-bearing reason: record it as an ADR the same way, so the next review doesn't re-suggest it.
 
@@ -127,9 +128,9 @@ Branch `refactor/<candidate-slug>` (the planned name) off the base. Map the cand
 
 **Ship** (7.5–7):
 
-5. Check the diff against the approval bar in [LENSES.md](LENSES.md). Then call the Skill tool with "review-prs" in local mode: fixed point = the base branch, spec = this candidate's card and decisions in the report. It fixes what's real; rerun the checks.
+5. Check the diff against the approval bar in [LENSES.md](LENSES.md). Then call the Skill tool with "review-prs" in local mode: fixed point = the base branch, spec = this candidate's card and its Decisions. It fixes what's real; rerun the checks.
 6. Update the candidate's status row (`pr-open`, PR number, Breaking) and write any **Departure** from the report, in the same branch.
-7. Call the Skill tool with "conventional-commit" to commit, push, then `gh pr create --base <base>`. Call the Skill tool with "pr-body" for the body, and link the candidate's card in the report from it. Never merge.
+7. Call the Skill tool with "conventional-commit" to commit, push, then `gh pr create --base <base>`. Call the Skill tool with "pr-body" for the body, and link the candidate's card file from it. Never merge.
 
 ---
 
@@ -154,7 +155,7 @@ Running low on budget? Stop at a candidate boundary, commit the table, and say e
 ## Rules of thumb
 
 - Delete complexity; don't move it. A refactor that leaves the reader holding the same number of concepts isn't a candidate.
-- File size is a place to look, never a finding. A 1,200-line deep module is fine; a 300-line file of special cases isn't.
+- File size says nothing about depth. A long deep module is a good module; a 300-line file of special cases isn't. But a file over the project's token budget gets a row whatever its depth, because its next commit is blocked: the row plans the split along the module's internal seams and leaves its interface where it is.
 - One candidate, one PR. A PR that needs "and also" in its title is two.
-- The report is a dated record: after the scan, only the status table, Decisions, and Departures change. Never rewrite a finding; a new scan is a new file.
+- The report is a dated record: after the scan, only the status table, Decisions, and Departures change. Never rewrite a finding; a new scan is a new folder.
 - Decisions recorded with their facts are what make autonomy safe. A decision without a fact is a guess.
