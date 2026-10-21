@@ -98,6 +98,7 @@ No `glob`: every file type counts. Lefthook skips a job whose `{staged_files}` c
 - **The job stays here, not in the remote.** A clone that can't fetch the remote then fails the commit with `script does not exist` instead of committing unchecked, and `args:` here decides the budget; a job defined in the remote can't be overridden from `lefthook.yml`.
 - **`ref:` takes a tag with no `-` or `/` in it.** lefthook clones with `--branch`, so a commit SHA fails. When a fetch fails, lefthook falls back to the cached clone, but for a ref with `-` or `/` it can't find it and deletes it instead.
 - **Keep the default `source_dir`** (`.lefthook/`): lefthook looks for a remote's scripts under the project's `source_dir`, so a project that changes it won't find the script. A project's own `.lefthook/pre-commit/` must not hold a script of the same name, or both run.
+- **Tools that lint the whole repo must skip `.git/`**: lefthook clones the remote into `.git/info/lefthook-remotes/`. rumdl walks `.git` (as of 0.3.0), so `rumdl check .` lints the remote's Markdown and fails, locally and in CI once `npm ci` has run `lefthook install`. Add `".git/**"` to `exclude` in `.rumdl.toml`. ruff, cspell and prettier skip `.git` already.
 
 For a repo carrying vendored or reference code, a diff check that ignores it:
 
