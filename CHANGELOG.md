@@ -1,5 +1,11 @@
 # simonsteiner-skills
 
+## 1.10.1
+
+### Patch Changes
+
+- [#48](https://github.com/simonsteiner/skills/pull/48) [`4bbf507`](https://github.com/simonsteiner/skills/commit/4bbf507bed53a882857d3aeb5d231439c75b04de) Thanks [@simonsteiner](https://github.com/simonsteiner)! - `setup-lefthook` now has projects that load the token-budget remote add `".git/**"` to `exclude` in `.rumdl.toml`. lefthook clones the remote into `.git/info/lefthook-remotes/`, and rumdl walks `.git`, so `rumdl check .` linted the remote's Markdown and failed CI. The migration steps also add the remote's words to the cspell dictionary.
+
 ## 1.10.0
 
 ### Minor Changes
