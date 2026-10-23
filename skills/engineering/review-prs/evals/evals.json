@@ -1,7 +1,5 @@
 {
-  "skills": [
-    "review-prs"
-  ],
+  "skills": ["review-prs"],
   "evals": [
     {
       "query": "do a code review on the open PRs, if they haven't got a review yet or enough code changed since. comment any findings and fix them.",
@@ -67,11 +65,29 @@
     },
     {
       "query": "/review-prs",
-      "setup": "New T3 Code thread whose first message is the skill call, on branch feat/gpx-export, which is the head of open PR #21. Open PR #22 on another branch has no review yet.",
+      "setup": "New T3 Code thread whose first message is the skill call, on branch feat/gpx-export, which is the head of open PR #21. Open PR #22 is on another branch. Neither #21 nor #22 has a review yet.",
       "expected_behavior": [
         "Lists all open PRs with gh pr list rather than narrowing to the thread's branch",
         "Reviews both #21 and #22",
-        "Does not open the report saying a PR was reviewed only because it is this thread's branch"
+        "Does not open the report saying a PR was reviewed only because it is this thread's branch",
+        "Links #21 and #22 to the thread after reviewing them"
+      ]
+    },
+    {
+      "query": "/review-prs",
+      "setup": "Existing T3 Code thread, partway through the conversation, in its own worktree on branch feat/csv-export with three commits ahead of origin/main and no PR. Open PR #23 on another branch has no review yet.",
+      "expected_behavior": [
+        "Runs in Local mode with origin/main as the fixed point, reviewing git diff origin/main...HEAD",
+        "Does not review #23 and posts no PR comments",
+        "Opens the report saying feat/csv-export was reviewed locally because it is this thread's branch and has no PR"
+      ]
+    },
+    {
+      "query": "/review-prs",
+      "setup": "Existing T3 Code thread, partway through the conversation, on main with no PR linked. Open PRs #24 and #25 have no review yet.",
+      "expected_behavior": [
+        "Says there is nothing of this thread's to review and stops",
+        "Does not review or comment on #24 or #25"
       ]
     },
     {
