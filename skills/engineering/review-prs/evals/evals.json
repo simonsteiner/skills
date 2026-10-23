@@ -1,5 +1,7 @@
 {
-  "skills": ["review-prs"],
+  "skills": [
+    "review-prs"
+  ],
   "evals": [
     {
       "query": "do a code review on the open PRs, if they haven't got a review yet or enough code changed since. comment any findings and fix them.",
@@ -47,7 +49,7 @@
     },
     {
       "query": "review the PR",
-      "setup": "T3 Code thread titled 'Add GPX export' with PR #20 linked to it. Two other open PRs, #18 and #19, have no review yet.",
+      "setup": "Existing T3 Code thread titled 'Add GPX export' that opened PR #20 earlier in the conversation; #20 is linked to it. Two other open PRs, #18 and #19, have no review yet.",
       "expected_behavior": [
         "Calls list_thread_pull_requests and reviews #20 only",
         "Does not review or comment on #18 or #19",
@@ -56,11 +58,20 @@
     },
     {
       "query": "/review-prs",
-      "setup": "T3 Code thread with no PR linked, on branch feat/gpx-export, which is the head of open PR #21. Open PR #22 on another branch has no review yet.",
+      "setup": "Existing T3 Code thread, partway through the conversation, with no PR linked, on branch feat/gpx-export, which is the head of open PR #21. Open PR #22 on another branch has no review yet.",
       "expected_behavior": [
         "Takes the thread's branch from t3_thread_read, after getting the threadId from t3_thread_configuration",
         "Reviews #21 only and links it to the thread",
         "Opens the report saying #21 was reviewed only because it is this thread's branch, and lists #22 as still needing a review"
+      ]
+    },
+    {
+      "query": "/review-prs",
+      "setup": "New T3 Code thread whose first message is the skill call, on branch feat/gpx-export, which is the head of open PR #21. Open PR #22 on another branch has no review yet.",
+      "expected_behavior": [
+        "Lists all open PRs with gh pr list rather than narrowing to the thread's branch",
+        "Reviews both #21 and #22",
+        "Does not open the report saying a PR was reviewed only because it is this thread's branch"
       ]
     },
     {
