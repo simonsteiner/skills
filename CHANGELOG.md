@@ -1,5 +1,11 @@
 # simonsteiner-skills
 
+## 1.11.0
+
+### Minor Changes
+
+- [#50](https://github.com/simonsteiner/skills/pull/50) [`5439e5f`](https://github.com/simonsteiner/skills/commit/5439e5fb5794f64194e28f860917f6fc3eebfde7) Thanks [@simonsteiner](https://github.com/simonsteiner)! - review-prs now fixes what other tools already flagged on a PR, along with its own findings: the annotations its check runs carry (linters, type checkers, CodeQL), collected by a new `outside-findings.sh` script, and its open SonarQube issues. Each one is verified first, and only ones the PR introduced are posted and fixed. Review sub-agents now get a model chosen per PR: the session's model by default, a mid-tier model for small, low-risk PRs, and never the smallest tier.
+
 ## 1.10.2
 
 ### Patch Changes
