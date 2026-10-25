@@ -1,5 +1,11 @@
 # simonsteiner-skills
 
+## 1.12.0
+
+### Minor Changes
+
+- [#51](https://github.com/simonsteiner/skills/pull/51) [`12067e1`](https://github.com/simonsteiner/skills/commit/12067e1d87fdc7cf9a6f63b0f8a96c54194e3837) Thanks [@simonsteiner](https://github.com/simonsteiner)! - setup-lefthook adds a SonarQube job to projects analysed by SonarQube or SonarCloud. It runs the SonarQube CLI's own pre-commit check on the staged files, which scans for hardcoded secrets and for new dependency risks when a manifest changes. The job is skipped on a machine without the `sonar` CLI or not logged in, and an existing `sonar integrate git` hook is replaced by it, so lefthook stays the only hook manager.
+
 ## 1.11.0
 
 ### Minor Changes
