@@ -98,6 +98,16 @@
         "Passes the sub-agent the PR number, worktree path, LENSES.md and spec source, but no summary of the conversation",
         "Posts the empty-export throw as a finding, even though the thread intended empty exports to return `[]`"
       ]
+    },
+    {
+      "query": "review PR 9 and fix what you find",
+      "setup": "PR #9 with no review. Its lint check run carries two annotations: an unused import on a line the diff adds and a long-standing warning on an untouched line. SonarCloud analyses the PR and reports one open bug (a possible null dereference) on a changed line.",
+      "expected_behavior": [
+        "Runs scripts/outside-findings.sh 9 and lists the PR's SonarQube issues itself rather than through a review sub-agent",
+        "Verifies the Sonar issue and the unused import, posts each inline naming its source and rule after the severity",
+        "Puts the warning on the untouched line in the summary only and does not fix it",
+        "Fixes the posted findings through address-review-findings and does not change the issue's status in SonarQube"
+      ]
     }
   ]
 }
