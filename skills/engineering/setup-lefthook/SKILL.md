@@ -17,6 +17,7 @@ Before writing a line, find out:
 - **Stack and package manager**: `uv.lock` / `pyproject.toml`, `package.json` with `package-lock.json` or `pnpm-lock.yaml`, `Cargo.toml`. A second stack in a subfolder (`web/package.json` in a Python repo) gets its own jobs with `root:`.
 - **What CI runs**, in `.github/workflows/`: each lint, format, type and test step, and the version it pins. A hook runs the same command at the same version; say so in its comment ("Same as CI's ruff step; bump the version in both places").
 - **Tool configs already there**: `ruff.toml` / `[tool.ruff]`, `[tool.mypy]` / `mypy.ini`, `biome.json`, `tsconfig.json`, `.rumdl.toml`, `cspell.json`. Hook what the project uses. For a project with nothing yet, the baseline is: Python → ruff, mypy, pytest on push; TypeScript → biome, tsc, tests on push; every project → rumdl for Markdown and the token budget.
+- **SonarQube**: `sonar-project.properties`, `.sonarlint/connectedMode.json`, a SonarQube or SonarCloud step in CI, or a Sonar check on PRs. A Sonar project gets the catalog's [SonarQube](references/JOBS.md#sonarqube) job. A `sonar integrate git` hook already installed (a global `core.hooksPath` pointing at Sonar's hooks, or a `# sonar:begin` block in `.husky/`) is replaced by that job, the same as any other existing hook.
 - **Existing hooks**: `.husky/`, `.pre-commit-config.yaml`, `core.hooksPath`. Carry their checks over and remove the old setup in the same change, or both run.
 
 ---

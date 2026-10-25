@@ -12,6 +12,7 @@ Jobs to compose `lefthook.yml` from, each with the comment it carries. The versi
 - [Rust](#rust)
 - [Markdown and spelling](#markdown-and-spelling)
 - [Shell](#shell)
+- [SonarQube](#sonarqube)
 - [Generated files kept in sync](#generated-files-kept-in-sync)
 - [Pre-push](#pre-push)
 
@@ -241,6 +242,27 @@ In a Node project: `npx rumdl@0.3.0 check --fix {staged_files}`, the same versio
       glob: "*.sh"
       run: shellcheck {staged_files}
 ```
+
+## SonarQube
+
+For a project analysed by SonarQube or SonarCloud. The job calls `sonar hook git-pre-commit`, the command the [SonarQube CLI](https://sonarsource.com/sonarqube/cli)'s own git and Husky hooks run, so it stays a lefthook job instead of a second hook manager (`sonar integrate git` would install its own pre-commit hook and fight lefthook for it):
+
+```yaml
+    # Hardcoded secrets in the staged files, scanned by the SonarQube CLI, plus
+    # new dependency risks when a manifest changes (project key from
+    # sonar-project.properties, or `sonar link <key>`). Skipped on a machine
+    # without `sonar` or not logged in (`sonar auth login`, or SONARQUBE_CLI_TOKEN
+    # with SONARQUBE_CLI_ORG); the Sonar analysis in CI stays the gate.
+    sonar:
+      skip:
+        - run: "! command -v sonar >/dev/null || ! sonar auth status >/dev/null 2>&1"
+      run: sonar hook git-pre-commit --dependency-risks {staged_files}
+```
+
+- **No `glob`:** a secret can sit in any file type.
+- **`--dependency-risks` only for a project SonarQube knows.** Without a project key it prints a warning and lets the commit through; drop the flag for a repo with no Sonar project, where the job scans secrets only.
+- **Keep the skip condition.** Without it, a missing `sonar` fails the job, and a logged-out one fails it with `code scanning is inactive: not authenticated`.
+- **The quality analysis stays in CI.** `sonar analyze --staged` runs on the server, needs a Vortex-eligible organization, and is too slow to run on every commit.
 
 ## Generated files kept in sync
 
