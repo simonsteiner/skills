@@ -25,6 +25,16 @@ pre-commit:
       glob: "*.sh"
       run: shellcheck {staged_files}
 
+    # Hardcoded secrets in the staged files, plus new dependency risks when
+    # package.json or its lockfile changes, scanned by the SonarQube CLI against
+    # the SonarCloud project. Skipped on a machine without `sonar` or not logged
+    # in (`sonar auth login`, or SONARQUBE_CLI_TOKEN with SONARQUBE_CLI_ORG);
+    # SonarCloud's PR analysis stays the gate.
+    sonar:
+      skip:
+        - run: "! command -v sonar >/dev/null || ! sonar auth status >/dev/null 2>&1"
+      run: sonar hook git-pre-commit --dependency-risks -p simonsteiner_skills {staged_files}
+
     # The only fixer of *.md. Config and excludes in .rumdl.toml; an excluded
     # staged file is skipped, not an error.
     rumdl:
