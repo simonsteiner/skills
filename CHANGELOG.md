@@ -1,5 +1,11 @@
 # simonsteiner-skills
 
+## 1.13.0
+
+### Minor Changes
+
+- [#53](https://github.com/simonsteiner/skills/pull/53) [`df2f3c4`](https://github.com/simonsteiner/skills/commit/df2f3c4898294f26e599de62c1de6949931d7223) Thanks [@simonsteiner](https://github.com/simonsteiner)! - `review-prs` now flags a test expectation changed alongside the code it tests when nothing explains the change. `pr-body` gains a title rule (say why the change matters), opens PRs ready rather than draft, and falls back to the REST API when GraphQL is rate-limited. `arch-review` labels each candidate a one-way or two-way door, and says before the batch starts which rows will stop for an answer.
+
 ## 1.12.0
 
 ### Minor Changes
