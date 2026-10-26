@@ -2,6 +2,8 @@
 
 The smell baseline, the Standards and Spec axes, and the "standards files must be on the list" rule in `LENSES.md` are adapted from the MIT-licensed `code-review` skill in <https://github.com/mattpocock/skills>. The smells come from Fowler's _Refactoring_, ch. 3.
 
+The rule that a test expectation changed alongside the code it tests needs a reason from the intended behaviour is an idea from the `ship-pr` and `autopilot` skills in <https://github.com/kentcdodds/kcd-skills>, reworded; no text is carried over.
+
 ---
 
 MIT License

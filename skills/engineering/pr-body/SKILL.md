@@ -150,11 +150,22 @@ Add each only when it applies, after Merge Danger:
 
 ---
 
+## Title
+
+PR titles usually become the squash commit's subject, so follow the repo's title convention — Conventional Commits when its history uses them; check the last few merged PRs. Within that, say why the change matters, not how it was done:
+
+- ❌ `perf(server): negotiate permessage-deflate on the websocket`
+- ✅ `perf(server): cut websocket frame size by 70% with compression`
+
+---
+
 ## Before handing it over
 
 - The first screen tells a reviewer what changed and why, without scrolling.
 - Every Evidence line is something that was actually run or measured.
 - Nothing is left in angle brackets, and no section is there just because the template has it.
+- Open it ready for review, not as a draft, unless the user asked for a draft: review bots skip drafts.
+- `gh pr create` and `gh pr edit` go through GraphQL. If they fail on GraphQL's rate limit, the REST limit is separate: write the body to a file and use `gh api repos/{owner}/{repo}/pulls -f title=<title> -f head=<branch> -f base=<base> -F body=@<file>` to open, or `gh api -X PATCH repos/{owner}/{repo}/pulls/<n> -F body=@<file>` to edit.
 - Every `#N` is a link you meant: GitHub turns `#3` in prose ("the #3 cause") into a link to issue 3. Rephrase, or escape it as `\#3`.
 
 See [CREDITS.md](CREDITS.md) for the upstream skills this adapts.

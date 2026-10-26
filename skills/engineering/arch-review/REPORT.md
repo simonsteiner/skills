@@ -17,7 +17,7 @@ Only three parts: the **Status** table and **Departures** in the overview, and e
 ## Overview sections, in order
 
 1. **Header** — repo and headline, then one meta line: date, SHA and branch, scope, glossary file, ADRs read. A jump line to the sections and the card files. The legend sits in a collapsed `<details>`. No introduction paragraph.
-2. **Status** — the backlog at a glance, in rank order, each ID linking to its card file: badges, lens, status, planned branch, PR, breaking, notes. Step 4 proposes the batch from it; every later session reads it first.
+2. **Status** — the backlog at a glance, in rank order, each ID linking to its card file: badges, door, lens, status, planned branch, PR, breaking, notes. Step 4 proposes the batch from it; every later session reads it first.
 3. **Where it hurts** — one diagram of the scanned area with the hot modules marked, and one line of evidence for why they're hot.
 4. **Since the last review** — the previous report's open rows and what became of them. Omit on a first scan.
 5. **Smaller findings** — `S1…`: title, `path:line`, which PR it rides with, two sentences.
@@ -29,7 +29,7 @@ Only three parts: the **Status** table and **Departures** in the overview, and e
 One file per candidate, `C<n>-<card-slug>.md` beside the overview — the centrepiece of the report. If a diagram needs a paragraph to be understood, redraw the diagram.
 
 - **Heading** — `# C1 · <title>`, a short title naming the deepening ("Collapse the order intake pipeline"), with a `[← Report](README.md)` back link under it.
-- **Badge line** — strength (🟢 Strong · 🟡 Worth exploring · ⚪ Speculative), 🔴 live defect when a bug was reproduced, the dependency category in code font (`in-process`, `local-substitutable`, `ports & adapters`, `mock`), and what it builds on.
+- **Badge line** — strength (🟢 Strong · 🟡 Worth exploring · ⚪ Speculative), 🔴 live defect when a bug was reproduced, the dependency category in code font (`in-process`, `local-substitutable`, `ports & adapters`, `mock`), the door (↔ `two-way` · 🚪 `one-way`: hard to reverse once merged — a data migration, a published wire or file format, deleted user data), and what it builds on.
 - **Files** — code-font paths with line ranges, on one line.
 - **Before / After** — one Mermaid flowchart with two subgraphs side by side (`flowchart LR`, each subgraph `direction TB`, `before ~~~ after` to keep them apart). It's the only way GitHub puts two diagrams next to each other.
 - **Evidence** — a `[!CAUTION]` callout with the reproduced failure for a live defect; otherwise one plain line with the count that shows the friction.

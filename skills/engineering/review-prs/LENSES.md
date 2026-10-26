@@ -13,6 +13,8 @@ Read in Step 2. Each lens lists only what the model would otherwise miss.
 
 Look past the hunk to callers and callees the diff doesn't touch: a changed return shape, a new `null`, a renamed key, a swallowed error, a lock or ordering assumption. A new behaviour with no test, or a test that can't fail (asserts the mock), is a **Test** finding.
 
+A test whose expected value changed in the same diff as the code it tests is suspect: the change may bend the test to the new output rather than fix the code. Each one needs a reason from the intended behaviour — the spec, the issue, the PR body. An expectation that changed with no such reason is a **Test** finding; quote the old and new value.
+
 ## Standards
 
 Anything the repo documents about how code is written: `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, `CODING_STANDARDS.md`, `GLOSSARY.md`, lint and formatter config. Search for them — when `CONTRIBUTING.md` or `CODING_STANDARDS.md` exists it must be on the list. Cite file and rule for every **Standards** finding, and skip anything tooling already enforces.
