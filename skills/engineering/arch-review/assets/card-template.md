@@ -9,7 +9,7 @@
 
 [← Report](README.md)
 
-🟢 **Strong** · 🔴 **live defect** · `<in-process | local-substitutable | ports & adapters | mock>` · builds on: <— | C2>
+🟢 **Strong** · 🔴 **live defect** · `<in-process | local-substitutable | ports & adapters | mock>` · <↔ `two-way` | 🚪 `one-way`> · builds on: <— | C2>
 
 `<path/a.py:81-127>` · `<path/b.py:117>` · `<tests/test_a.py:34>`
 

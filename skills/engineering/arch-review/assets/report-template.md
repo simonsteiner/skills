@@ -37,12 +37,13 @@ flowchart LR
 
 The backlog, in rank order. After the scan only three parts of the report change: this table, each card's **Decisions**, and **Departures**. The findings stay as found.
 
-| ID | Deepening | Strength | Lens | Status | Branch | PR | Breaking | Notes |
-|---|---|---|---|---|---|---|---|---|
-| [C1](C1-<card-slug>.md) | <names the deepening> | 🟢 Strong · 🔴 live defect | deepening | todo | `refactor/<slug>` | | | |
-| [S1](#s1--title) | <smaller finding> | — | maintainability | todo | rides with C1 | | | |
+| ID | Deepening | Strength | Door | Lens | Status | Branch | PR | Breaking | Notes |
+|---|---|---|---|---|---|---|---|---|---|
+| [C1](C1-<card-slug>.md) | <names the deepening> | 🟢 Strong · 🔴 live defect | ↔ two-way | deepening | todo | `refactor/<slug>` | | | |
+| [S1](#s1--title) | <smaller finding> | — | ↔ two-way | maintainability | todo | rides with C1 | | | |
 
 Strength: 🟢 Strong · 🟡 Worth exploring · ⚪ Speculative · 🔴 live defect (a bug reproduced during the scan).
+Door: ↔ two-way (a revert undoes it) · 🚪 one-way (a data migration, a published wire or file format, deleted user data; stops at Step 6 for the user).
 Status: `todo` · `in-progress` · `pr-open` · `merged` · `blocked` · `dropped`. `blocked` and `dropped` always carry a reason in Notes.
 
 ## Where it hurts

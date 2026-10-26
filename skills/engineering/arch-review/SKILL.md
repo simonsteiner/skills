@@ -48,7 +48,7 @@ Call the Skill tool with "codebase-design" before anything else. Use its vocabul
 
 The report is a folder, `docs/arch-review/YYYY-MM-DD-<slug>/`, so no file in it outgrows the token budget an agent can read whole. Copy [assets/report-template.md](assets/report-template.md) to its `README.md` (status table, friction map, smaller findings, recommendation) and [assets/card-template.md](assets/card-template.md) to one `C<n>-<card-slug>.md` per candidate, with its before/after diagram; fill them in following [REPORT.md](REPORT.md). Check every file against the budget (`wc -c`, bytes / 4) before committing. Add the report to the top of `docs/arch-review/README.md` (create the index if it's missing).
 
-- **Candidates** (`C1…`) are deepenings, each with Files, Problem, Solution, Wins, a before/after diagram, strength (`Strong` / `Worth exploring` / `Speculative`), dependency category, and `live defect` when it hides a bug you reproduced.
+- **Candidates** (`C1…`) are deepenings, each with Files, Problem, Solution, Wins, a before/after diagram, strength (`Strong` / `Worth exploring` / `Speculative`), dependency category, door (`two-way`, or `one-way` when it needs a data migration, a change to a published wire or file format, or deletes user data — the Step 6 list), and `live defect` when it hides a bug you reproduced.
 - **Smaller findings** (`S1…`) are local maintainability fixes from the second lens — two sentences each.
 - Don't design interfaces here. That's Step 6.
 
@@ -69,7 +69,7 @@ Rank: strength, then live defect, then churn, then dependency order (a candidate
 
 Propose the batch and **wait for the user's answer** — this is the run's one checkpoint:
 
-- **Default: every `Strong` row still `todo`**, in rank order. List each as `ID — title — strength — planned branch`.
+- **Default: every `Strong` row still `todo`**, in rank order. List each as `ID — title — strength — door — planned branch`, and say up front that a `one-way` row will stop at Step 6 for the user's answer.
 - Name what's left out (`Worth exploring`, `Speculative`) so the user can pull a row in.
 - Say where the smaller findings go: with the candidate PR that touches the same module, or in final PRs of at most five `S` rows each, grouped by module.
 
@@ -112,7 +112,7 @@ Branch `refactor/<candidate-slug>` (the planned name) off the base. Map the cand
 - Ground every answer in a fact from this tree — a measurement, a grep count, a reproduced failure — not an assertion. Look facts up; never guess them.
 - When the interface shape is genuinely open, use codebase-design's design-it-twice pattern and take your own recommendation.
 - Record every decision in the **Decisions** block of the candidate's card: `Q<n> — question → answer, because <fact>`. Call the Skill tool with "conventional-commit" to commit the Decisions on the candidate branch.
-- **One-way doors stop the candidate, not the run:** data migrations, published wire or file formats, deletion of user data. Mark the row `blocked` with the question in Notes and move on to the next candidate.
+- **One-way doors stop the candidate, not the run:** the card's door says what to expect, but a design that turns out to need one counts too — data migrations, published wire or file formats, deletion of user data. Mark the row `blocked` with the question in Notes and move on to the next candidate.
 - A new domain term, or a sharpened one: call the Skill tool with "domain-modeling" and update the glossary inline. Dropping a candidate for a load-bearing reason: record it as an ADR the same way, so the next review doesn't re-suggest it.
 
 ---
