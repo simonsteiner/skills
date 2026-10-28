@@ -9,9 +9,38 @@ Changes: everything was rewritten and condensed. Impeccable's engine binary, det
 
 Both works are licensed under the Apache License, Version 2.0, reproduced below. Copyright for `impeccable`: Copyright 2025 Paul Bakaus. Copyright for `frontend-design`: Anthropic, PBC.
 
+`MECHANICS.md` adapts the MIT-licensed Web Interface Guidelines by Vercel Labs, from <https://github.com/vercel-labs/web-interface-guidelines> (`command.md` at `434b7f9`), the rules behind the `web-design-guidelines` skill in `vercel-labs/agent-skills`. Carried over: the source-level checks the skill's floor and audit lacked, regrouped under the audit dimensions they score — forms, focus and semantics, motion, media, theming, touch and viewport, and state, content, and locale. Left out: the copy rules that conflict with this skill's sentence case and voice, the React hydration checks, font and connection preloading (the `web-perf` skill's ground), and specific library picks. The MIT licence is reproduced below.
+
 ## Contents
 
+- [MIT License](#mit-license)
 - [Apache License, Version 2.0](#apache-license-version-20)
+
+## MIT License
+
+```text
+MIT License
+
+Copyright (c) 2025 Vercel Labs
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
 ## Apache License, Version 2.0
 

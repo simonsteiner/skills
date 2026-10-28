@@ -103,6 +103,6 @@ Archived in October 2026 because chat history (Claude transcripts from late Augu
 Considered in October 2026 and declined, having sat installed outside the manifest:
 
 - **mattpocock/skills:** `triage` — needs the issue-tracker setup ADR 0001 removed; `teach`; `writing-fragments`, `writing-shape` and `writing-beats` — still `in-progress/` drafts upstream.
-- **vercel-labs/agent-skills:** `web-design-guidelines` — fires on the same "review my UI" requests as [`frontend-craft`](../skills/engineering/frontend-craft/SKILL.md)'s audit mode.
+- **vercel-labs/agent-skills:** `web-design-guidelines` — fires on the same "review my UI" requests as [`frontend-craft`](../skills/engineering/frontend-craft/SKILL.md)'s audit mode, so its rules were adapted into that skill's implementation lens instead.
 
 Re-curating any of them is moving its entry back from `archived` to `skills`.
