@@ -1,3 +1,4 @@
 node_modules
 __pycache__/
 .eval-workspace/
+.DS_Store
