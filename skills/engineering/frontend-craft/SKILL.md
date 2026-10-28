@@ -10,6 +10,9 @@ metadata:
     - skill: impeccable
       author: Paul Bakaus
       url: "https://github.com/pbakaus/impeccable"
+    - skill: web-interface-guidelines
+      author: Vercel Labs
+      url: "https://github.com/vercel-labs/web-interface-guidelines"
 ---
 
 # Frontend Craft
@@ -70,7 +73,7 @@ For a new surface where several directions are genuinely open, show the user the
 
 ### 4. Build
 
-Read [FLOOR.md](FLOOR.md) immediately before the first UI edit — including small refinements — and build to it without announcing it.
+Read [FLOOR.md](FLOOR.md) immediately before the first UI edit — including small refinements — and build to it without announcing it. Read [MECHANICS.md](MECHANICS.md) with it on every build: the source-level checks a screenshot can't show, most of which apply to any interactive surface.
 
 - **The first viewport is a thesis, not a header.** Open with the most characteristic thing in the subject's world, at the scale it has in life: a headline, an image, a live demo, an interaction. The big-number-small-label-plus-accent hero is the default; use it only if it's truly the best option.
 - **Typography carries the personality.** Use type as an active part of the design, not a neutral delivery vehicle. Line lengths under ~75 characters; serif body gets a little more line-height than sans.
@@ -96,7 +99,7 @@ Refinement keeps the incumbent world. Read [FLOOR.md](FLOOR.md) before editing, 
 - **Bolder** — find where the design is hedging: a timid scale step, an accent used as a sticker, a safe layout. Commit one of them — larger type contrast, colour that owns a region, a composition the category wouldn't attempt. Don't add decoration.
 - **Quieter** — remove before restyling: fewer colours at full saturation, fewer effects, one motion moment instead of many, more space. Keep the one memorable move.
 - **Simpler** — strip to the task: cut options past four per decision, merge redundant sections, drop chrome that encodes nothing.
-- **Polish** — walk the whole path at every breakpoint: alignment and spacing rhythm, type scale, every interactive state, browser surfaces, copy, and the [FLOOR.md](FLOOR.md) checks. Fix small things; flag anything that needs a design decision.
+- **Polish** — walk the whole path at every breakpoint: alignment and spacing rhythm, type scale, every interactive state, browser surfaces, copy, and the [FLOOR.md](FLOOR.md) checks; then walk the [MECHANICS.md](MECHANICS.md) lens over the source. Fix small things; flag anything that needs a design decision.
 - **Copy** — apply [Writing](#writing) to labels, buttons, errors, and empty states.
 
 ---

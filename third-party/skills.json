@@ -148,6 +148,11 @@
           "why": "The interview engine. Model-invoked, so it fires on 'grill me' on its own; used to stress-test plans, often with 'answer with your recommendations'."
         },
         {
+          "name": "handoff",
+          "path": "skills/productivity/handoff",
+          "why": "Compacts a long thread into a handoff document in $TMPDIR so a fresh agent can pick the work up, referencing specs, ADRs and commits rather than copying them. User-invoked and self-contained."
+        },
+        {
           "name": "research",
           "path": "skills/engineering/research",
           "why": "Delegates reading legwork to a background agent and lands findings as Markdown in the repo."
@@ -193,6 +198,31 @@
           "name": "prototype",
           "path": "skills/engineering/prototype",
           "why": "Never invoked in chat history (Claude transcripts from 30 Aug, prompt history from May, Codex sessions Aug–Sep 2026)."
+        },
+        {
+          "name": "triage",
+          "path": "skills/engineering/triage",
+          "why": "Never curated: it reads issue-tracker label mappings from /setup-matt-pocock-skills, which ADR 0001 removed along with the rest of that ecosystem. review-prs and address-review-findings cover the PR side."
+        },
+        {
+          "name": "teach",
+          "path": "skills/productivity/teach",
+          "why": "Never curated: it builds a learning workspace (lessons, records, references) in the current directory, which is outside the coding workflow these skills serve."
+        },
+        {
+          "name": "writing-fragments",
+          "path": "skills/in-progress/writing-fragments",
+          "why": "Never curated: still an in-progress/ draft upstream, so an unpinned sync can reshape it, and long-form article writing isn't part of the workflow. Same for writing-shape and writing-beats."
+        },
+        {
+          "name": "writing-shape",
+          "path": "skills/in-progress/writing-shape",
+          "why": "Never curated; see writing-fragments."
+        },
+        {
+          "name": "writing-beats",
+          "path": "skills/in-progress/writing-beats",
+          "why": "Never curated; see writing-fragments."
         }
       ]
     },
@@ -217,6 +247,24 @@
           "name": "find-skills",
           "path": "skills/find-skills",
           "why": "Never invoked in chat history (Claude transcripts from 30 Aug, prompt history from May, Codex sessions Aug–Sep 2026). `npx skills find` does the same from a terminal."
+        }
+      ]
+    },
+    {
+      "repo": "vercel-labs/agent-skills",
+      "why": "Vercel's official collection — a different repo from vercel-labs/skills above, the smaller discovery-tooling one. One prose reviewer is curated; the rest are Vercel-platform or React-specific.",
+      "skills": [
+        {
+          "name": "writing-guidelines",
+          "path": "skills/writing-guidelines",
+          "why": "Reviews docs and prose against Vercel's writing handbook: voice, tone, structure. Nothing owned reviews prose. A thin wrapper: each run fetches the handbook's latest command.md, so the rules move with upstream rather than with a sync."
+        }
+      ],
+      "archived": [
+        {
+          "name": "web-design-guidelines",
+          "path": "skills/web-design-guidelines",
+          "why": "Never curated: it triggers on the same requests ('review my UI', 'audit design') as the owned frontend-craft's audit mode, and ADR 0007 keeps one skill answering UI requests. Its source-level rules, which frontend-craft lacked, are adapted into frontend-craft's MECHANICS.md lens instead."
         }
       ]
     },

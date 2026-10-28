@@ -31,13 +31,13 @@ Review a frontend without changing it. A **critique** judges the design — spec
 
 ## Audit
 
-Score each dimension 0–4 (0 broken, 2 partial, 4 excellent):
+Walk the MECHANICS.md lens over the source first; each of its groups names the dimension it scores under. Then score each dimension 0–4 (0 broken, 2 partial, 4 excellent):
 
 1. **Accessibility** — contrast (4.5:1 body, 3:1 large); keyboard reachability, focus visibility, and tab order; semantic HTML and heading hierarchy; labels and ARIA on interactive elements; alt text; form labels and error messages; `prefers-reduced-motion` handled with an intentional alternative.
 2. **Performance** — layout reads and writes in loops; animating layout properties or unbounded blur and shadow; unoptimised or eagerly loaded images; `will-change` left on at rest; heavy or unused imports; needless re-renders. For loading and Core Web Vitals depth, call the Skill tool with "web-perf" if it's installed.
 3. **Theming** — hard-coded colours outside the tokens; broken or missing dark mode; tokens used inconsistently; values that don't update on theme switch.
 4. **Responsive** — fixed widths, horizontal scroll, touch targets under 44×44px, gestures that fail under touch or swallow page scroll, layouts that break when text size increases.
-5. **Integrity** — the FLOOR.md checks and refusals, verified in context: repeated shortcuts, design-system drift, placeholder or decorative content, structure interchangeable with an unrelated product. Call out what's a false positive.
+5. **Integrity** — the FLOOR.md checks and refusals, verified in context: repeated shortcuts, design-system drift, placeholder or decorative content, structure interchangeable with an unrelated product. Also whether it holds up in real use: shareable state in the URL, undoable destructive actions, content at its extremes, locale-aware formats. Call out what's a false positive.
 
 ## Report
 
