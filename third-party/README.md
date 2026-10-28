@@ -39,6 +39,10 @@ To add one: find it (`npx skills find`), try it without installing (`npx skills 
 
 The repo this one forked from ([ADR 0001](../docs/adr/0001-fork-and-pare-down-to-conventional-commit.md)). What I own lives under [`skills/`](../skills/); the rest of the flow is tracked from upstream instead.
 
+### User-invoked
+
+- **[handoff](https://github.com/mattpocock/skills/blob/main/skills/productivity/handoff/SKILL.md)** — compact the thread into a handoff document so a fresh agent can continue the work.
+
 ### Model-invoked
 
 - **[codebase-design](https://github.com/mattpocock/skills/blob/main/skills/engineering/codebase-design/SKILL.md)** — shared vocabulary for designing deep modules.
@@ -68,6 +72,14 @@ Intercom's skills, written for their Claude Code plugins. Only the one that stan
 
 - **[secure-github-actions](https://github.com/intercom/2x-skills/blob/main/plugins/security-tools/skills/secure-github-actions/SKILL.md)** — harden workflow YAML against expression injection and supply-chain attacks: SHA-pinned actions, explicit `permissions:`, `pull_request_target` traps.
 
+## vercel-labs/agent-skills
+
+Vercel's official collection — a different repo from `vercel-labs/skills`, the smaller discovery-tooling one. The rest of it is Vercel-platform or React-specific.
+
+### Model-invoked
+
+- **[writing-guidelines](https://github.com/vercel-labs/agent-skills/blob/main/skills/writing-guidelines/SKILL.md)** — review docs and prose against Vercel's writing handbook: voice, tone, structure. Each run fetches the handbook's latest rules, so they change with upstream, not with a sync.
+
 ## Archived
 
 Curated once and then retired, or considered and declined in favour of an owned skill. Each stays in `skills.json` under its source's `archived` list with the reason, so the decision isn't re-litigated; the sync no longer installs it, and `--check` reports an `archived` line while a copy is still installed (`npx skills remove -g <name>` clears it).
@@ -87,5 +99,10 @@ Archived in October 2026 because chat history (Claude transcripts from late Augu
 - **vercel-labs/skills:** `find-skills` — `npx skills find` does the same from a terminal.
 
 - **intercom/2x-skills** (never curated): `attach-github-assets`, replaced by the owned `attach-media`; `create-pr`, whose rules were adapted into [`pr-body`](../skills/engineering/pr-body/SKILL.md); `thermo-nuclear-code-review`, `skill-review`, `fix-flaky-tests`, `audit-memory`, `cc-cost-analysis`, `permissions-analyzer`, `tool-misses` — tied to Intercom's plugin install or stack, or covered by owned skills. Reasons per skill are in `skills.json`.
+
+Considered in October 2026 and declined, having sat installed outside the manifest:
+
+- **mattpocock/skills:** `triage` — needs the issue-tracker setup ADR 0001 removed; `teach`; `writing-fragments`, `writing-shape` and `writing-beats` — still `in-progress/` drafts upstream.
+- **vercel-labs/agent-skills:** `web-design-guidelines` — fires on the same "review my UI" requests as [`frontend-craft`](../skills/engineering/frontend-craft/SKILL.md)'s audit mode.
 
 Re-curating any of them is moving its entry back from `archived` to `skills`.
