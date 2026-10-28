@@ -16,7 +16,7 @@ Curating either has a cost. Both are model-invoked with overlapping triggers, so
 - `frontend-craft` is model-invoked, in `engineering/`. `SKILL.md` keeps frontend-design's process and voice, adds impeccable's mode choice, brief-wins and refine-vs-redesign rules, colour strategies, and bounded verification, and covers refinement requests (bolder, quieter, simpler, polish, copy) as short guidance rather than commands.
 - Three references load on demand: `MODES.md` (what each mode lets the visual world do), `FLOOR.md` (checks and refusals, read before any UI edit), `REVIEW.md` (critique and audit rubrics and report format).
 - Dropped from impeccable: the engine and detector, hooks, live mode, sub-agents, the command dispatcher, the setup flow and its project files, the concept-seed roll, the comp-led image pipeline, and native iOS/Android references. The skill reads a project's `DESIGN.md` when one exists but never creates it.
-- Both upstreams are Apache-2.0. `CREDITS.md` carries the license, the copyright lines, and what changed, as section 4 requires. The repo itself stays MIT; the adapted files are under Apache-2.0 per the credits.
+- Both upstreams are Apache-2.0. `CREDITS.md` carries the license, the copyright lines, and what changed, as section 4 requires. The repo itself stays MIT; the adapted files are under Apache-2.0 per the credits. `MECHANICS.md`, added later, adapts the MIT-licensed Vercel Web Interface Guidelines instead; `CREDITS.md` carries that licence too.
 
 ## Consequences
 

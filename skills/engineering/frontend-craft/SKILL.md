@@ -10,7 +10,7 @@ metadata:
     - skill: impeccable
       author: Paul Bakaus
       url: "https://github.com/pbakaus/impeccable"
-    - skill: web-design-guidelines
+    - skill: web-interface-guidelines
       author: Vercel Labs
       url: "https://github.com/vercel-labs/web-interface-guidelines"
 ---
