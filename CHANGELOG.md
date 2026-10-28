@@ -1,5 +1,17 @@
 # simonsteiner-skills
 
+## 1.14.0
+
+### Minor Changes
+
+- [#54](https://github.com/simonsteiner/skills/pull/54) [`8109dd3`](https://github.com/simonsteiner/skills/commit/8109dd303f6f03e2d6eaff3c6fb0ca41c3b01b8f) Thanks [@simonsteiner](https://github.com/simonsteiner)! - `frontend-craft` gains an implementation lens, `MECHANICS.md`: the source-level checks a screenshot can't show, adapted from Vercel's Web Interface Guidelines. It covers form fields (`autocomplete`, labels, paste, error focus), focus and semantics, `transition: all` and interruptible motion, image dimensions and lazy loading, `color-scheme`, touch and viewport, and state, content and locale (URL state, undo for destructive actions, `Intl` formats). Builds read it when the surface has forms, URL state, media, a dark theme or touch gestures. Polish and the audit walk it over the source, and each group scores under an existing audit dimension.
+
+### Patch Changes
+
+- [#54](https://github.com/simonsteiner/skills/pull/54) [`a301a12`](https://github.com/simonsteiner/skills/commit/a301a12fcecba9757c0597c3dac9e7916c87fe0d) Thanks [@simonsteiner](https://github.com/simonsteiner)! - Curate `handoff` from `mattpocock/skills`, and add `vercel-labs/agent-skills` as a source for `writing-guidelines`. It's a different repo from the `vercel-labs/skills` already listed. Both skills were already installed but missing from the manifest; curating them puts them back on the upgrade path.
+
+  Six more skills were installed the same way and are now recorded under `archived` with their reasons: `triage`, `teach`, and the `writing-fragments` / `writing-shape` / `writing-beats` drafts from `mattpocock/skills`, plus `web-design-guidelines`, which competes with `frontend-craft`'s audit mode.
+
 ## 1.13.0
 
 ### Minor Changes
