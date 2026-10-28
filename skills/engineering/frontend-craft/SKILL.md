@@ -73,7 +73,7 @@ For a new surface where several directions are genuinely open, show the user the
 
 ### 4. Build
 
-Read [FLOOR.md](FLOOR.md) immediately before the first UI edit — including small refinements — and build to it without announcing it. If the surface has forms, URL state, media, a dark theme, or touch gestures, read [MECHANICS.md](MECHANICS.md) too: the source-level checks a screenshot can't show.
+Read [FLOOR.md](FLOOR.md) immediately before the first UI edit — including small refinements — and build to it without announcing it. Read [MECHANICS.md](MECHANICS.md) with it on every build: the source-level checks a screenshot can't show, most of which apply to any interactive surface.
 
 - **The first viewport is a thesis, not a header.** Open with the most characteristic thing in the subject's world, at the scale it has in life: a headline, an image, a live demo, an interaction. The big-number-small-label-plus-accent hero is the default; use it only if it's truly the best option.
 - **Typography carries the personality.** Use type as an active part of the design, not a neutral delivery vehicle. Line lengths under ~75 characters; serif body gets a little more line-height than sans.

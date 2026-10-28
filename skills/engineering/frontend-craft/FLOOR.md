@@ -1,6 +1,6 @@
 # Quality floor
 
-Read this after the direction is settled and before any UI edit. Build to it without announcing the checklist. A pinned brief or the committed visual world overrides anything here; your own habit doesn't. This floor is checked on the render; forms, URL state, media, a dark theme, and touch gestures also have source-level checks in MECHANICS.md — read it before building any of them.
+Read this after the direction is settled and before any UI edit. Build to it without announcing the checklist. A pinned brief or the committed visual world overrides anything here; your own habit doesn't. This floor is checked on the render; the source-level checks are in MECHANICS.md — read it too when an edit adds controls, forms, motion, media, user content, URL state, a theme, or gestures.
 
 ## Verify
 

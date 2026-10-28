@@ -1,6 +1,6 @@
 # Implementation lens
 
-What a screenshot can't show. FLOOR.md checks the render; this lens reads the source — markup attributes, CSS properties, how state and data flow. Walk it over the files that implement the surface, cite every finding as `file:line`, and skip groups the surface doesn't have. Each group scores under the REVIEW.md audit dimension in its heading. The brief, the mode, and the project's own conventions win where they conflict.
+What a screenshot can't show. FLOOR.md checks the render; this lens reads the source — markup attributes, CSS properties, how state and data flow. Walk it over the files that implement the surface, cite every finding as `file:line`, and skip groups the surface doesn't have. Each group scores under the REVIEW.md audit dimension in its heading, unless a bullet names another. The brief, the mode, and the project's own conventions win where they conflict.
 
 ## Forms — Accessibility
 
@@ -22,13 +22,13 @@ What a screenshot can't show. FLOOR.md checks the render; this lens reads the so
 - Transitions list their properties; never `transition: all`.
 - Animations can be interrupted: input mid-transition reverses from where it is, not after it finishes.
 - SVG transforms go on a `<g>` with `transform-box: fill-box`, so `transform-origin` means what it says.
-- Motion that autoplays for more than five seconds alongside other content has a pause, stop, or hide control.
+- Motion that autoplays for more than five seconds alongside other content has a pause, stop, or hide control (Accessibility).
 
 ## Media and long lists — Performance
 
 - `<img>` has `width` and `height` (or an aspect-ratio box), so loading doesn't shift the layout.
 - Below the fold: `loading="lazy"`. The largest image above the fold: `fetchpriority="high"`, never lazy.
-- Short loops are muted `playsinline` video with a still fallback, not animated GIFs. Meaningful media has captions or a transcript.
+- Short loops are muted `playsinline` video with a still fallback, not animated GIFs. Meaningful media has captions or a transcript (Accessibility).
 - Lists that can grow past a few hundred rows virtualise or use `content-visibility: auto`.
 
 ## Theming — Theming
@@ -47,7 +47,7 @@ What a screenshot can't show. FLOOR.md checks the render; this lens reads the so
 ## State, content, and locale — Integrity
 
 - State a person would share or come back to — filters, tabs, pagination, open panels — lives in the URL.
-- Destructive actions confirm or offer undo; they never fire immediately.
+- Destructive actions are undoable or confirmed — prefer undo; never irreversible in one click.
 - Text containers survive the shortest, typical, and longest real input: `min-width: 0` on flex children that truncate, wrapping or clamping for user content, and an empty state for empty strings and arrays.
 - `…` not `...`; a non-breaking space inside `10 MB` and `⌘ K`.
 - Dates, times, numbers, and currency go through `Intl.DateTimeFormat` and `Intl.NumberFormat`, never hand-built strings, and render the same on server and client.
