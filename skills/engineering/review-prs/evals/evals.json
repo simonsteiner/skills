@@ -135,7 +135,7 @@
       "setup": "Repo whose origin is https://dev.azure.com/acme/Shop/_git/web, with one active PR, id 512, no votes and no human threads. The az CLI with the azure-devops extension is signed in; gh is not configured.",
       "expected_behavior": [
         "Reads forges/azure-devops.md and uses az repos and az devops invoke rather than gh",
-        "Passes --org and --project on each call instead of running az devops configure --defaults",
+        "Passes --org (and --project where the command takes it) on every call instead of running az devops configure --defaults",
         "Checks every inline comment's line against the local git diff before posting, and posts each as its own pullRequestThreads thread",
         "Posts the summary as a closed thread naming the range reviewed, and casts no vote",
         "Fixes the findings itself rather than calling address-review-findings, replying on each thread and setting fixed threads to fixed"

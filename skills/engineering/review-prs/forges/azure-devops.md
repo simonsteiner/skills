@@ -24,7 +24,7 @@ Below, `<scope>` means `--org https://dev.azure.com/<org> --project "<project>"`
 
 ## Find what needs a review
 
-From `az repos pr list` (above): `pullRequestId`, `title`, `createdBy.uniqueName`, `sourceRefName`, `targetRefName` (both `refs/heads/…`), `isDraft`, `lastMergeSourceCommit.commitId` (the head), `lastMergeTargetCommit.commitId`, `reviewers[].vote`. The open PR for one branch: add `--source-branch <branch>`.
+From `az repos pr list` (above): `pullRequestId`, `title`, `createdBy.uniqueName`, `sourceRefName`, `targetRefName` (both `refs/heads/…`), `isDraft`, `reviewers[].vote`, `forkSource` (set on a PR from a fork). The open PR for one branch: add `--source-branch <branch>`.
 
 Threads and iterations per PR:
 
@@ -33,8 +33,10 @@ az devops invoke <thread-route> --resource pullRequestThreads -o json
 az devops invoke <thread-route> --resource pullRequestIterations -o json
 ```
 
-- **Real review** — a non-zero `vote` from a human reviewer, or a thread whose first comment is a human's: `commentType` `text` (not `system`), not `isDeleted`, and an author that isn't a bot or service account (CodeRabbit posts under whatever account it was installed with — usually named for it).
-- **Reviewed commit** — a review-prs summary names its range (`Range: <base>..<head>`); use that head. Otherwise the iteration that was newest when the human's newest thread was published (`publishedDate`): its `sourceRefCommit.commitId`.
+**The head** (`<head-oid>`) is the newest iteration's `sourceRefCommit.commitId`. Not `lastMergeSourceCommit`: that is the source tip of the last merge calculation and lags a push until the merge is recalculated.
+
+- **Real review** — any of: a non-zero `vote` from a human reviewer; an inline human thread (`threadContext` set, first comment `commentType` `text`, not `isDeleted`) by someone other than the PR's author, as on GitHub, where a general comment doesn't count; or a review-prs summary (`Range: …`). A human is an author that isn't a bot or service account (CodeRabbit posts under whatever account it was installed with — usually named for it).
+- **Reviewed commit** — a review-prs summary names its range (`Range: <base>..<head>`); use that head. Otherwise take the time of the newest real review — the inline thread's `publishedDate`, or for a vote the `system` thread Azure DevOps adds when the vote is cast (`properties.CodeReviewThreadType` `VoteUpdate`) — and the iteration that was newest then: its `sourceRefCommit.commitId`. No baseline found → review the whole PR.
 - **Changed since** — fetch both and diff locally: `git diff --stat <reviewed-oid> <head-oid>`.
 
 A PR whose `targetRefName` is another open PR's `sourceRefName` is stacked on it.
@@ -45,8 +47,8 @@ A PR whose `targetRefName` is another open PR's `sourceRefName` is stacked on it
 git fetch --prune origin
 az repos pr show --org https://dev.azure.com/<org> --id <id> -o json            # description, refs, head, mergeStatus
 az repos pr work-item list --org https://dev.azure.com/<org> --id <id> -o json  # linked work items: the spec
-git diff <lastMergeTargetCommit>...<lastMergeSourceCommit>
-tmp="$(mktemp -d)"; git worktree add --quiet --detach "$tmp/pr-<id>" <lastMergeSourceCommit> && echo "$tmp/pr-<id>"
+git diff origin/<target branch>...<head-oid>
+tmp="$(mktemp -d)"; git worktree add --quiet --detach "$tmp/pr-<id>" <head-oid> && echo "$tmp/pr-<id>"
 ```
 
 `az repos pr …` commands that take an `--id` want `--org` only, not `--project`. A head missing after the fetch (a PR from a fork) comes with `git fetch origin "refs/pull/<id>/merge"`, whose second parent is the head. Read a work item with `az boards work-item show --org … --id <n>`. Attachments in the description need auth to download: list them in the summary as not checked.
@@ -69,8 +71,8 @@ tmp="$(mktemp -d)"; git worktree add --quiet --detach "$tmp/pr-<id>" <lastMergeS
 
 ADO has no batched review: each inline comment is its own thread, and nothing is atomic. So:
 
-1. Check every comment's line against `git diff -U0 <lastMergeTargetCommit>...<lastMergeSourceCommit> -- <path>` first; a line outside every hunk goes in the summary instead. ADO would accept it, but the rule holds on every forge.
-2. Re-read the head (`az repos pr show`); a head that moved since the review means the lines may not match — re-check the new commits before posting.
+1. Check every comment's line against `git diff -U0 origin/<target branch>...<head-oid> -- <path>` first; a line outside every hunk goes in the summary instead. ADO would accept it, but the rule holds on every forge.
+2. Re-read the head (`pullRequestIterations`) right before posting; a head that moved since the review means the lines may not match — re-check the new commits before posting.
 3. Post each thread from a `mktemp` file, then delete that exact path:
 
    ```json
@@ -93,7 +95,7 @@ A post that fails partway leaves the threads before it posted. Don't re-post the
 
 ## Fix and resolve
 
-address-review-findings works only on GitHub, so do its loop here yourself, reading that skill for its rules (verdicts, commits, push safety, carrying fixes up a stack) but not its scripts. Fix in the PR's worktree, commit through the "conventional-commit" skill, push with `git push origin HEAD:<source branch>`, then per thread — yours and the bots' you confirmed:
+address-review-findings works only on GitHub, so do its loop here yourself, reading that skill for its rules (verdicts, commits, push safety, carrying fixes up a stack) but not its scripts. Fix in the review worktree you kept from Step 2 (SKILL.md), commit through the "conventional-commit" skill, and push with `git push origin HEAD:<source branch>`. A PR from a fork (`forkSource` set) pushes to `forkSource.repository.remoteUrl` instead; when that isn't writable, say so, leave its threads open, and stop fixing that PR. Then per thread — yours and the bots' you confirmed or disputed:
 
 ```bash
 # reply: {"parentCommentId": 1, "commentType": 1, "content": "Fixed in abc1234: …"}
@@ -102,8 +104,8 @@ az devops invoke <thread-route> threadId=<thread-id> --resource pullRequestThrea
 az devops invoke <thread-route> threadId=<thread-id> --resource pullRequestThreads --http-method PATCH --in-file <file> -o json
 ```
 
-(`threadId=` joins the other `--route-parameters`.) A thread you disagree with gets a reply and stays `active`. A fix that changed what the PR describes → the "pr-body" skill, then `az repos pr update --org … --id <id> --description "<body>"` and `--title`.
+(`threadId=` joins the other `--route-parameters`.) A thread you disagree with gets a reply and stays `active`. Remove the worktree once the PR's fixes are pushed. A fix that changed what the PR describes → the "pr-body" skill, then `az repos pr update --org … --id <id> --description "<body>"` and `--title`.
 
 ## Ready to merge
 
-`az repos pr show`'s `mergeStatus` (`succeeded`, or `conflicts`), every policy evaluation `approved` (`running`/`queued` → report as pending), no `active` threads, and the target branch is the default branch rather than another PR's.
+`az repos pr show`'s `mergeStatus` (`succeeded`, or `conflicts`), every blocking policy evaluation (`configuration.isBlocking`) `approved` or `notApplicable` (`running`/`queued` → report as pending; a non-blocking one that's `rejected` is worth naming but doesn't block), no `active` threads, and the target branch is the default branch rather than another PR's.
