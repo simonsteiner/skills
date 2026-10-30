@@ -34,7 +34,7 @@ gh api repos/{owner}/{repo}/pulls/<n>/comments --paginate \
 
 **Real review.** A review by a bot (`bot` above: REST `user.type` `Bot`, so CodeRabbit and Copilot whatever their login) never counts, and neither does a failure stub. Every thread reply also files an empty `COMMENTED` review of its own, so an empty-bodied comment review counts only when it opened an inline thread (its `id` is some comment's `review`); an empty approval or change request counts as it is. A human inline comment that opened a thread counts as a review too.
 
-**Changed since the last real review** — the newest real review's `commit_id` against the head:
+**Changed since the last real review** — the reviewed commit against the head. That's the head of the `Range: <base>..<head>` line in the newest review whose body has one (a review-prs summary); with none, the newest real review's `commit_id`. A summary's `Fixed:` line lists the commits that answered it: count lines only from the other commits, with `git log --format=%H <reviewed-oid>..<headRefOid>` and `git show --numstat <sha>` per commit.
 
 ```bash
 gh api repos/{owner}/{repo}/compare/<reviewed-oid>...<headRefOid> --jq '[.files[] | {filename, additions, deletions}]'
@@ -90,7 +90,13 @@ Exit 2 lists the comments outside the diff: move them into the body and post aga
 
 ## Fix and resolve
 
-Call the Skill tool with "address-review-findings" for each PR that got comments or has bot threads you confirmed or disputed. It reads the unresolved threads — yours and the bots' — fixes, replies to a disputed one and leaves it open, commits, pushes, replies with the commit, resolves, and carries fixes up a stack. Afterwards a fix that changed what the PR describes → the "pr-body" skill for the body, `gh pr edit <n> --title` for the title.
+Call the Skill tool with "address-review-findings" for each PR that got comments or has bot threads you confirmed or disputed. It reads the unresolved threads — yours and the bots' — fixes, replies to a disputed one and leaves it open, commits, pushes, replies with the commit, resolves, and carries fixes up a stack. Afterwards record the fix commits in your summary — the review id is the number after `pullrequestreview-` in `post-review.sh`'s URL:
+
+```bash
+<skill-dir>/scripts/note-fixes.sh <n> <review-id> <sha>...
+```
+
+It adds them to a `Fixed:` line after the summary's `Range:` line, merging with any earlier round. A fix that changed what the PR describes → the "pr-body" skill for the body, `gh pr edit <n> --title` for the title.
 
 ## Ready to merge
 

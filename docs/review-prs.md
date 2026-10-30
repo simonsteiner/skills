@@ -29,3 +29,7 @@ CodeRabbit, Copilot and similar bots don't count as a review: a PR they alone ha
 ## Azure DevOps
 
 review-prs reads the forge from `origin`. On Azure DevOps it uses the `az` CLI (`az extension add --name azure-devops`, then `az login` or `AZURE_DEVOPS_EXT_PAT`) and the commands in [forges/azure-devops.md](../skills/engineering/review-prs/forges/azure-devops.md). There are no bundled scripts for it yet, and address-review-findings is GitHub-only, so on Azure DevOps review-prs posts its threads and fixes the findings itself. Other forges get Local mode only.
+
+## What a review records
+
+Each review-prs summary ends with `Range: <base>..<head>`, the commits it covered, and once its findings are fixed, `Fixed: <sha> …`, the commits that answered it. The next run reads both: it starts from the reviewed head, and commits on the `Fixed:` line don't count toward "enough changed to review again". So a PR doesn't come back just because its own fixes landed, but when it does come back for new work, the fixes are reviewed with it.

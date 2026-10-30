@@ -18,7 +18,7 @@ Review what nobody has looked at, leave the findings where the author will see t
 
 The workflow below is the same everywhere; the commands differ. Read the forge from `git remote get-url origin`, then read its file before Step 1 and take every command from it:
 
-- `github.com`, or any host where `gh repo view` succeeds (GitHub Enterprise, an SSH host alias) → [forges/github.md](forges/github.md) — `gh`, with the bundled [scripts/post-review.sh](scripts/post-review.sh) and [scripts/outside-findings.sh](scripts/outside-findings.sh).
+- `github.com`, or any host where `gh repo view` succeeds (GitHub Enterprise, an SSH host alias) → [forges/github.md](forges/github.md) — `gh`, with the bundled [scripts/post-review.sh](scripts/post-review.sh), [scripts/outside-findings.sh](scripts/outside-findings.sh) and [scripts/note-fixes.sh](scripts/note-fixes.sh).
 - `dev.azure.com`, `ssh.dev.azure.com`, `*.visualstudio.com` → [forges/azure-devops.md](forges/azure-devops.md) — `az repos` and `az devops invoke`; no bundled scripts.
 - Anything else (GitLab, Bitbucket, Gitea) → PR mode isn't supported: say so, offer Local mode against the PR's target branch, and stop.
 
@@ -54,7 +54,7 @@ Check the forge's CLI is signed in before Step 1. Terms below are GitHub's; on A
 From the listing, a PR **needs a review** when either holds:
 
 - **No real review** — no human review (see Gotchas) and no human inline comment. Bot reviews and bot threads don't count, however many.
-- **Enough changed since the last real one** — diff the newest real review's commit against the head. About 30+ changed lines of code (not docs, lockfiles, formatting), or a new file, counts. Typo fixes and no-op rebases don't.
+- **Enough changed since the last real one** — diff the reviewed commit against the head: the head of the `Range:` line in the newest review-prs summary, else the newest real review's commit (forge file). About 30+ changed lines of code (not docs, lockfiles, formatting), or a new file, counts. Typo fixes and no-op rebases don't. Commits the summary's `Fixed:` line lists don't count toward it — they answer that review — but when a re-review runs, its range still starts at the reviewed commit, so the fixes get reviewed with the rest.
 
 The set is one PR or many. A PR whose base is another open PR's head branch is **stacked** on it: order each stack base first. Independent PRs have no order. Skip drafts unless asked. Nothing needs a review → say so and stop.
 
@@ -102,7 +102,7 @@ No findings → still post the summary, so the PR stops reading as unreviewed. C
 
 ## Step 4 — Fix and resolve
 
-**PR mode:** fix every posted finding and every bot thread you confirmed, and reply to the ones you disputed, as the forge file says — on GitHub through the "address-review-findings" skill, on Azure DevOps by hand following its rules. A stack is fixed one layer at a time, bottom-up, each layer's fixes carried up before the next starts — never in parallel; independent PRs may run in parallel. Expect the verdict **fix** nearly every time; if re-reading shows a finding was wrong, reply saying so and resolve it. A bot thread you disputed gets a reply with the reason and stays open. Once a PR's fixes are pushed, re-read its title and body: a fix that changed what they describe → call the Skill tool with "pr-body" and update both.
+**PR mode:** fix every posted finding and every bot thread you confirmed, and reply to the ones you disputed, as the forge file says — on GitHub through the "address-review-findings" skill, on Azure DevOps by hand following its rules. A stack is fixed one layer at a time, bottom-up, each layer's fixes carried up before the next starts — never in parallel; independent PRs may run in parallel. Expect the verdict **fix** nearly every time; if re-reading shows a finding was wrong, reply saying so and resolve it. A bot thread you disputed gets a reply with the reason and stays open. Once a PR's fixes are pushed, record them in your review summary: a `Fixed: <sha> …` line after its `Range:` line, listing the fix commits, as the forge file says. Then re-read the PR's title and body: a fix that changed what they describe → call the Skill tool with "pr-body" and update both.
 
 **Local mode:** fix each real finding, run the repo's checks, then call the Skill tool with "conventional-commit" to commit.
 
