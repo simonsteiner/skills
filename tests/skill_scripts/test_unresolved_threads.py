@@ -21,8 +21,8 @@ def thread(id, *authors, resolved=False, total=None):
             "comments": {"totalCount": total or len(comments), "nodes": comments}}
 
 
-def review(body, state="COMMENTED"):
-    return {"state": state, "body": body}
+def review(body, state="COMMENTED", author="alice"):
+    return {"state": state, "body": body, "author": {"login": author}}
 
 
 class UnresolvedThreadsTest(unittest.TestCase):
@@ -75,6 +75,18 @@ class UnresolvedThreadsTest(unittest.TestCase):
 
     def test_a_long_review_mentioning_rate_limits_is_real(self):
         result, _ = self.run_with([review("The rate limit check is wrong. " + "x" * 300)], [])
+        self.assertEqual(result.stderr, "")
+
+    def test_warns_when_only_bots_reviewed_but_lists_their_threads(self):
+        bots = [review("Actionable comments posted: 2. " + "x" * 300, author="coderabbitai"),
+                review("", author="copilot-pull-request-reviewer"), review("", author="some-scanner[bot]")]
+        result, threads = self.run_with(bots, [thread("A", "coderabbitai")])
+        self.assertIn("has no real review — only bot reviews (coderabbitai, copilot-pull-request-reviewer, "
+                      "some-scanner[bot])", result.stderr)
+        self.assertEqual([t["id"] for t in threads], ["A"])
+
+    def test_a_human_review_beside_a_bot_review_is_real(self):
+        result, _ = self.run_with([review("", author="coderabbitai"), review("LGTM", author="alice")], [])
         self.assertEqual(result.stderr, "")
 
 

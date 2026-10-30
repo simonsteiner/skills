@@ -11,8 +11,9 @@ set -euo pipefail
 # Set GH_REPO=owner/repo to target another repo, e.g. a fork whose checkout has an
 # upstream remote and no `gh repo set-default`.
 #
-# stderr warns when the PR has no real review: no reviews, or only ones that report
-# their own failure ("Copilot encountered an error…", rate-limit notices).
+# stderr warns when the PR has no real review: no reviews, only ones that report their
+# own failure ("Copilot encountered an error…", rate-limit notices), or only bots'
+# (CodeRabbit, Copilot) — their threads are still listed.
 # awaitingReviewer is true when you (the authenticated user) already replied last in a
 # thread someone else started — reply again only if the reviewer has said more since.
 # A thread whose commentCount exceeds its comments array has more than one page of
@@ -35,11 +36,18 @@ export ME; ME="$(gh api user --jq .login)"
 
 # A failed automated review still shows up in `reviews`; it isn't one. Empty-bodied
 # reviews are real — they just carry inline comments. Only a short body can be a failure
-# stub; a long review that mentions "rate limit" is a real one.
-real="$(gh pr view "$pr" --json reviews --jq '[.reviews[]
+# stub; a long review that mentions "rate limit" is a real one. A bot's review is input,
+# not a review: GraphQL drops the "[bot]" suffix, so known bots are named too.
+reviews="$(gh pr view "$pr" --json reviews --jq '[.reviews[]
   | select(.state != "PENDING")
-  | select((.body | length) > 300 or (.body | test("unable to review|encountered an error|rate.?limit"; "i") | not))] | length')"
-if [[ "$real" == 0 ]]; then
+  | select((.body | length) > 300 or (.body | test("unable to review|encountered an error|rate.?limit"; "i") | not))
+  | (.author.login // "") as $l
+  | {login: $l, bot: ($l | test("\\[bot\\]$|^(coderabbitai|copilot-pull-request-reviewer|github-actions|sonarqubecloud)$"))}]')"
+human="$(jq '[.[] | select(.bot | not)] | length' <<<"$reviews")"
+bots="$(jq -r '[.[] | select(.bot) | .login] | unique | join(", ")' <<<"$reviews")"
+if [[ "$human" == 0 && -n "$bots" ]]; then
+  echo "warning: PR #$pr has no real review — only bot reviews ($bots); their threads are listed, but no person or review-prs run has reviewed it" >&2
+elif [[ "$human" == 0 ]]; then
   echo "warning: PR #$pr has no real review — none, or only failed ones; not a clean review, nobody looked" >&2
 fi
 
