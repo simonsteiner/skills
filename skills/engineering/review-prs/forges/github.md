@@ -21,16 +21,20 @@ The commands review-prs runs when `origin` is on `github.com`. `gh` must be auth
 ## Find what needs a review
 
 ```bash
-gh pr list --state open --limit 100 --json number,title,author,headRefName,baseRefName,headRefOid,isDraft,reviews
-gh api repos/{owner}/{repo}/pulls/<n>/comments --paginate --jq '.[] | select(.user.type != "Bot") | .id'   # per PR: any line = a human inline comment
+gh pr list --state open --limit 100 --json number,title,author,createdAt,headRefName,baseRefName,headRefOid,isDraft
 gh pr list --head <branch> --state open --json number   # the open PR for one branch
+# per PR: its reviews, and the review each inline thread was opened in
+gh api repos/{owner}/{repo}/pulls/<n>/reviews --paginate \
+  --jq '.[] | select(.state != "PENDING") | {id, state, commit_id, body, login: .user.login, bot: (.user.type == "Bot")}'
+gh api repos/{owner}/{repo}/pulls/<n>/comments --paginate \
+  --jq '.[] | select(.in_reply_to_id == null) | {review: .pull_request_review_id, bot: (.user.type == "Bot")}'
 ```
 
 `--limit 100` is the listing cap from SKILL.md Step 1, not a page size; `gh` returns the newest first.
 
-**Bots.** In `gh pr list`'s `reviews`, a bot's `author.login` has no `[bot]` suffix: `coderabbitai`, `copilot-pull-request-reviewer`, `github-actions`, `sonarqubecloud`, and anything whose REST `user.type` is `Bot`. None of them is a real review.
+**Real review.** A review by a bot (`bot` above: REST `user.type` `Bot`, so CodeRabbit and Copilot whatever their login) never counts, and neither does a failure stub. Every thread reply also files an empty `COMMENTED` review of its own, so an empty-bodied comment review counts only when it opened an inline thread (its `id` is some comment's `review`); an empty approval or change request counts as it is. A human inline comment that opened a thread counts as a review too.
 
-**Changed since the last real review** — the newest real review's `commit.oid` against the head:
+**Changed since the last real review** — the newest real review's `commit_id` against the head:
 
 ```bash
 gh api repos/{owner}/{repo}/compare/<reviewed-oid>...<headRefOid> --jq '[.files[] | {filename, additions, deletions}]'

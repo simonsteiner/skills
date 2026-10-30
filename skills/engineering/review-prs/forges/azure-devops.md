@@ -35,8 +35,8 @@ az devops invoke <thread-route> --resource pullRequestIterations -o json
 
 **The head** (`<head-oid>`) is the newest iteration's `sourceRefCommit.commitId`. Not `lastMergeSourceCommit`: that is the source tip of the last merge calculation and lags a push until the merge is recalculated.
 
-- **Real review** — any of: a non-zero `vote` from a human reviewer; an inline human thread (`threadContext` set, first comment `commentType` `text`, not `isDeleted`) by someone other than the PR's author, as on GitHub, where a general comment doesn't count; or a review-prs summary (`Range: …`). A human is an author that isn't a bot or service account (CodeRabbit posts under whatever account it was installed with — usually named for it).
-- **Reviewed commit** — a review-prs summary names its range (`Range: <base>..<head>`); use that head. Otherwise take the time of the newest real review — the inline thread's `publishedDate`, or for a vote the `system` thread Azure DevOps adds when the vote is cast (`properties.CodeReviewThreadType` `VoteUpdate`) — and the iteration that was newest then: its `sourceRefCommit.commitId`. No baseline found → review the whole PR.
+- **Real review** — any of: a non-zero `vote` from a human reviewer; an inline human thread (`threadContext` set, first comment `commentType` `text`, not `isDeleted`) by someone other than the PR's author — a general comment doesn't count; or a review-prs summary (`Range: …`). A human is an author that isn't a bot or service account (CodeRabbit posts under whatever account it was installed with — usually named for it).
+- **Reviewed commit** — a review-prs summary names its range (`Range: <base>..<head>`); use that head. Otherwise take the time of the newest real review — the inline thread's `publishedDate`, or for a vote the `system` thread Azure DevOps adds when the vote is cast (`properties.CodeReviewThreadType.$value` `VoteUpdate`; property values come wrapped as `{"$type", "$value"}`) — and the iteration that was newest then: its `sourceRefCommit.commitId`. No baseline found → review the whole PR.
 - **Changed since** — fetch both and diff locally: `git diff --stat <reviewed-oid> <head-oid>`.
 
 A PR whose `targetRefName` is another open PR's `sourceRefName` is stacked on it.
@@ -108,4 +108,4 @@ az devops invoke <thread-route> threadId=<thread-id> --resource pullRequestThrea
 
 ## Ready to merge
 
-`az repos pr show`'s `mergeStatus` (`succeeded`, or `conflicts`), every blocking policy evaluation (`configuration.isBlocking`) `approved` or `notApplicable` (`running`/`queued` → report as pending; a non-blocking one that's `rejected` is worth naming but doesn't block), no `active` or `pending` threads, and the target branch is the default branch rather than another PR's.
+`az repos pr show`'s `mergeStatus` (`succeeded`, or `conflicts`), every blocking policy evaluation (`configuration.isBlocking`) `approved` or `notApplicable` (`running`/`queued` → report as pending; a non-blocking one that's `rejected` is worth naming but doesn't block), no `active` or `pending` threads, and the target branch isn't another open PR's source branch. A release or develop branch is a fine target.
