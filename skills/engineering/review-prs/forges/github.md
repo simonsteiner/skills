@@ -47,7 +47,7 @@ tmp="$(mktemp -d)"; git worktree add --quiet --detach "$tmp/pr-<n>" <headRefOid>
 gh pr checks <n>
 ```
 
-The spec is the body and `closingIssuesReferences` (`gh issue view <m>`). Screenshots or recordings in either (`github.com/user-attachments/…`): call the Skill tool with "download-media", passing `-o <worktree path>/.scratch/media`.
+The spec is the body and `closingIssuesReferences` (`gh issue view <m>`). Screenshots or recordings in either (`github.com/user-attachments/…`): call the Skill tool with "download-media", passing `-o <worktree path>/.scratch/media`, and check them against the diff.
 
 ## Outside findings
 
@@ -62,7 +62,7 @@ The spec is the body and `closingIssuesReferences` (`gh issue view <m>`). Screen
   gh pr view <n> --comments   # CodeRabbit's walkthrough and summary
   ```
 
-  The REST list includes resolved threads; one whose code already changed verifies as not holding.
+  The REST list includes resolved threads and doesn't mark them. Tell them apart with address-review-findings' `scripts/unresolved-threads.sh <n>`: a confirmed finding in a resolved thread is posted as your own comment, since the fix step reads only unresolved threads.
 - **Sonar** — the PR's key for `pullRequest` is its number.
 
 ## Post the review
@@ -84,7 +84,7 @@ Exit 2 lists the comments outside the diff: move them into the body and post aga
 
 ## Fix and resolve
 
-Call the Skill tool with "address-review-findings" for each PR that got comments or has bot threads you confirmed. It reads the unresolved threads — yours and the bots' — fixes, commits, pushes, replies with the commit, resolves, and carries fixes up a stack. Afterwards a fix that changed what the PR describes → the "pr-body" skill for the body, `gh pr edit <n> --title` for the title.
+Call the Skill tool with "address-review-findings" for each PR that got comments or has bot threads you confirmed or disputed. It reads the unresolved threads — yours and the bots' — fixes, replies to a disputed one and leaves it open, commits, pushes, replies with the commit, resolves, and carries fixes up a stack. Afterwards a fix that changed what the PR describes → the "pr-body" skill for the body, `gh pr edit <n> --title` for the title.
 
 ## Ready to merge
 

@@ -18,11 +18,11 @@ Review what nobody has looked at, leave the findings where the author will see t
 
 The workflow below is the same everywhere; the commands differ. Read the forge from `git remote get-url origin`, then read its file before Step 1 and take every command from it:
 
-- `github.com` → [forges/github.md](forges/github.md) — `gh`, with the bundled [scripts/post-review.sh](scripts/post-review.sh) and [scripts/outside-findings.sh](scripts/outside-findings.sh).
+- `github.com`, or any host where `gh repo view` succeeds (GitHub Enterprise, an SSH host alias) → [forges/github.md](forges/github.md) — `gh`, with the bundled [scripts/post-review.sh](scripts/post-review.sh) and [scripts/outside-findings.sh](scripts/outside-findings.sh).
 - `dev.azure.com`, `ssh.dev.azure.com`, `*.visualstudio.com` → [forges/azure-devops.md](forges/azure-devops.md) — `az repos` and `az devops invoke`; no bundled scripts.
 - Anything else (GitLab, Bitbucket, Gitea) → PR mode isn't supported: say so, offer Local mode against the PR's target branch, and stop.
 
-Check the forge's CLI is signed in before Step 1. Terms below are GitHub's; on Azure DevOps a PR's head is its source branch and `lastMergeSourceCommit`, its base the target branch.
+Check the forge's CLI is signed in before Step 1. Terms below are GitHub's; on Azure DevOps a PR's head is its source branch and newest iteration, its base the target branch.
 
 ## Gotchas
 
@@ -41,7 +41,7 @@ Check the forge's CLI is signed in before Step 1. Terms below are GitHub's; on A
 
 ## Step 1 — Find what needs a review (PR mode)
 
-**PRs the user names (`#12 #15`, "the stack") are reviewed, whatever their review state** — being called on a PR is the request. A recent real review only narrows a named PR to a re-review of what changed since (Step 2). Otherwise the set depends on where the call sits in the thread:
+**PRs the user names (`#12 #15`, "the stack") are reviewed, whatever their review state** — being called on a PR is the request. A recent real review only narrows a named PR to a re-review of what changed since (Step 2); with nothing changed since, review the whole PR again. Otherwise the set depends on where the call sits in the thread:
 
 - **First message of the thread** — the call opens the thread, and the thread hasn't created or pushed to a PR yet → all open PRs: list them and filter as below, whatever branch the thread is on and whatever PRs are linked to it. Link each PR you review to the thread (`link_pull_request`, when it takes the PR's URL), so a later call in this thread finds them as its own work.
 - **Partway through a thread** — anything else, including a first message that opened a PR before calling this skill → the thread's own work only, whatever its review state, without the listing and filter. In T3 Code, `list_thread_pull_requests` lists the PRs linked to the current thread and the stacks they chain into: the open ones, with any stack they chain into, are the set — one PR, a stack, or several independent PRs. Merged and closed links don't count. No open PR linked → the thread's current branch: `t3_thread_read` (`threadId` from `t3_thread_configuration`) returns `branch`; outside T3 Code, the session's own checkout. A worktree thread (`worktreePath` set) owns its branch. A thread on the main checkout (`worktreePath` null) reports the checkout's current branch, which another session may have switched — the report lines below are what catch a wrong narrowing. Then:
@@ -61,7 +61,7 @@ Once the set is settled, rename the thread or session **only if its title is gen
 
 ## Step 2 — Review each PR
 
-Per PR (stacks bottom-up, independent PRs one at a time), read its diff against its base, and check out its head in a worktree of its own for reading whole files and running checks — the forge file has the commands. Work in the printed path until the review is posted, then `git worktree remove --force <path> && rmdir <its parent>`. Fixes happen in Step 4, on the branch itself.
+Per PR (stacks bottom-up, independent PRs one at a time), read its diff against its base, and check out its head in a worktree of its own for reading whole files and running checks — the forge file has the commands. Work in the printed path until the review is posted, then `git worktree remove --force <path> && rmdir <its parent>` — on GitHub, where address-review-findings makes its own. On Azure DevOps keep it for Step 4's fixes and remove it once they're pushed.
 
 Local mode: pin `git diff <fixed-point>...HEAD`, confirm the ref resolves and the diff isn't empty before anything else. A generic title (Step 1) becomes `Review since <fixed-point>: <topic>`.
 
@@ -70,7 +70,7 @@ Read the changed files whole, run the repo's checks — tests, lint, type check,
 **Outside findings (PR mode).** What other tools already flagged on the PR gets fixed in the same pass, so collect it yourself, not through a sub-agent, and only **after** your own review, so it can't anchor it:
 
 - **CI annotations** — linters, type checkers, CodeQL, anything CI reports inline (forge file).
-- **Bot reviews** — CodeRabbit, Copilot and the like: their inline threads, and what they put only in a review body or summary comment (CodeRabbit's nitpicks and "outside diff range" comments). A bot's thread you confirm isn't posted again: name it in the summary ("Confirms CodeRabbit on `src/export.ts:40`", with your severity if it differs) and Step 4 fixes it in its own thread. One you can't ground also goes in the summary, with why, so Step 4 replies rather than fixes. A real one from a review body on a diff line becomes your own comment.
+- **Bot reviews** — CodeRabbit, Copilot and the like: their inline threads, and what they put only in a review body or summary comment (CodeRabbit's nitpicks and "outside diff range" comments). A bot's unresolved thread you confirm isn't posted again: name it in the summary ("Confirms CodeRabbit on `src/export.ts:40`", with your severity if it differs) and Step 4 fixes it in its own thread. One you can't ground also goes in the summary, with why, so Step 4 replies rather than fixes. A real one from a review body, or from a thread someone resolved without fixing it, on a diff line becomes your own comment: Step 4 reads only unresolved threads.
 - **SonarQube / SonarCloud** — when the PR's checks or a comment show a Sonar analysis, list its open issues for this PR: the SonarQube MCP tool (`search_sonar_issues_in_projects` with the `pullRequest` key from `list_pull_requests`), else the `sonar` CLI, else, for a public SonarCloud project, `curl -s "https://sonarcloud.io/api/issues/search?componentKeys=<key>&pullRequest=<n>&resolved=false&ps=500"` (500 a page, the most it allows; page on with `&p=2` while `paging.total` is higher). The project key is in `sonar-project.properties` or the CI config. None reachable → name Sonar as not checked in the summary.
 - **Other failed checks** with a reason but no annotation (a coverage gate, a security scanner's comment).
 
@@ -96,7 +96,7 @@ No findings → still post the summary, so the PR stops reading as unreviewed. C
 
 ## Step 4 — Fix and resolve
 
-**PR mode:** fix every posted finding and every bot thread you confirmed, as the forge file says — on GitHub through the "address-review-findings" skill, on Azure DevOps by hand following its rules. A stack is fixed one layer at a time, bottom-up, each layer's fixes carried up before the next starts — never in parallel; independent PRs may run in parallel. Expect the verdict **fix** nearly every time; if re-reading shows a finding was wrong, reply saying so and resolve it. A bot thread you disputed gets a reply with the reason and stays open. Once a PR's fixes are pushed, re-read its title and body: a fix that changed what they describe → call the Skill tool with "pr-body" and update both.
+**PR mode:** fix every posted finding and every bot thread you confirmed, and reply to the ones you disputed, as the forge file says — on GitHub through the "address-review-findings" skill, on Azure DevOps by hand following its rules. A stack is fixed one layer at a time, bottom-up, each layer's fixes carried up before the next starts — never in parallel; independent PRs may run in parallel. Expect the verdict **fix** nearly every time; if re-reading shows a finding was wrong, reply saying so and resolve it. A bot thread you disputed gets a reply with the reason and stays open. Once a PR's fixes are pushed, re-read its title and body: a fix that changed what they describe → call the Skill tool with "pr-body" and update both.
 
 **Local mode:** fix each real finding, run the repo's checks, then call the Skill tool with "conventional-commit" to commit.
 
