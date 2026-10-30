@@ -26,6 +26,8 @@ gh api repos/{owner}/{repo}/pulls/<n>/comments --paginate --jq '.[] | select(.us
 gh pr list --head <branch> --state open --json number   # the open PR for one branch
 ```
 
+`--limit 100` is the listing cap from SKILL.md Step 1, not a page size; `gh` returns the newest first.
+
 **Bots.** In `gh pr list`'s `reviews`, a bot's `author.login` has no `[bot]` suffix: `coderabbitai`, `copilot-pull-request-reviewer`, `github-actions`, `sonarqubecloud`, and anything whose REST `user.type` is `Bot`. None of them is a real review.
 
 **Changed since the last real review** — the newest real review's `commit.oid` against the head:

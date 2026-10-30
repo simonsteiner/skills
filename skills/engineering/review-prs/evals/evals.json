@@ -140,6 +140,15 @@
         "Posts the summary as a closed thread naming the range reviewed, and casts no vote",
         "Fixes the findings itself rather than calling address-review-findings, replying on each thread and setting fixed threads to fixed"
       ]
+    },
+    {
+      "query": "review the open PRs",
+      "setup": "GitHub repo with 15 open PRs and no review on any of them: #50 to #61 are independent, and #62, #63 and #64 form a stack.",
+      "expected_behavior": [
+        "Reviews at most 10 PRs in this run, oldest first, and does not split the stack across runs",
+        "Ends the report by naming the PRs still needing a review and offering to continue with the next 10",
+        "On 'continue', reviews the remaining PRs under the same cap rather than re-reviewing the ones just reviewed"
+      ]
     }
   ]
 }

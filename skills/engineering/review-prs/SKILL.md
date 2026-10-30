@@ -57,6 +57,11 @@ From the listing, a PR **needs a review** when either holds:
 
 The set is one PR or many. A PR whose base is another open PR's head branch is **stacked** on it: order each stack base first. Independent PRs have no order. Skip drafts unless asked. Nothing needs a review → say so and stop.
 
+**Two caps keep a run inside the session's budget**, since each review costs checks, whole-file reads and a fix pass:
+
+- **The listing stops at 100.** A listing that returns exactly 100 PRs probably cut some off: open the report with "100+ open PRs; only the 100 newest were considered".
+- **A run reviews at most 10 PRs** found by the listing — the oldest first, as they've waited longest. A stack counts as one unit and is never split, even when it alone is over 10. The rest wait for the next run, which finds them because the reviewed ones now carry a real review. PRs the user named aren't capped.
+
 Once the set is settled, rename the thread or session **only if its title is generic** — one that names no PR and no topic, as a title generated from a bare skill call does ("Review Open Pull Requests", "Code review PRs"). A title that already says what the thread is about stays as it is, even if it isn't phrased as a review — so does one another agent gave the thread when it launched it. New title: `Review #32: gate push on checks`, `Review stack #24–#31: eval runner`. In T3 Code, read the title with `t3_thread_configuration` (gives `threadId`) then `t3_thread_read`, and rename with `t3_thread_update` and `{"action": "rename", "title": "<title>"}`. A rename that errors gets fixed from the error and retried once; still failing → name it in the report. No such tool → skip this.
 
 ## Step 2 — Review each PR
@@ -102,6 +107,6 @@ No findings → still post the summary, so the PR stops reading as unreviewed. C
 
 ## Step 5 — Report
 
-Per PR: link, the range reviewed (`<base-oid>..<head-oid>`, or `<reviewed-oid>..<head-oid>` on a re-review), findings by severity, bot findings confirmed or disputed, what was fixed (commit), what's still open and why. Include the per-thread lines from Step 4; they are the record of what each fix answered. Then a **ready to merge** verdict per PR and per stack: open threads, conflicts, a layer still based on an unmerged branch, and CI read from the forge now — never a status you didn't just read. Checks still pending → watch them in the background and report when they finish, or report them as pending; never wait with `sleep`. Before reporting, `git worktree list` shows none of the worktrees you created, and the scripts copy's folder is deleted. Name every PR skipped because its review was recent enough. Local mode: findings per axis, fixed or not, checks run.
+Per PR: link, the range reviewed (`<base-oid>..<head-oid>`, or `<reviewed-oid>..<head-oid>` on a re-review), findings by severity, bot findings confirmed or disputed, what was fixed (commit), what's still open and why. Include the per-thread lines from Step 4; they are the record of what each fix answered. Then a **ready to merge** verdict per PR and per stack: open threads, conflicts, a layer still based on an unmerged branch, and CI read from the forge now — never a status you didn't just read. Checks still pending → watch them in the background and report when they finish, or report them as pending; never wait with `sleep`. Before reporting, `git worktree list` shows none of the worktrees you created, and the scripts copy's folder is deleted. Name every PR skipped because its review was recent enough. When the cap left PRs unreviewed, end with them and an offer to go on: "14 more PRs need a review: #41, #44, … Say *continue* to review the next 10." A *continue* runs this skill again on those PRs, under the same cap. Local mode: findings per axis, fixed or not, checks run.
 
 Merging is not part of this skill. Don't rewrite history on a branch under review — fixes are new commits.

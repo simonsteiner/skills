@@ -24,7 +24,7 @@ Below, `<scope>` means `--org https://dev.azure.com/<org> --project "<project>"`
 
 ## Find what needs a review
 
-From `az repos pr list` (above): `pullRequestId`, `title`, `createdBy.uniqueName`, `sourceRefName`, `targetRefName` (both `refs/heads/…`), `isDraft`, `reviewers[].vote`, `forkSource` (set on a PR from a fork). The open PR for one branch: add `--source-branch <branch>`.
+From `az repos pr list` (above): `pullRequestId`, `title`, `createdBy.uniqueName`, `sourceRefName`, `targetRefName` (both `refs/heads/…`), `isDraft`, `reviewers[].vote`, `forkSource` (set on a PR from a fork). The open PR for one branch: add `--source-branch <branch>`. `--top 100` is the listing cap from SKILL.md Step 1.
 
 Threads and iterations per PR:
 
