@@ -1,5 +1,7 @@
 {
-  "skills": ["review-prs"],
+  "skills": [
+    "review-prs"
+  ],
   "evals": [
     {
       "query": "do a code review on the open PRs, if they haven't got a review yet or enough code changed since. comment any findings and fix them.",
@@ -107,6 +109,36 @@
         "Verifies the Sonar issue and the unused import, posts each inline naming its source and rule after the severity",
         "Puts the warning on the untouched line in the summary only and does not fix it",
         "Fixes the posted findings through address-review-findings and does not change the issue's status in SonarQube"
+      ]
+    },
+    {
+      "query": "review the open PRs",
+      "setup": "GitHub repo with open PR #40 whose only review is CodeRabbit's: two inline threads (one real off-by-one on a changed line, one wrong claim that a variable is unused) and a 'Nitpick comments' section in the review body naming a real missing null check on a changed line. No human has reviewed it.",
+      "expected_behavior": [
+        "Treats #40 as needing a review because CodeRabbit's review is not a real review",
+        "Does its own full review, running the repo's checks, before reading CodeRabbit's threads",
+        "Does not repost the off-by-one inline; names it in the summary as confirming CodeRabbit's thread",
+        "Posts the null check from the nitpick section as its own inline comment naming CodeRabbit as the source",
+        "Leaves CodeRabbit's wrong unused-variable thread open with a reply giving the reason, rather than fixing or resolving it"
+      ]
+    },
+    {
+      "query": "review PR 41",
+      "setup": "GitHub PR #41 with a human review on its current head and nothing changed since.",
+      "expected_behavior": [
+        "Reviews #41 anyway because the user named it, instead of skipping it as recently reviewed",
+        "Posts a summary even if it finds nothing"
+      ]
+    },
+    {
+      "query": "review the open PRs",
+      "setup": "Repo whose origin is https://dev.azure.com/acme/Shop/_git/web, with one active PR, id 512, no votes and no human threads. The az CLI with the azure-devops extension is signed in; gh is not configured.",
+      "expected_behavior": [
+        "Reads forges/azure-devops.md and uses az repos and az devops invoke rather than gh",
+        "Passes --org and --project on each call instead of running az devops configure --defaults",
+        "Checks every inline comment's line against the local git diff before posting, and posts each as its own pullRequestThreads thread",
+        "Posts the summary as a closed thread naming the range reviewed, and casts no vote",
+        "Fixes the findings itself rather than calling address-review-findings, replying on each thread and setting fixed threads to fixed"
       ]
     }
   ]
