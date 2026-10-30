@@ -95,7 +95,7 @@ A post that fails partway leaves the threads before it posted. Don't re-post the
 
 ## Fix and resolve
 
-address-review-findings works only on GitHub, so do its loop here yourself, reading that skill for its rules (verdicts, commits, push safety, carrying fixes up a stack) but not its scripts. Fix in the review worktree you kept from Step 2 (SKILL.md), commit through the "conventional-commit" skill, and push with `git push origin HEAD:<source branch>`. A PR from a fork (`forkSource` set) pushes to `forkSource.repository.remoteUrl` instead; when that isn't writable, say so, leave its threads open, and stop fixing that PR. Then per thread — yours and the bots' you confirmed or disputed:
+address-review-findings works only on GitHub, so do its loop here yourself, reading that skill for its rules (verdicts, commits, push safety, carrying fixes up a stack) but not its scripts. Fix in the review worktree you kept from Step 2 (SKILL.md), call the Skill tool with "conventional-commit" to commit, and push with `git push origin HEAD:<source branch>`. A PR from a fork (`forkSource` set) pushes to `forkSource.repository.remoteUrl` instead; when that isn't writable, say so, leave its threads open, and stop fixing that PR. Then per thread — yours and the bots' you confirmed or disputed:
 
 ```bash
 # reply: {"parentCommentId": 1, "commentType": 1, "content": "Fixed in abc1234: …"}
@@ -108,4 +108,4 @@ az devops invoke <thread-route> threadId=<thread-id> --resource pullRequestThrea
 
 ## Ready to merge
 
-`az repos pr show`'s `mergeStatus` (`succeeded`, or `conflicts`), every blocking policy evaluation (`configuration.isBlocking`) `approved` or `notApplicable` (`running`/`queued` → report as pending; a non-blocking one that's `rejected` is worth naming but doesn't block), no `active` threads, and the target branch is the default branch rather than another PR's.
+`az repos pr show`'s `mergeStatus` (`succeeded`, or `conflicts`), every blocking policy evaluation (`configuration.isBlocking`) `approved` or `notApplicable` (`running`/`queued` → report as pending; a non-blocking one that's `rejected` is worth naming but doesn't block), no `active` or `pending` threads, and the target branch is the default branch rather than another PR's.
