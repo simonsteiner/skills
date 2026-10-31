@@ -1,5 +1,15 @@
 # simonsteiner-skills
 
+## 1.15.1
+
+### Patch Changes
+
+- [#59](https://github.com/simonsteiner/skills/pull/59) [`4904c7c`](https://github.com/simonsteiner/skills/commit/4904c7c56d0e9550b0e0f4d889692ce6f009e160) Thanks [@simonsteiner](https://github.com/simonsteiner)! - address-review-findings now picks the repo before anything else: in a fork checkout with an `upstream` remote a new `pick-repo.sh` lists gh's default repo and origin's (resolving SSH aliases, and keeping an enterprise token off an unknown origin host), and it looks each PR up on both and uses the repo that has it (or the `GH_REPO` its caller passed) for every `gh` call, and checks the PR's URL before fixing. review-prs passes its `GH_REPO` on when it hands the fixes over, so the fix step no longer reads the upstream repo's PRs.
+
+- [#56](https://github.com/simonsteiner/skills/pull/56) [`3373cc6`](https://github.com/simonsteiner/skills/commit/3373cc6bafd9023ba58309362ea4e2333be90602) Thanks [@simonsteiner](https://github.com/simonsteiner)! - review-prs: a new `scripts/forge.sh` picks the forge from `origin` alone (Azure DevOps hosts first, then GitHub, then any host `gh` accepts), so a `GH_REPO` or a GitHub `upstream` remote no longer decides it. The GitHub and Azure DevOps guides now share the same sections, each forge's fix loop lives in its own guide, and the Azure DevOps guide is marked untested: it stops on an error rather than guess. The GitHub path is unchanged.
+
+- [#56](https://github.com/simonsteiner/skills/pull/56) [`9517e14`](https://github.com/simonsteiner/skills/commit/9517e1477cb32a40f3b0e63aef64a8cfd201d255) Thanks [@simonsteiner](https://github.com/simonsteiner)! - review-prs: a shorter, plainer description that says what the skill does and when to use it. The mid-thread scoping steps, the thread-rename recipe and the review sub-agent brief move into a `THREADS.md` it reads only when they apply, and a new `scripts/sonar-issues.sh` pages through a public SonarCloud project's PR issues. The skill body drops from about 4,750 to 3,800 tokens with no change to what it does.
+
 ## 1.15.0
 
 ### Minor Changes
