@@ -28,9 +28,9 @@ sys.stdout.write(json.dumps(pages[page]))
 '''
 
 
-def issue(n):
+def issue(n, project="acme_web"):
     return {"key": f"AX{n}", "rule": "java:S2259", "severity": "MAJOR", "type": "BUG",
-            "component": f"acme_web:src/F{n}.java", "line": n, "message": f"null #{n}", "status": "OPEN"}
+            "component": f"{project}:src/F{n}.java", "line": n, "message": f"null #{n}", "status": "OPEN"}
 
 
 class SonarIssuesTest(unittest.TestCase):
@@ -64,6 +64,12 @@ class SonarIssuesTest(unittest.TestCase):
         [argv] = self.calls()
         for arg in ("componentKeys=acme_web", "pullRequest=41", "resolved=false", "ps=500", "p=1"):
             self.assertIn(arg, argv)
+
+    def test_strips_a_project_key_that_holds_colons(self):
+        page = {"paging": {"total": 1}, "issues": [issue(3, project="com.acme:web")]}
+        result = self.run_with({"1": page}, "com.acme:web", "41")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["path"], "src/F3.java")
 
     def test_pages_on_until_the_total_is_read(self):
         pages = {"1": {"paging": {"total": 3}, "issues": [issue(1), issue(2)]},
