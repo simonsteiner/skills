@@ -17,6 +17,8 @@ The feedback lives on GitHub, so `gh` must be authenticated (`gh auth status`). 
 
 ## Step 0 — Which PRs
 
+**Pick the repo first.** In a fork checkout with an `upstream` remote, bare `gh pr …` resolves to the upstream repo, so it lists and reads someone else's PRs. When the caller passed a `GH_REPO`, use that. Otherwise compare `gh repo view --json nameWithOwner` with `gh repo view "$(git remote get-url origin)" --json nameWithOwner`; when they differ, the PRs live on origin's. Then put `GH_REPO=<owner>/<repo>` (`<host>/<owner>/<repo>` off `github.com`) in front of every `gh` command and script call below, since shell variables don't survive between tool calls, and before fixing a PR check that `gh pr view <n> --json url` names that repo.
+
 No PR named → the one for the current branch. "The open PRs", a list of numbers, or "the stack" → several. Map them first:
 
 ```bash
