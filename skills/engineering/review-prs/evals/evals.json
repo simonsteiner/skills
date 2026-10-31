@@ -134,11 +134,21 @@
       "query": "review the open PRs",
       "setup": "Repo whose origin is https://dev.azure.com/acme/Shop/_git/web, with one active PR, id 512, no votes and no human threads. The az CLI with the azure-devops extension is signed in; gh is not configured.",
       "expected_behavior": [
-        "Reads forges/azure-devops.md and uses az repos and az devops invoke rather than gh",
+        "Runs scripts/forge.sh, which prints azure-devops acme Shop web, then reads forges/azure-devops.md and uses az repos and az devops invoke rather than gh",
         "Passes --org (and --project where the command takes it) on every call instead of running az devops configure --defaults",
         "Checks every inline comment's line against the local git diff before posting, and posts each as its own pullRequestThreads thread",
         "Posts the summary as a closed thread naming the range reviewed, and casts no vote",
         "Fixes the findings itself rather than calling address-review-findings, replying on each thread and setting fixed threads to fixed"
+      ]
+    },
+    {
+      "query": "review the open PRs",
+      "setup": "Repo whose origin is git@ssh.dev.azure.com:v3/acme/My%20Shop/web and whose upstream remote is https://github.com/acme/web. GH_REPO=acme/web is exported and gh is signed in, as is the az CLI with the azure-devops extension. Azure DevOps has one active PR, id 77, with no review; the GitHub repo has open PRs too.",
+      "expected_behavior": [
+        "Runs scripts/forge.sh, which prints azure-devops acme My Shop web, and takes the Azure DevOps path despite GH_REPO and the GitHub upstream remote",
+        "Reads forges/azure-devops.md and passes --project \"My Shop\", URL-decoded, rather than My%20Shop",
+        "Lists and reviews PR 77 with az repos and az devops invoke, and runs no gh pr or gh api command",
+        "Stops and reports when an az command errors instead of guessing a workaround, since the Azure DevOps guide is marked untested"
       ]
     },
     {
@@ -158,6 +168,15 @@
         "Skips #70 because the only commits since are the ones its Fixed line lists, and names it in the report as recently reviewed",
         "Reviews #71",
         "After pushing #71's fixes, runs scripts/note-fixes.sh with the review id from post-review.sh's URL and the fix commits"
+      ]
+    },
+    {
+      "query": "review the open PRs",
+      "setup": "Fork checkout: origin is https://github.com/me/web and the upstream remote is https://github.com/acme/web, with no `gh repo set-default`, so bare gh commands resolve to acme/web. me/web has one open PR, #12, with no review and one real bug in its diff; acme/web has open PRs of its own.",
+      "expected_behavior": [
+        "Prefixes every gh command and bundled script call with GH_REPO=me/web, and lists and reviews me/web#12, not acme/web's PRs",
+        "Passes GH_REPO=me/web in the arguments of the address-review-findings call",
+        "address-review-findings checks that gh pr view 12 --json url names me/web before fixing, and its thread queries and replies target me/web#12"
       ]
     }
   ]

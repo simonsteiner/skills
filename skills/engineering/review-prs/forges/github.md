@@ -1,24 +1,25 @@
 # GitHub
 
-The commands review-prs runs when `origin` is on `github.com`. `gh` must be authenticated (`gh auth status`).
+The commands review-prs runs when `forge.sh` prints `github <owner>/<repo>`: `origin` is on `github.com`, or on another host `gh` accepts (GitHub Enterprise, an SSH host alias).
 
 ## Contents
 
-- Gotchas
-- Find what needs a review
+- Setup
+- List PRs
 - Read a PR
 - Outside findings
 - Post the review
+- Record fixes
 - Fix and resolve
 - Ready to merge
 
-## Gotchas
+## Setup
 
-- GitHub rejects the **whole** review if one inline comment's line is outside the diff (HTTP 422). `post-review.sh` checks lines before sending anything.
-- A review under the user's own account can only be a plain `COMMENT`; a PR's author can't request changes on their own PR.
-- In a fork checkout with an `upstream` remote, bare `gh pr …` and `repos/{owner}/{repo}` resolve to the upstream repo, so `gh pr view <n>` fails or reads someone else's PR. If `gh repo view --json nameWithOwner` isn't the repo the PRs live on, prefix every `gh` command and script call with `GH_REPO=<owner>/<repo>` (shell variables don't survive between tool calls).
+`gh` must be authenticated (`gh auth status`). The bundled scripts are [scripts/post-review.sh](../scripts/post-review.sh), [scripts/outside-findings.sh](../scripts/outside-findings.sh) and [scripts/note-fixes.sh](../scripts/note-fixes.sh).
 
-## Find what needs a review
+In a fork checkout with an `upstream` remote, bare `gh pr …` and `repos/{owner}/{repo}` resolve to the upstream repo, so `gh pr view <n>` fails or reads someone else's PR. If `gh repo view --json nameWithOwner` isn't the repo the PRs live on, prefix every `gh` command and script call with `GH_REPO=<owner>/<repo>`, or `GH_REPO=<host>/<owner>/<repo>` when `origin` isn't on `github.com` — `forge.sh` prints no host, and without one `gh` targets `github.com` (shell variables don't survive between tool calls).
+
+## List PRs
 
 ```bash
 gh pr list --state open --limit 100 --json number,title,author,createdAt,headRefName,baseRefName,headRefOid,isDraft
@@ -73,7 +74,7 @@ The spec is the body and `closingIssuesReferences` (`gh issue view <m>`). Screen
 
 ## Post the review
 
-[scripts/post-review.sh](../scripts/post-review.sh), payload on stdin, run from the repo under review. It pins the review to the PR's current head as a `COMMENT`, checks every comment's `path` and `line` sits inside a hunk before sending anything (new-file numbers; `"side": "LEFT"` with old-file numbers for a deleted line; `start_line` + `line` for a range, both in one hunk), refuses while you already have a draft review on the PR, and deletes the empty draft a failed post leaves behind.
+GitHub rejects the **whole** review if one inline comment's line is outside the diff (HTTP 422), and a review under the user's own account can only be a plain `COMMENT`: a PR's author can't request changes on their own PR. So post through [scripts/post-review.sh](../scripts/post-review.sh), payload on stdin, run from the repo under review. It pins the review to the PR's current head as a `COMMENT`, checks every comment's `path` and `line` sits inside a hunk before sending anything (new-file numbers; `"side": "LEFT"` with old-file numbers for a deleted line; `start_line` + `line` for a range, both in one hunk), refuses while you already have a draft review on the PR, and deletes the empty draft a failed post leaves behind.
 
 ```bash
 <skill-dir>/scripts/post-review.sh <n> <<'JSON'
@@ -86,17 +87,23 @@ The spec is the body and `closingIssuesReferences` (`gh issue view <m>`). Screen
 JSON
 ```
 
-Exit 2 lists the comments outside the diff: move them into the body and post again.
+Exit 2 lists the comments outside the diff: move them into the body and post again. Keep the URL it prints: its number after `pullrequestreview-` is the review id that *Record fixes* needs.
 
-## Fix and resolve
+## Record fixes
 
-Call the Skill tool with "address-review-findings" for each PR that got comments or has bot threads you confirmed or disputed. It reads the unresolved threads — yours and the bots' — fixes, replies to a disputed one and leaves it open, commits, pushes, replies with the commit, resolves, and carries fixes up a stack. Afterwards record the fix commits in your summary — the review id is the number after `pullrequestreview-` in `post-review.sh`'s URL:
+The review id is the number after `pullrequestreview-` in `post-review.sh`'s URL:
 
 ```bash
 <skill-dir>/scripts/note-fixes.sh <n> <review-id> <sha>...
 ```
 
-It adds them to a `Fixed:` line after the summary's `Range:` line, merging with any earlier round. A fix that changed what the PR describes → the "pr-body" skill for the body, `gh pr edit <n> --title` for the title.
+It adds the fix commits to a `Fixed:` line after the summary's `Range:` line, merging with any earlier round.
+
+## Fix and resolve
+
+Once the review is posted, remove its worktree (`git worktree remove --force <path> && rmdir <its parent>`): address-review-findings makes its own.
+
+Call the Skill tool with "address-review-findings" for each PR that got comments or has bot threads you confirmed or disputed. It reads the unresolved threads — yours and the bots' — fixes, replies to a disputed one and leaves it open, commits, pushes, replies with the commit, resolves, and carries fixes up a stack. When *Setup* needed a `GH_REPO` prefix, pass it in the call's arguments (`GH_REPO=<owner>/<repo>`, then the PRs): the prefix ends with the command it was on, and without it the skill reads the upstream repo's PRs. Afterwards record the fix commits in your summary (*Record fixes*). A fix that changed what the PR describes → the "pr-body" skill for the body, `gh pr edit <n> --title` for the title.
 
 ## Ready to merge
 

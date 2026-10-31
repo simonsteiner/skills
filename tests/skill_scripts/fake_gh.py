@@ -2,7 +2,8 @@
 
 The scripts call `gh` by name; FakeGh puts this one first on PATH. It answers from a
 list of rules, logs every call, and fails any call no rule matches, so a test also
-proves what a script did *not* send.
+proves what a script did *not* send. Each logged call keeps the GH_* and GITHUB_*
+variables it ran with, so a test can check which tokens a script let through.
 
 A rule: {"args": [...prefix of argv...], "stdout": "text" | "json": <value> | "pages":
 [<value>, ...], "exit": 0, "once": false}. "pages" stands for a `--paginate` response,
@@ -35,15 +36,16 @@ class FakeGh:
         self.rules.append({"args": list(args), **rule})
         return self
 
-    def run(self, script, *args, stdin="", env=None):
+    def run(self, script, *args, stdin="", env=None, cwd=None):
         self.spec.write_text(json.dumps(self.rules))
         self.log.write_text("")
         # A GH_REPO or GH_HOST in the developer's shell would pick the scripts' repo; only a test's env= may.
-        inherited = {k: v for k, v in os.environ.items() if k not in ("GH_REPO", "GH_HOST")}
+        # A git hook running the suite exports GIT_DIR and the like, which would point git at the outer repo.
+        inherited = {k: v for k, v in os.environ.items() if k not in ("GH_REPO", "GH_HOST") and not k.startswith("GIT_")}
         env = {**inherited, "PATH": self.path, "FAKE_GH_RULES": str(self.spec),
                "FAKE_GH_LOG": str(self.log), **(env or {})}
         return subprocess.run([str(script), *map(str, args)], input=stdin, capture_output=True,
-                              text=True, env=env, check=False)
+                              text=True, env=env, cwd=cwd, check=False)
 
     @property
     def calls(self):
@@ -55,7 +57,8 @@ def main(argv):
     rules = json.loads(rules_path.read_text())
     stdin = "" if sys.stdin.isatty() else sys.stdin.read() if "--input" in argv else ""
     with open(os.environ["FAKE_GH_LOG"], "a") as log:
-        log.write(json.dumps({"args": argv, "stdin": stdin}) + "\n")
+        env = {k: v for k, v in os.environ.items() if k.startswith(("GH_", "GITHUB_"))}
+        log.write(json.dumps({"args": argv, "stdin": stdin, "env": env}) + "\n")
     for i, rule in enumerate(rules):
         if argv[: len(rule["args"])] != rule["args"]:
             continue

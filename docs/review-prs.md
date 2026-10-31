@@ -28,7 +28,7 @@ CodeRabbit, Copilot and similar bots don't count as a review: a PR they alone ha
 
 ## Azure DevOps
 
-review-prs reads the forge from `origin`. On Azure DevOps it uses the `az` CLI (`az extension add --name azure-devops`, then `az login` or `AZURE_DEVOPS_EXT_PAT`) and the commands in [forges/azure-devops.md](../skills/engineering/review-prs/forges/azure-devops.md). There are no bundled scripts for it yet, and address-review-findings is GitHub-only, so on Azure DevOps review-prs posts its threads and fixes the findings itself. Other forges get Local mode only.
+review-prs picks the forge with its `scripts/forge.sh`, which reads `origin` only: a `GH_REPO` in your shell or a GitHub `upstream` remote can't turn an Azure DevOps checkout into a GitHub one. The workflow is the same on both; the commands live in one guide per forge, with the same sections in the same order. On Azure DevOps it uses the `az` CLI (`az extension add --name azure-devops`, then `az login` or `AZURE_DEVOPS_EXT_PAT`) and the commands in [forges/azure-devops.md](../skills/engineering/review-prs/forges/azure-devops.md). There are no bundled scripts for it yet, and address-review-findings is GitHub-only, so on Azure DevOps review-prs posts its threads and fixes the findings itself. That guide hasn't been run against a real organization yet, so review-prs stops on an `az` error rather than guess; expect the first runs to need a fix or two. Other forges get Local mode only.
 
 ## What a review records
 

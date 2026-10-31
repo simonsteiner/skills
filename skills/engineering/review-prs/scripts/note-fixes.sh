@@ -12,12 +12,15 @@ set -euo pipefail
 # commits to the same line. Short or full hex SHAs; duplicates are dropped.
 # The review id is the number after "pullrequestreview-" in post-review.sh's URL.
 # Prints the review URL.
-# Set GH_REPO=owner/repo to target another repo, e.g. a fork with an upstream remote.
+# Set GH_REPO=[HOST/]owner/repo to target another repo, e.g. a fork with an upstream remote.
 
 if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
   sed -n '/^# [A-Z]/,/^$/{/^$/q;s/^# \{0,1\}//p;}' "$0"  # the comment above
   exit 0
 fi
+
+# gh api takes its host from GH_HOST, never from GH_REPO, so carry a host-qualified GH_REPO's over.
+[[ "${GH_REPO:-}" == */*/* ]] && export GH_HOST="${GH_REPO%%/*}"
 
 pr="${1:-}" review="${2:-}"
 [[ "$pr" =~ ^[0-9]+$ ]] || { echo "error: expected a PR number, got '$pr'" >&2; exit 1; }
