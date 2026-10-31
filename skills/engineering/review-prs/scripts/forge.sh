@@ -33,7 +33,7 @@ elif [[ "$url" =~ ^([^/@:]*@)?([^/:]+):(.*)$ ]]; then
 else
   printf 'unsupported\t%s\n' "$url"; exit 0
 fi
-lower() { tr "[:upper:]" "[:lower:]" <<<"$1"; }
+lower() { local s="$1"; tr "[:upper:]" "[:lower:]" <<<"$s"; }
 host="$(lower "$host")" path="${path%/}"
 
 # An SSH host alias (`Host github-work` with `HostName github.com` in ~/.ssh/config) names
