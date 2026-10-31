@@ -98,6 +98,14 @@ class ForgeTest(unittest.TestCase):
         [call] = self.gh.calls
         self.assertEqual(call["args"][:3], ["repo", "view", "https://ghe.example.com/acme/web.git"])
 
+    def test_ssh_over_port_443_is_still_github_com(self):
+        # GitHub's documented `Host github.com` / `Hostname ssh.github.com` / `Port 443` config.
+        self.alias("github.com", "ssh.github.com")
+        for origin in ("git@github.com:acme/web.git", "ssh://git@github.com/acme/web.git"):
+            with self.subTest(origin=origin):
+                self.assertEqual(self.forge(origin), "github\tacme/web\n")
+        self.assertEqual(self.gh.calls, [])
+
     def test_ssh_host_alias_for_azure_devops(self):
         self.alias("ado", "ssh.dev.azure.com")
         self.assertEqual(self.forge("git@ado:v3/acme/Shop/web"), "azure-devops\tacme\tShop\tweb\n")
@@ -111,6 +119,18 @@ class ForgeTest(unittest.TestCase):
         origin = "https://ghe.example.com/acme/web.git"
         self.gh.on("repo", "view", origin, json={"nameWithOwner": "acme/web"})
         self.assertEqual(self.forge(origin), "github\tacme/web\n")
+
+    def test_enterprise_token_goes_only_to_gh_host(self):
+        tokens = {"GH_ENTERPRISE_TOKEN": "t1", "GITHUB_ENTERPRISE_TOKEN": "t2"}
+        self.gh.on("repo", "view", json={"nameWithOwner": "acme/web"})
+        cases = (("https://GHE.example.com/acme/web.git", "ghe.example.com", tokens),
+                 ("https://evil.example.com/acme/web.git", "ghe.example.com", {}),
+                 ("https://ghe.example.com/acme/web.git", None, {}))
+        for origin, gh_host, sent in cases:
+            with self.subTest(origin=origin, gh_host=gh_host):
+                self.forge(origin, env={**tokens, **({"GH_HOST": gh_host} if gh_host else {})})
+                [call] = self.gh.calls
+                self.assertEqual({k: v for k, v in call["env"].items() if k in tokens}, sent)
 
     def test_unsupported_host(self):
         # No rule: the fake gh fails the `gh repo view`, as the real one does for a GitLab URL.
