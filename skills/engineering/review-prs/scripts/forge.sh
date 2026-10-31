@@ -40,7 +40,9 @@ host="$(lower "$host")" path="${path%/}"
 if [[ "$(lower "$scheme")" == ssh ]] \
    && real="$(ssh -G "$host" 2>/dev/null | awk '$1 == "hostname" && !n++ { print $2 }')" \
    && [[ -n "$real" && "$(lower "$real")" != "$host" ]]; then
-  host="$(lower "$real")" url="https://$host/$path"
+  host="$(lower "$real")"
+  [[ "$host" == ssh.github.com ]] && host=github.com   # GitHub's SSH-over-port-443 endpoint
+  url="https://$host/$path"
 fi
 
 decode() { local s="${1//\\/\\\\}"; printf '%b' "${s//%/\\x}"; }

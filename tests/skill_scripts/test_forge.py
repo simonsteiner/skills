@@ -98,6 +98,14 @@ class ForgeTest(unittest.TestCase):
         [call] = self.gh.calls
         self.assertEqual(call["args"][:3], ["repo", "view", "https://ghe.example.com/acme/web.git"])
 
+    def test_ssh_over_port_443_is_still_github_com(self):
+        # GitHub's documented `Host github.com` / `Hostname ssh.github.com` / `Port 443` config.
+        self.alias("github.com", "ssh.github.com")
+        for origin in ("git@github.com:acme/web.git", "ssh://git@github.com/acme/web.git"):
+            with self.subTest(origin=origin):
+                self.assertEqual(self.forge(origin), "github\tacme/web\n")
+        self.assertEqual(self.gh.calls, [])
+
     def test_ssh_host_alias_for_azure_devops(self):
         self.alias("ado", "ssh.dev.azure.com")
         self.assertEqual(self.forge("git@ado:v3/acme/Shop/web"), "azure-devops\tacme\tShop\tweb\n")
