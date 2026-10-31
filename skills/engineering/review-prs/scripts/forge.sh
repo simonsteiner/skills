@@ -12,8 +12,9 @@ set -euo pipefail
 #
 # Azure DevOps hosts are checked first (dev.azure.com, ssh.dev.azure.com with v3/
 # paths, *.visualstudio.com), then github.com, then any other host `gh repo view
-# <origin URL>` accepts (GitHub Enterprise, an SSH host alias). An unsupported host
-# still exits 0. Exits 1 with a message when there is no `origin` remote.
+# <origin URL>` accepts (GitHub Enterprise). An SSH host alias is first resolved to its
+# real host with `ssh -G`. An unsupported host still exits 0. Exits 1 with a message
+# when there is no `origin` remote.
 
 if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
   sed -n '/^# [A-Z]/,/^$/{/^$/q;s/^# \{0,1\}//p;}' "$0"  # the comment above
@@ -24,17 +25,29 @@ url="$(git remote get-url origin 2>/dev/null)" \
   || { echo "error: no 'origin' remote here (or not a git repo) — can't tell the forge" >&2; exit 1; }
 
 # Split into host and path: scheme://[user@]host[:port]/path, or scp-style [user@]host:path.
-if [[ "$url" =~ ^[a-zA-Z][a-zA-Z0-9+.-]*://([^/@]*@)?([^/:]+)(:[0-9]*)?(/.*)?$ ]]; then
-  host="${BASH_REMATCH[2]}" path="${BASH_REMATCH[4]#/}"
+if [[ "$url" =~ ^([a-zA-Z][a-zA-Z0-9+.-]*)://([^/@]*@)?([^/:]+)(:[0-9]*)?(/.*)?$ ]]; then
+  scheme="${BASH_REMATCH[1]}" host="${BASH_REMATCH[3]}" path="${BASH_REMATCH[5]#/}"
 elif [[ "$url" =~ ^([^/@:]*@)?([^/:]+):(.*)$ ]]; then
-  host="${BASH_REMATCH[2]}" path="${BASH_REMATCH[3]#/}"
+  scheme=ssh host="${BASH_REMATCH[2]}" path="${BASH_REMATCH[3]#/}"
 else
   printf 'unsupported\t%s\n' "$url"; exit 0
 fi
-host="$(tr "[:upper:]" "[:lower:]" <<<"$host")" path="${path%/}"
+lower() { tr "[:upper:]" "[:lower:]" <<<"$1"; }
+host="$(lower "$host")" path="${path%/}"
+
+# An SSH host alias (`Host github-work` with `HostName github.com` in ~/.ssh/config) names
+# its real host only to ssh: gh reads a URL's host literally. So ask ssh for the real one.
+if [[ "$(lower "$scheme")" == ssh ]] \
+   && real="$(ssh -G "$host" 2>/dev/null | awk '$1 == "hostname" && !n++ { print $2 }')" \
+   && [[ -n "$real" && "$(lower "$real")" != "$host" ]]; then
+  host="$(lower "$real")" url="https://$host/$path"
+fi
 
 decode() { local s="${1//\\/\\\\}"; printf '%b' "${s//%/\\x}"; }
-ado() { printf 'azure-devops\t%s\t%s\t%s\n' "$(decode "$1")" "$(decode "$2")" "$(decode "$3")"; exit 0; }
+ado() {
+  local org="$1" project="$2" repo="$3"
+  printf 'azure-devops\t%s\t%s\t%s\n' "$(decode "$org")" "$(decode "$project")" "$(decode "$repo")"; exit 0
+}
 IFS=/ read -r -a parts <<<"$path"
 
 case "$host" in
@@ -52,7 +65,7 @@ case "$host" in
   github.com | www.github.com)
     if (( ${#parts[@]} == 2 )); then printf 'github\t%s/%s\n' "${parts[0]}" "${parts[1]%.git}"; exit 0; fi ;;
   *)
-    # GitHub Enterprise or an SSH host alias: ask gh. The URL argument wins over GH_REPO anyway.
+    # GitHub Enterprise, or an SSH host alias for it: ask gh. The URL argument wins over GH_REPO anyway.
     if repo="$(env -u GH_REPO gh repo view "$url" --json nameWithOwner --jq .nameWithOwner 2>/dev/null)" \
        && [[ "$repo" == */* ]]; then
       printf 'github\t%s\n' "$repo"; exit 0
