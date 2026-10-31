@@ -1,6 +1,6 @@
 # Threads and sub-agents
 
-Read in Step 1 when the call comes partway through a thread or the title is generic, and in Step 2 before starting a review sub-agent.
+Read in Step 1 when the call comes partway through a thread or the title is generic (in Local mode, in Step 2), and in Step 2 before starting a review sub-agent.
 
 ## The thread's own work
 

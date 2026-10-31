@@ -65,7 +65,7 @@ Once the set is settled, a generic thread title (one naming no PR and no topic, 
 
 Per PR (stacks bottom-up, independent PRs one at a time), read its diff against its base, and check out its head in a worktree of its own for reading whole files and running checks (*Read a PR*, forge guide). Work in the printed path until the review is posted; *Fix and resolve* (forge guide) says when to remove it.
 
-Local mode: pin `git diff <fixed-point>...HEAD`, confirm the ref resolves and the diff isn't empty before anything else.
+Local mode: pin `git diff <fixed-point>...HEAD`, confirm the ref resolves and the diff isn't empty before anything else. A generic title gets renamed (*Thread title*, [THREADS.md](THREADS.md)).
 
 Read the changed files whole, run the repo's checks — tests, lint, type check, what CI runs — and read the PR's checks on the forge (*Read a PR*, forge guide; a failure the diff caused, local or in CI, is a finding in this review, not a follow-up) — then read [LENSES.md](LENSES.md) and review on three axes: **Correctness**, **Standards**, **Spec**. On a re-review, review only `<reviewed-oid>..<head>` and read the existing human threads first so you don't repeat one.
 
