@@ -106,6 +106,13 @@ class ForgeTest(unittest.TestCase):
                 self.assertEqual(self.forge(origin), "github\tacme/web\n")
         self.assertEqual(self.gh.calls, [])
 
+    def test_ssh_github_com_origin_is_github_com(self):
+        # GitHub documents `ssh://git@ssh.github.com:443/<owner>/<repo>.git` as a clone URL.
+        for origin in ("ssh://git@ssh.github.com:443/acme/web.git", "git@ssh.github.com:acme/web.git"):
+            with self.subTest(origin=origin):
+                self.assertEqual(self.forge(origin), "github\tacme/web\n")
+        self.assertEqual(self.gh.calls, [])
+
     def test_ssh_host_alias_for_azure_devops(self):
         self.alias("ado", "ssh.dev.azure.com")
         self.assertEqual(self.forge("git@ado:v3/acme/Shop/web"), "azure-devops\tacme\tShop\tweb\n")

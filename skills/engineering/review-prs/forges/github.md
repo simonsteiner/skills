@@ -103,7 +103,7 @@ It adds the fix commits to a `Fixed:` line after the summary's `Range:` line, me
 
 Once the review is posted, remove its worktree (`git worktree remove --force <path> && rmdir <its parent>`): address-review-findings makes its own.
 
-Call the Skill tool with "address-review-findings" for each PR that got comments or has bot threads you confirmed or disputed. It reads the unresolved threads — yours and the bots' — fixes, replies to a disputed one and leaves it open, commits, pushes, replies with the commit, resolves, and carries fixes up a stack. Afterwards record the fix commits in your summary (*Record fixes*). A fix that changed what the PR describes → the "pr-body" skill for the body, `gh pr edit <n> --title` for the title.
+Call the Skill tool with "address-review-findings" for each PR that got comments or has bot threads you confirmed or disputed. It reads the unresolved threads — yours and the bots' — fixes, replies to a disputed one and leaves it open, commits, pushes, replies with the commit, resolves, and carries fixes up a stack. When *Setup* needed a `GH_REPO` prefix, pass it in the call's arguments (`GH_REPO=<owner>/<repo>`, then the PRs): the prefix ends with the command it was on, and without it the skill reads the upstream repo's PRs. Afterwards record the fix commits in your summary (*Record fixes*). A fix that changed what the PR describes → the "pr-body" skill for the body, `gh pr edit <n> --title` for the title.
 
 ## Ready to merge
 
