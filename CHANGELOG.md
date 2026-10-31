@@ -1,5 +1,15 @@
 # simonsteiner-skills
 
+## 1.15.0
+
+### Minor Changes
+
+- [#55](https://github.com/simonsteiner/skills/pull/55) [`8f6d7e4`](https://github.com/simonsteiner/skills/commit/8f6d7e45371f445c3c79413b4df40fbfa315b8d9) Thanks [@simonsteiner](https://github.com/simonsteiner)! - review-prs treats bot reviews such as CodeRabbit and Copilot as input rather than a review: a PR that only bots have looked at still gets reviewed, and a PR you name always is. Each bot finding is verified: a confirmed one in an open thread is fixed there rather than posted twice, one found only in a review body or a resolved thread is posted as the skill's own comment, and a wrong one gets a reply and stays open. Thread replies no longer count as a review either. A run now reviews at most 10 PRs found by listing, keeping stacks whole, and offers to continue with the rest; a listing that hits its 100-PR ceiling says so. Each review summary records the range it covered and, once its findings are fixed, a `Fixed:` line with the fix commits: the next run starts from that range, and fix commits alone don't put a PR back in line, though a later re-review still covers them. The workflow is now forge-neutral, with the GitHub commands in `forges/github.md` and a new `forges/azure-devops.md` that runs the same review through the `az` CLI.
+
+### Patch Changes
+
+- [#55](https://github.com/simonsteiner/skills/pull/55) [`1dee56b`](https://github.com/simonsteiner/skills/commit/1dee56b10a784318ef01eef360a85ddb22e0612c) Thanks [@simonsteiner](https://github.com/simonsteiner)! - address-review-findings no longer counts a bot's review (CodeRabbit, Copilot, any account GitHub marks as a bot) or the empty review GitHub files for each thread reply as a real one: it still works through the bot's threads, but warns that only bots reviewed the PR and suggests running review-prs. Its PR listing now asks for up to 100 PRs instead of `gh`'s silent default of 30, and says so when it hits that ceiling.
+
 ## 1.14.0
 
 ### Minor Changes
