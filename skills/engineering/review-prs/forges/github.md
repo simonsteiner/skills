@@ -17,7 +17,7 @@ The commands review-prs runs when `forge.sh` prints `github <owner>/<repo>`: `or
 
 `gh` must be authenticated (`gh auth status`). The bundled scripts are [scripts/post-review.sh](../scripts/post-review.sh), [scripts/outside-findings.sh](../scripts/outside-findings.sh) and [scripts/note-fixes.sh](../scripts/note-fixes.sh).
 
-In a fork checkout with an `upstream` remote, bare `gh pr …` and `repos/{owner}/{repo}` resolve to the upstream repo, so `gh pr view <n>` fails or reads someone else's PR. If `gh repo view --json nameWithOwner` isn't the repo the PRs live on, prefix every `gh` command and script call with `GH_REPO=<owner>/<repo>` (shell variables don't survive between tool calls).
+In a fork checkout with an `upstream` remote, bare `gh pr …` and `repos/{owner}/{repo}` resolve to the upstream repo, so `gh pr view <n>` fails or reads someone else's PR. If `gh repo view --json nameWithOwner` isn't the repo the PRs live on, prefix every `gh` command and script call with `GH_REPO=<owner>/<repo>`, or `GH_REPO=<host>/<owner>/<repo>` when `origin` isn't on `github.com` — `forge.sh` prints no host, and without one `gh` targets `github.com` (shell variables don't survive between tool calls).
 
 ## List PRs
 
