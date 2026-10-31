@@ -8,7 +8,7 @@ set -euo pipefail
 #
 #   unresolved-threads.sh [pr-number]   default: the PR for the current branch
 #
-# Set GH_REPO=owner/repo to target another repo, e.g. a fork whose checkout has an
+# Set GH_REPO=[HOST/]owner/repo to target another repo, e.g. a fork whose checkout has an
 # upstream remote and no `gh repo set-default`.
 #
 # stderr warns when the PR has no real review: no reviews, only ones that report their
@@ -23,6 +23,9 @@ if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
   sed -n '/^# [A-Z]/,/^$/{/^$/q;s/^# \{0,1\}//p;}' "$0"  # the comment above
   exit 0
 fi
+
+# gh api takes its host from GH_HOST, never from GH_REPO, so carry a host-qualified GH_REPO's over.
+[[ "${GH_REPO:-}" == */*/* ]] && export GH_HOST="${GH_REPO%%/*}"
 
 pr="${1:-$(gh pr view --json number --jq .number)}"
 # GH_REPO ([HOST/]OWNER/REPO) wins: `gh pr` honours it but `gh repo view` doesn't, and in

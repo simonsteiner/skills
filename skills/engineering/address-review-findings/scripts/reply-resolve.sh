@@ -11,11 +11,15 @@ set -euo pipefail
 #   BODY
 #
 # Prints the reply URL, then "resolved" when --resolve was given.
+# A host-qualified GH_REPO (HOST/owner/repo) sends the calls to that host.
 
 if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
   sed -n '/^# [A-Z]/,/^$/{/^$/q;s/^# \{0,1\}//p;}' "$0"  # the comment above
   exit 0
 fi
+
+# gh api takes its host from GH_HOST, never from GH_REPO, so carry a host-qualified GH_REPO's over.
+[[ "${GH_REPO:-}" == */*/* ]] && export GH_HOST="${GH_REPO%%/*}"
 
 thread="${1:-}"
 resolve="${2:-}"

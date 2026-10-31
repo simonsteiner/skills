@@ -11,12 +11,15 @@ set -euo pipefail
 # Annotations on unchanged lines come through too; filter them against the diff.
 # Tools that report only through their own service (SonarQube) don't appear here.
 # Prints nothing when no check run has annotations.
-# Set GH_REPO=owner/repo to target another repo, e.g. a fork with an upstream remote.
+# Set GH_REPO=[HOST/]owner/repo to target another repo, e.g. a fork with an upstream remote.
 
 if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
   sed -n '/^# [A-Z]/,/^$/{/^$/q;s/^# \{0,1\}//p;}' "$0"  # the comment above
   exit 0
 fi
+
+# gh api takes its host from GH_HOST, never from GH_REPO, so carry a host-qualified GH_REPO's over.
+[[ "${GH_REPO:-}" == */*/* ]] && export GH_HOST="${GH_REPO%%/*}"
 
 pr="${1:-}"
 [[ "$pr" =~ ^[0-9]+$ ]] || { echo "error: expected a PR number, got '$pr'" >&2; exit 1; }
