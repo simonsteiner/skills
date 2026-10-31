@@ -13,7 +13,8 @@ set -euo pipefail
 # Azure DevOps hosts are checked first (dev.azure.com, ssh.dev.azure.com with v3/
 # paths, *.visualstudio.com), then github.com, then any other host `gh repo view
 # <origin URL>` accepts (GitHub Enterprise). An SSH host alias is first resolved to its
-# real host with `ssh -G`. An unsupported host still exits 0. Exits 1 with a message
+# real host with `ssh -G`. GH_ENTERPRISE_TOKEN reaches that probe only when the host is
+# GH_HOST. An unsupported host still exits 0. Exits 1 with a message
 # when there is no `origin` remote.
 
 if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
@@ -40,7 +41,9 @@ host="$(lower "$host")" path="${path%/}"
 if [[ "$(lower "$scheme")" == ssh ]] \
    && real="$(ssh -G "$host" 2>/dev/null | awk '$1 == "hostname" && !n++ { print $2 }')" \
    && [[ -n "$real" && "$(lower "$real")" != "$host" ]]; then
-  host="$(lower "$real")" url="https://$host/$path"
+  host="$(lower "$real")"
+  [[ "$host" == ssh.github.com ]] && host=github.com   # GitHub's SSH-over-port-443 endpoint
+  url="https://$host/$path"
 fi
 
 decode() { local s="${1//\\/\\\\}"; printf '%b' "${s//%/\\x}"; }
@@ -66,7 +69,11 @@ case "$host" in
     if (( ${#parts[@]} == 2 )); then printf 'github\t%s/%s\n' "${parts[0]}" "${parts[1]%.git}"; exit 0; fi ;;
   *)
     # GitHub Enterprise, or an SSH host alias for it: ask gh. The URL argument wins over GH_REPO anyway.
-    if repo="$(env -u GH_REPO gh repo view "$url" --json nameWithOwner --jq .nameWithOwner 2>/dev/null)" \
+    # gh sends GH_ENTERPRISE_TOKEN to any host but github.com, so keep it for GH_HOST, the host
+    # it's set up for, and never hand it to whatever host a clone's origin names.
+    probe=(-u GH_REPO)
+    [[ "$host" == "$(lower "${GH_HOST:-}")" ]] || probe+=(-u GH_ENTERPRISE_TOKEN -u GITHUB_ENTERPRISE_TOKEN)
+    if repo="$(env "${probe[@]}" gh repo view "$url" --json nameWithOwner --jq .nameWithOwner 2>/dev/null)" \
        && [[ "$repo" == */* ]]; then
       printf 'github\t%s\n' "$repo"; exit 0
     fi ;;
