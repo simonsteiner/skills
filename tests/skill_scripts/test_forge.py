@@ -120,6 +120,18 @@ class ForgeTest(unittest.TestCase):
         self.gh.on("repo", "view", origin, json={"nameWithOwner": "acme/web"})
         self.assertEqual(self.forge(origin), "github\tacme/web\n")
 
+    def test_enterprise_token_goes_only_to_gh_host(self):
+        tokens = {"GH_ENTERPRISE_TOKEN": "t1", "GITHUB_ENTERPRISE_TOKEN": "t2"}
+        self.gh.on("repo", "view", json={"nameWithOwner": "acme/web"})
+        cases = (("https://GHE.example.com/acme/web.git", "ghe.example.com", tokens),
+                 ("https://evil.example.com/acme/web.git", "ghe.example.com", {}),
+                 ("https://ghe.example.com/acme/web.git", None, {}))
+        for origin, gh_host, sent in cases:
+            with self.subTest(origin=origin, gh_host=gh_host):
+                self.forge(origin, env={**tokens, **({"GH_HOST": gh_host} if gh_host else {})})
+                [call] = self.gh.calls
+                self.assertEqual({k: v for k, v in call["env"].items() if k in tokens}, sent)
+
     def test_unsupported_host(self):
         # No rule: the fake gh fails the `gh repo view`, as the real one does for a GitLab URL.
         self.assertEqual(self.forge("git@GitLab.com:acme/web.git"), "unsupported\tgitlab.com\n")

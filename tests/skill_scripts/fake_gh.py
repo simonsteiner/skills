@@ -2,7 +2,8 @@
 
 The scripts call `gh` by name; FakeGh puts this one first on PATH. It answers from a
 list of rules, logs every call, and fails any call no rule matches, so a test also
-proves what a script did *not* send.
+proves what a script did *not* send. Each logged call keeps the GH_* and GITHUB_*
+variables it ran with, so a test can check which tokens a script let through.
 
 A rule: {"args": [...prefix of argv...], "stdout": "text" | "json": <value> | "pages":
 [<value>, ...], "exit": 0, "once": false}. "pages" stands for a `--paginate` response,
@@ -56,7 +57,8 @@ def main(argv):
     rules = json.loads(rules_path.read_text())
     stdin = "" if sys.stdin.isatty() else sys.stdin.read() if "--input" in argv else ""
     with open(os.environ["FAKE_GH_LOG"], "a") as log:
-        log.write(json.dumps({"args": argv, "stdin": stdin}) + "\n")
+        env = {k: v for k, v in os.environ.items() if k.startswith(("GH_", "GITHUB_"))}
+        log.write(json.dumps({"args": argv, "stdin": stdin, "env": env}) + "\n")
     for i, rule in enumerate(rules):
         if argv[: len(rule["args"])] != rule["args"]:
             continue
