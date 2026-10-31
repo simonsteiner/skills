@@ -1,5 +1,7 @@
 {
-  "skills": ["review-prs"],
+  "skills": [
+    "review-prs"
+  ],
   "evals": [
     {
       "query": "do a code review on the open PRs, if they haven't got a review yet or enough code changed since. comment any findings and fix them.",
@@ -107,6 +109,55 @@
         "Verifies the Sonar issue and the unused import, posts each inline naming its source and rule after the severity",
         "Puts the warning on the untouched line in the summary only and does not fix it",
         "Fixes the posted findings through address-review-findings and does not change the issue's status in SonarQube"
+      ]
+    },
+    {
+      "query": "review the open PRs",
+      "setup": "GitHub repo with open PR #40 whose only review is CodeRabbit's: two inline threads (one real off-by-one on a changed line, one wrong claim that a variable is unused) and a 'Nitpick comments' section in the review body naming a real missing null check on a changed line. No human has reviewed it.",
+      "expected_behavior": [
+        "Treats #40 as needing a review because CodeRabbit's review is not a real review",
+        "Does its own full review, running the repo's checks, before reading CodeRabbit's threads",
+        "Does not repost the off-by-one inline; names it in the summary as confirming CodeRabbit's thread",
+        "Posts the null check from the nitpick section as its own inline comment naming CodeRabbit as the source",
+        "Leaves CodeRabbit's wrong unused-variable thread open with a reply giving the reason, rather than fixing or resolving it"
+      ]
+    },
+    {
+      "query": "review PR 41",
+      "setup": "GitHub PR #41 with a human review on its current head and nothing changed since.",
+      "expected_behavior": [
+        "Reviews #41 anyway because the user named it, instead of skipping it as recently reviewed",
+        "Posts a summary even if it finds nothing"
+      ]
+    },
+    {
+      "query": "review the open PRs",
+      "setup": "Repo whose origin is https://dev.azure.com/acme/Shop/_git/web, with one active PR, id 512, no votes and no human threads. The az CLI with the azure-devops extension is signed in; gh is not configured.",
+      "expected_behavior": [
+        "Reads forges/azure-devops.md and uses az repos and az devops invoke rather than gh",
+        "Passes --org (and --project where the command takes it) on every call instead of running az devops configure --defaults",
+        "Checks every inline comment's line against the local git diff before posting, and posts each as its own pullRequestThreads thread",
+        "Posts the summary as a closed thread naming the range reviewed, and casts no vote",
+        "Fixes the findings itself rather than calling address-review-findings, replying on each thread and setting fixed threads to fixed"
+      ]
+    },
+    {
+      "query": "review the open PRs",
+      "setup": "GitHub repo with 15 open PRs and no review on any of them: #50 to #61 are independent, and #62, #63 and #64 form a stack.",
+      "expected_behavior": [
+        "Reviews at most 10 PRs in this run, oldest first, and does not split the stack across runs",
+        "Ends the report by naming the PRs still needing a review and offering to continue with the next 10",
+        "On 'continue', reviews the remaining PRs under the same cap rather than re-reviewing the ones just reviewed"
+      ]
+    },
+    {
+      "query": "review the open PRs",
+      "setup": "GitHub PR #70 whose review-prs summary ends with 'Range: a1b2c3d..e4f5a6b' and 'Fixed: 1111111 2222222'. Since e4f5a6b the branch has only those two fix commits (60 changed lines) plus a thread-reply review by the author on the new head. Open PR #71 has no review.",
+      "expected_behavior": [
+        "Takes e4f5a6b from the summary's Range line as the reviewed commit, not the commit of the author's reply review",
+        "Skips #70 because the only commits since are the ones its Fixed line lists, and names it in the report as recently reviewed",
+        "Reviews #71",
+        "After pushing #71's fixes, runs scripts/note-fixes.sh with the review id from post-review.sh's URL and the fix commits"
       ]
     }
   ]

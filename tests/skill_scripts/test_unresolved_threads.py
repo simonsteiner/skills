@@ -21,8 +21,13 @@ def thread(id, *authors, resolved=False, total=None):
             "comments": {"totalCount": total or len(comments), "nodes": comments}}
 
 
-def review(body, state="COMMENTED"):
-    return {"state": state, "body": body}
+def review(body, state="COMMENTED", author="alice", bot=False, id=None):
+    return {"id": id or hash((body, state, author)) % 10**6, "state": state, "body": body,
+            "user": {"login": author, "type": "Bot" if bot else "User"}}
+
+
+def comment(review_id, reply_to=None):
+    return {"pull_request_review_id": review_id, "in_reply_to_id": reply_to}
 
 
 class UnresolvedThreadsTest(unittest.TestCase):
@@ -34,8 +39,10 @@ class UnresolvedThreadsTest(unittest.TestCase):
         self.gh.on("repo", "view", json={"nameWithOwner": "o/r"})
         self.gh.on("api", "user", json={"login": "me"})
 
-    def run_with(self, reviews, threads, pr=None, env=None):
-        self.gh.on("pr", "view", str(pr or 7), "--json", "reviews", json={"reviews": reviews})
+    def run_with(self, reviews, threads, pr=None, env=None, comments=()):
+        n, repo = pr or 7, "/".join((env or {}).get("GH_REPO", "o/r").split("/")[-2:])
+        self.gh.on("api", f"repos/{repo}/pulls/{n}/reviews?per_page=100", pages=[reviews])
+        self.gh.on("api", f"repos/{repo}/pulls/{n}/comments?per_page=100", pages=[list(comments)])
         self.gh.on("api", "graphql", json={"data": {"repository": {"pullRequest": {"reviewThreads": {
             "pageInfo": {"hasNextPage": False, "endCursor": None}, "nodes": threads}}}}})
         result = self.gh.run(SCRIPT, *([pr] if pr else []), env=env)
@@ -75,6 +82,33 @@ class UnresolvedThreadsTest(unittest.TestCase):
 
     def test_a_long_review_mentioning_rate_limits_is_real(self):
         result, _ = self.run_with([review("The rate limit check is wrong. " + "x" * 300)], [])
+        self.assertEqual(result.stderr, "")
+
+    def test_warns_when_only_bots_reviewed_but_lists_their_threads(self):
+        bots = [review("Actionable comments posted: 2. " + "x" * 300, author="coderabbitai[bot]", bot=True),
+                review("Looks fine.", author="copilot-pull-request-reviewer[bot]", bot=True),
+                review("1 issue.", author="some-scanner", bot=True)]
+        result, threads = self.run_with(bots, [thread("A", "coderabbitai")])
+        self.assertIn("has no real review — only bot reviews (coderabbitai[bot], "
+                      "copilot-pull-request-reviewer[bot], some-scanner)", result.stderr)
+        self.assertEqual([t["id"] for t in threads], ["A"])
+
+    def test_a_human_review_beside_a_bot_review_is_real(self):
+        result, _ = self.run_with([review("Two nits.", author="coderabbitai[bot]", bot=True),
+                                   review("LGTM", author="alice")], [])
+        self.assertEqual(result.stderr, "")
+
+    def test_thread_replies_are_not_a_review(self):
+        bot, reply = review("Two nits.", author="coderabbitai[bot]", bot=True, id=1), review("", author="me", id=2)
+        result, _ = self.run_with([bot, reply], [], comments=[comment(1), comment(2, reply_to=10)])
+        self.assertIn("only bot reviews (coderabbitai[bot])", result.stderr)
+
+    def test_an_empty_review_with_its_own_inline_comment_is_real(self):
+        result, _ = self.run_with([review("", author="alice", id=3)], [], comments=[comment(3)])
+        self.assertEqual(result.stderr, "")
+
+    def test_an_empty_approval_is_real(self):
+        result, _ = self.run_with([review("", state="APPROVED", author="alice")], [])
         self.assertEqual(result.stderr, "")
 
 

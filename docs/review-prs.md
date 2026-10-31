@@ -21,3 +21,15 @@ A thread started with just the skill call (`$review-prs`, "review open PRs") get
 ## A thread that already has a PR
 
 Called in a thread with open linked PRs (T3 Code's `list_thread_pull_requests`), review-prs reviews those PRs — or that stack — only, instead of every open PR that needs a review. Merged or closed links don't count. With nothing linked, the thread's own branch counts: if it isn't the default branch and has an open PR, review-prs reviews that PR alone (not the rest of a stack it's in), links it to the thread, and says so at the top of the report along with the other PRs that need a review. A thread opened on a checkout that happens to be on a feature branch narrows the same way, so ask for "all open PRs" there. Name other PRs in the call to override it.
+
+## Bot reviewers like CodeRabbit
+
+CodeRabbit, Copilot and similar bots don't count as a review: a PR they alone have looked at still gets one. Their threads and nitpicks are input — review-prs reviews first, then checks each bot finding against the code, confirms or disputes it in its summary, and fixes the confirmed ones in the bot's own thread rather than posting them twice. Naming a PR (`/review-prs #32`) always reviews it, even right after a human review; with no new commits that review is short.
+
+## Azure DevOps
+
+review-prs reads the forge from `origin`. On Azure DevOps it uses the `az` CLI (`az extension add --name azure-devops`, then `az login` or `AZURE_DEVOPS_EXT_PAT`) and the commands in [forges/azure-devops.md](../skills/engineering/review-prs/forges/azure-devops.md). There are no bundled scripts for it yet, and address-review-findings is GitHub-only, so on Azure DevOps review-prs posts its threads and fixes the findings itself. Other forges get Local mode only.
+
+## What a review records
+
+Each review-prs summary ends with `Range: <base>..<head>`, the commits it covered, and once its findings are fixed, `Fixed: <sha> …`, the commits that answered it. The next run reads both: it starts from the reviewed head, and commits on the `Fixed:` line don't count toward "enough changed to review again". So a PR doesn't come back just because its own fixes landed, but when it does come back for new work, the fixes are reviewed with it.

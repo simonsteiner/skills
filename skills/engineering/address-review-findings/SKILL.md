@@ -20,8 +20,10 @@ The feedback lives on GitHub, so `gh` must be authenticated (`gh auth status`). 
 No PR named → the one for the current branch. "The open PRs", a list of numbers, or "the stack" → several. Map them first:
 
 ```bash
-gh pr list --state open --author @me --json number,title,headRefName,headRefOid,baseRefName,isDraft,isCrossRepository
+gh pr list --state open --author @me --limit 100 --json number,title,headRefName,headRefOid,baseRefName,isDraft,isCrossRepository
 ```
+
+Without `--limit`, `gh` stops at 30 without saying so. 100 is a deliberate ceiling, not a page size: when the list comes back with exactly 100, there are probably more, so open the report with "100+ open PRs; only the 100 newest were considered".
 
 A PR whose base is another PR's head branch is **stacked** on it. Order the set bottom-up — base first — and run Steps 1–4 once per PR in that order. A fix made low in the stack is still missing from every PR above it until Step 4 carries it up.
 
@@ -74,7 +76,7 @@ Inline threads need GraphQL — the REST endpoint doesn't say whether a thread i
 - If nothing is unresolved, say so and move to the next PR (or stop).
 - `commentCount` above the length of `comments` means the thread outgrew one page — open its `url` and read the rest there.
 - **`awaitingReviewer: true`** means you already replied last in a thread someone else started — an earlier run left it open on purpose. Skip it unless the reviewer has written since; replying again just stacks duplicates. Threads from your own `review-prs` run are never flagged.
-- **No real review is not a clean review.** A stacked layer can arrive with zero threads because no reviewer looked at it, and an automated reviewer that failed ("Copilot encountered an error…", a rate-limit notice) looked at nothing either. The script warns on stderr when a PR has no real review; say so in the report rather than counting the PR as done, and suggest running `review-prs` on it.
+- **No real review is not a clean review.** A stacked layer can arrive with zero threads because no reviewer looked at it, and an automated reviewer that failed ("Copilot encountered an error…", a rate-limit notice) looked at nothing either. A bot's review (CodeRabbit, Copilot) is input, not a review: work through its threads like any other, but all of them resolved still isn't a reviewed PR. The script warns on stderr when a PR has no real review, naming the bots when only they reviewed; say so in the report rather than counting the PR as done, and suggest running `review-prs` on it.
 
 ---
 
