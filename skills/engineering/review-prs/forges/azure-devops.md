@@ -1,30 +1,37 @@
 # Azure DevOps
 
-The commands review-prs runs when `origin` is on `dev.azure.com`, `ssh.dev.azure.com` or `*.visualstudio.com`. Needs the `az` CLI with the `azure-devops` extension (`az extension show --name azure-devops`), signed in with `az login` or `AZURE_DEVOPS_EXT_PAT`. No script is bundled for this forge yet: build each call from this page, check its output, and stop on an error rather than guess.
+**Untested:** this guide has not yet been run against a real Azure DevOps organization. When a command errors or returns something this page doesn't describe, stop and report it rather than guess a fix.
+
+The commands review-prs runs when `forge.sh` prints `azure-devops <org> <project> <repo>`: `origin` is on `dev.azure.com`, `ssh.dev.azure.com` or `*.visualstudio.com`. No script is bundled for this forge yet: build each call from this page and check its output.
 
 ## Contents
 
 - Setup
-- Find what needs a review
+- List PRs
 - Read a PR
 - Outside findings
 - Post the review
+- Record fixes
 - Fix and resolve
 - Ready to merge
 
 ## Setup
 
-Read organization, project and repository from the remote — `https://dev.azure.com/<org>/<project>/_git/<repo>` or `git@ssh.dev.azure.com:v3/<org>/<project>/<repo>` (`https://<org>.visualstudio.com/<project>/_git/<repo>` on old URLs). URL-decode them (`%20` → space). Pass them on every call; never `az devops configure --defaults`, which changes the user's global config:
+Needs the `az` CLI with the `azure-devops` extension (`az extension show --name azure-devops`), signed in with `az login` or `AZURE_DEVOPS_EXT_PAT`. Check both before listing anything.
+
+Take organization, project and repository from `forge.sh`'s line, already URL-decoded; its fields are tab-separated, since a project or repo name can hold spaces. Pass them on every call; never `az devops configure --defaults`, which changes the user's global config.
+
+Terms in SKILL.md are GitHub's: here a PR's head is its source branch and newest iteration, its base the target branch.
+
+Below, `<scope>` means `--org https://dev.azure.com/<org> --project "<project>"`, and `<thread-route>` means `--org https://dev.azure.com/<org> --area git --api-version 7.1 --route-parameters project="<project>" repositoryId="<repo>" pullRequestId=<id>`. `az devops invoke` returns `{"value": [...]}` for lists. Where it rejects `7.1`, use `7.0`.
+
+## List PRs
 
 ```bash
 az repos pr list --org https://dev.azure.com/<org> --project "<project>" --repository "<repo>" --status active --top 100 -o json
 ```
 
-Below, `<scope>` means `--org https://dev.azure.com/<org> --project "<project>"`, and `<thread-route>` means `--org https://dev.azure.com/<org> --area git --api-version 7.1 --route-parameters project="<project>" repositoryId="<repo>" pullRequestId=<id>`. `az devops invoke` returns `{"value": [...]}` for lists. Where it rejects `7.1`, use `7.0`.
-
-## Find what needs a review
-
-From `az repos pr list` (above): `pullRequestId`, `title`, `createdBy.uniqueName`, `sourceRefName`, `targetRefName` (both `refs/heads/…`), `isDraft`, `reviewers[].vote`, `forkSource` (set on a PR from a fork). The open PR for one branch: add `--source-branch <branch>`. `--top 100` is the listing cap from SKILL.md Step 1.
+From it: `pullRequestId`, `title`, `createdBy.uniqueName`, `sourceRefName`, `targetRefName` (both `refs/heads/…`), `isDraft`, `reviewers[].vote`, `forkSource` (set on a PR from a fork). The open PR for one branch: add `--source-branch <branch>`. `--top 100` is the listing cap from SKILL.md Step 1.
 
 Threads and iterations per PR:
 
@@ -87,31 +94,42 @@ ADO has no batched review: each inline comment is its own thread, and nothing is
    ```
 
    `filePath` starts with `/`. A deleted line uses `leftFileStart`/`leftFileEnd` with old-file numbers; a range sets start and end lines.
-4. Post the summary last, as a thread with no `threadContext` and `"status": "closed"` — it asks for no action, so it mustn't hold a "resolve all comments" policy open. Its body names `Range: <base-oid>..<head-oid>` so a re-run finds the reviewed commit. Keep the `id` the POST returns: Step 4 writes the fix commits into this thread.
+4. Post the summary last, as a thread with no `threadContext` and `"status": "closed"` — it asks for no action, so it mustn't hold a "resolve all comments" policy open. Its body names `Range: <base-oid>..<head-oid>` so a re-run finds the reviewed commit. Keep the `id` the POST returns: *Record fixes* writes the fix commits into this thread.
 
 Never cast a vote (approve, reject, wait for author): the review runs under the user's account, and a vote is theirs.
 
 A post that fails partway leaves the threads before it posted. Don't re-post them; post the rest and say so in the report.
 
-## Fix and resolve
+## Record fixes
 
-address-review-findings works only on GitHub, so do its loop here yourself, reading that skill for its rules (verdicts, commits, push safety, carrying fixes up a stack) but not its scripts. Fix in the review worktree you kept from Step 2 (SKILL.md), call the Skill tool with "conventional-commit" to commit, and push with `git push origin HEAD:<source branch>`. A PR from a fork (`forkSource` set) pushes to `forkSource.repository.remoteUrl` instead; when that isn't writable, say so, leave its threads open, and stop fixing that PR. Then per thread — yours and the bots' you confirmed or disputed:
-
-```bash
-# reply: {"parentCommentId": 1, "commentType": 1, "content": "Fixed in abc1234: …"}
-az devops invoke <thread-route> threadId=<thread-id> --resource pullRequestThreadComments --http-method POST --in-file <file> -o json
-# resolve, only when a fix landed: {"status": "fixed"}
-az devops invoke <thread-route> threadId=<thread-id> --resource pullRequestThreads --http-method PATCH --in-file <file> -o json
-```
-
-(`threadId=` joins the other `--route-parameters`.) A thread you disagree with gets a reply and stays `active`. Remove the worktree once the PR's fixes are pushed. Then record the fix commits in the summary thread: the one this run posted, by the `id` the POST in step 4 of posting returned (an earlier review's summary also has no `threadContext` and a `Range:` line, so don't look it up by those). Read its first comment's `content`, add or extend a `Fixed: <sha> …` line after the `Range:` line, and send it back:
+Write the fix commits into the summary thread: the one this run posted, by the `id` the POST in step 4 of posting returned (an earlier review's summary also has no `threadContext` and a `Range:` line, so don't look it up by those). Read its first comment's `content`, add or extend a `Fixed: <sha> …` line after the `Range:` line, and send it back:
 
 ```bash
 # {"content": "<the whole summary, with the Fixed: line>"}
 az devops invoke <thread-route> threadId=<summary-thread-id> commentId=1 --resource pullRequestThreadComments --http-method PATCH --in-file <file> -o json
 ```
 
- A fix that changed what the PR describes → the "pr-body" skill, then `az repos pr update --org … --id <id> --description "<body>"` and `--title`.
+## Fix and resolve
+
+address-review-findings works only on GitHub, so do its loop here yourself, reading that skill for its rules (verdicts, commits, push safety, carrying fixes up a stack) but not its scripts. Per PR, stacks bottom-up:
+
+1. Keep the review worktree from *Read a PR* after posting, and fix in it. Each posted finding and each bot thread you confirmed gets a fix; run the repo's checks again.
+2. Call the Skill tool with "conventional-commit" to commit, and push with `git push origin HEAD:<source branch>`. A PR from a fork (`forkSource` set) pushes to `forkSource.repository.remoteUrl` instead; when that isn't writable, say so, leave its threads open, and stop fixing that PR.
+3. Per thread — yours and the bots' you confirmed or disputed — reply, and resolve only when a fix landed:
+
+   ```bash
+   # reply: {"parentCommentId": 1, "commentType": 1, "content": "Fixed in abc1234: …"}
+   az devops invoke <thread-route> threadId=<thread-id> --resource pullRequestThreadComments --http-method POST --in-file <file> -o json
+   # resolve, only when a fix landed: {"status": "fixed"}
+   az devops invoke <thread-route> threadId=<thread-id> --resource pullRequestThreads --http-method PATCH --in-file <file> -o json
+   ```
+
+   (`threadId=` joins the other `--route-parameters`.) A thread you disagree with gets a reply and stays `active`.
+4. Record the fix commits (*Record fixes*).
+5. In a stack, carry the fixes up before the next layer starts: merge the layer as pushed into the one stacked on it, in that layer's worktree, and push — merge, not rebase.
+6. Remove the worktree once the PR's fixes are pushed and carried up: `git worktree remove --force <path> && rmdir <its parent>`.
+
+A fix that changed what the PR describes → the "pr-body" skill, then `az repos pr update --org … --id <id> --description "<body>"` and `--title`.
 
 ## Ready to merge
 

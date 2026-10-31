@@ -35,15 +35,16 @@ class FakeGh:
         self.rules.append({"args": list(args), **rule})
         return self
 
-    def run(self, script, *args, stdin="", env=None):
+    def run(self, script, *args, stdin="", env=None, cwd=None):
         self.spec.write_text(json.dumps(self.rules))
         self.log.write_text("")
         # A GH_REPO or GH_HOST in the developer's shell would pick the scripts' repo; only a test's env= may.
-        inherited = {k: v for k, v in os.environ.items() if k not in ("GH_REPO", "GH_HOST")}
+        # A git hook running the suite exports GIT_DIR and the like, which would point git at the outer repo.
+        inherited = {k: v for k, v in os.environ.items() if k not in ("GH_REPO", "GH_HOST") and not k.startswith("GIT_")}
         env = {**inherited, "PATH": self.path, "FAKE_GH_RULES": str(self.spec),
                "FAKE_GH_LOG": str(self.log), **(env or {})}
         return subprocess.run([str(script), *map(str, args)], input=stdin, capture_output=True,
-                              text=True, env=env, check=False)
+                              text=True, env=env, cwd=cwd, check=False)
 
     @property
     def calls(self):
