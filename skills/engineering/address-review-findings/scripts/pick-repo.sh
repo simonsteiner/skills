@@ -8,7 +8,8 @@ set -euo pipefail
 #   acme/web        gh's default repo: the upstream in a fork checkout
 #   me/web          origin's repo, when it differs
 #
-# A GH_REPO already set is printed alone. One line → every PR lives there. Two lines →
+# With GH_HOST naming another host, a github.com repo is printed as github.com/owner/repo,
+# since gh resolves a bare owner/repo on GH_HOST. A GH_REPO already set is printed alone. One line → every PR lives there. Two lines →
 # look each PR up on both. Origin's repo is read from `git remote get-url origin`
 # without handing the raw URL to gh: an SSH host alias is resolved with `ssh -G`,
 # GitHub's ssh.github.com maps to github.com, and a github.com origin needs no gh call.
@@ -23,12 +24,18 @@ fi
 
 if [[ -n "${GH_REPO:-}" ]]; then printf '%s\n' "$GH_REPO"; exit 0; fi
 
-lower() { tr "[:upper:]" "[:lower:]" <<<"$1"; }
-# owner/repo on github.com, host/owner/repo elsewhere, from a repo's web URL.
+lower() { local s="$1"; tr "[:upper:]" "[:lower:]" <<<"$s"; }
+# owner/repo on github.com, host/owner/repo elsewhere, from a repo's web URL. A bare
+# owner/repo resolves on GH_HOST, so github.com is spelled out when GH_HOST names another host.
 from_url() {
-  [[ "$1" =~ ^https?://([^/]+)/([^/]+/[^/]+)$ ]] || return 1
-  local host; host="$(lower "${BASH_REMATCH[1]}")"
-  if [[ "$host" == github.com ]]; then printf '%s\n' "${BASH_REMATCH[2]}"; else printf '%s/%s\n' "$host" "${BASH_REMATCH[2]}"; fi
+  local url="$1" host repo
+  [[ "$url" =~ ^https?://([^/]+)/([^/]+/[^/]+)$ ]] || return 1
+  host="$(lower "${BASH_REMATCH[1]}")" repo="${BASH_REMATCH[2]}"
+  if [[ "$host" == github.com && "$(lower "${GH_HOST:-github.com}")" == github.com ]]; then
+    printf '%s\n' "$repo"
+  else
+    printf '%s/%s\n' "$host" "$repo"
+  fi
 }
 
 default="$(gh repo view --json url --jq .url 2>/dev/null)" && default="$(from_url "$default")" || default=""
@@ -50,7 +57,7 @@ if url="$(git remote get-url origin 2>/dev/null)"; then
   fi
   [[ "$host" == ssh.github.com || "$host" == www.github.com ]] && host=github.com
   if [[ "$host" == github.com && "$path" =~ ^[^/]+/[^/]+$ ]]; then
-    origin="$path"
+    origin="$(from_url "https://github.com/$path")"
   elif [[ -n "$host" && "$path" =~ ^[^/]+/[^/]+$ ]]; then
     probe=(-u GH_REPO)
     [[ "$host" == "$(lower "${GH_HOST:-}")" ]] || probe+=(-u GH_ENTERPRISE_TOKEN -u GITHUB_ENTERPRISE_TOKEN)

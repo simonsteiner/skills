@@ -88,6 +88,12 @@ class PickRepoTest(unittest.TestCase):
         [probe] = self.origin_probes()
         self.assertEqual({k: v for k, v in probe["env"].items() if k in TOKENS}, {})
 
+    def test_github_com_is_spelled_out_when_gh_host_is_another_host(self):
+        # gh resolves a bare owner/repo on GH_HOST, so acme/web would mean ghe.example.com/acme/web.
+        self.default("https://github.com/acme/web")
+        self.assertEqual(self.pick("git@github.com:me/web.git", env={"GH_HOST": "ghe.example.com"}),
+                         "github.com/acme/web\ngithub.com/me/web\n")
+
     def test_origin_alone_when_gh_has_no_default(self):
         self.assertEqual(self.pick("git@github.com:me/web.git"), "me/web\n")
 
