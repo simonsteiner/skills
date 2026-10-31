@@ -1,6 +1,6 @@
 ---
 name: review-prs
-compatibility: Requires git and jq, plus an authenticated gh CLI for GitHub or the az CLI with the azure-devops extension for Azure DevOps.
+compatibility: Requires git and jq (and curl for the public SonarCloud fallback), plus an authenticated gh CLI for GitHub or the az CLI with the azure-devops extension for Azure DevOps.
 description: >
   Code-reviews pull requests on GitHub or Azure DevOps, then comments the findings inline, fixes them and resolves the threads. Covers open PRs that no human has reviewed yet or that changed a lot since their last review, a PR or stack the user names, and a local diff since a commit, branch or tag. Use when the user wants PRs, a branch or a stack reviewed, says nothing has reviewed their PRs (a bot review such as CodeRabbit or Copilot doesn't count), asks to "review since" a ref, or wants findings commented and fixed in one pass. Not for working through comments a reviewer already left (address-review-findings).
 ---
