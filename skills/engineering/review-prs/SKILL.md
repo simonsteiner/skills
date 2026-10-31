@@ -16,10 +16,10 @@ Review what nobody has looked at, leave the findings where the author will see t
 
 ## Forge
 
-The workflow below is the same everywhere; the commands differ. Read the forge from `git remote get-url origin`, then read its file before Step 1 and take every command from it:
+The workflow below is the same everywhere; the commands differ. Read the forge from `git remote get-url origin`, checking in this order — Azure DevOps hosts first, so a `GH_REPO` or a GitHub `upstream` remote can't pass an Azure DevOps checkout off as GitHub — then read its file before Step 1 and take every command from it:
 
-- `github.com`, or any host where `gh repo view` succeeds (GitHub Enterprise, an SSH host alias) → [forges/github.md](forges/github.md) — `gh`, with the bundled [scripts/post-review.sh](scripts/post-review.sh), [scripts/outside-findings.sh](scripts/outside-findings.sh) and [scripts/note-fixes.sh](scripts/note-fixes.sh).
 - `dev.azure.com`, `ssh.dev.azure.com`, `*.visualstudio.com` → [forges/azure-devops.md](forges/azure-devops.md) — `az repos` and `az devops invoke`; no bundled scripts.
+- `github.com`, or another host where `gh repo view <origin URL>` succeeds (GitHub Enterprise, an SSH host alias) → [forges/github.md](forges/github.md) — `gh`, with the bundled [scripts/post-review.sh](scripts/post-review.sh), [scripts/outside-findings.sh](scripts/outside-findings.sh) and [scripts/note-fixes.sh](scripts/note-fixes.sh).
 - Anything else (GitLab, Bitbucket, Gitea) → PR mode isn't supported: say so, offer Local mode against the PR's target branch, and stop.
 
 Check the forge's CLI is signed in before Step 1. Terms below are GitHub's; on Azure DevOps a PR's head is its source branch and newest iteration, its base the target branch.
@@ -61,7 +61,7 @@ The set is one PR or many. A PR whose base is another open PR's head branch is *
 **Two caps keep a run inside the session's budget**, since each review costs checks, whole-file reads and a fix pass:
 
 - **The listing stops at 100.** A listing that returns exactly 100 PRs probably cut some off: open the report with "100+ open PRs; only the 100 newest were considered".
-- **A run reviews at most 10 PRs** found by the listing — the oldest first, as they've waited longest. Every layer of a stack counts, a stack ranks by its oldest layer, and it's never split: a stack that would take the run past 10 waits for the next run, unless it's first in line. A PR based on a branch that isn't the default and isn't in the listing has a parent the listing cut off: find it (`--head <base>` on the forge's listing) and treat the two as one stack. The rest wait for the next run, which finds them because the reviewed ones now carry a real review. PRs the user named aren't capped.
+- **A run reviews at most 10 PRs** found by the listing — the oldest first, as they've waited longest. Every layer of a stack counts, a stack ranks by its oldest layer, and it's never split: a stack that would take the run past 10 waits for the next run, unless it's first in line. A PR based on a branch that isn't the default and isn't in the listing may have a parent the listing cut off: look for an open PR from that branch (`--head <base>` on the forge's listing). One found → treat the two as one stack; a draft parent defers the whole stack unless drafts were asked for. None found (a `release` or `develop` target) → the PR is independent. The rest wait for the next run, which finds them because the reviewed ones now carry a real review. PRs the user named aren't capped.
 
 Once the set is settled, rename the thread or session **only if its title is generic** — one that names no PR and no topic, as a title generated from a bare skill call does ("Review Open Pull Requests", "Code review PRs"). A title that already says what the thread is about stays as it is, even if it isn't phrased as a review — so does one another agent gave the thread when it launched it. New title: `Review #32: gate push on checks`, `Review stack #24–#31: eval runner`. In T3 Code, read the title with `t3_thread_configuration` (gives `threadId`) then `t3_thread_read`, and rename with `t3_thread_update` and `{"action": "rename", "title": "<title>"}`. A rename that errors gets fixed from the error and retried once; still failing → name it in the report. No such tool → skip this.
 

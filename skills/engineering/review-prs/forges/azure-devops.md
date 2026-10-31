@@ -87,7 +87,7 @@ ADO has no batched review: each inline comment is its own thread, and nothing is
    ```
 
    `filePath` starts with `/`. A deleted line uses `leftFileStart`/`leftFileEnd` with old-file numbers; a range sets start and end lines.
-4. Post the summary last, as a thread with no `threadContext` and `"status": "closed"` — it asks for no action, so it mustn't hold a "resolve all comments" policy open. Its body names `Range: <base-oid>..<head-oid>` so a re-run finds the reviewed commit.
+4. Post the summary last, as a thread with no `threadContext` and `"status": "closed"` — it asks for no action, so it mustn't hold a "resolve all comments" policy open. Its body names `Range: <base-oid>..<head-oid>` so a re-run finds the reviewed commit. Keep the `id` the POST returns: Step 4 writes the fix commits into this thread.
 
 Never cast a vote (approve, reject, wait for author): the review runs under the user's account, and a vote is theirs.
 
@@ -104,7 +104,7 @@ az devops invoke <thread-route> threadId=<thread-id> --resource pullRequestThrea
 az devops invoke <thread-route> threadId=<thread-id> --resource pullRequestThreads --http-method PATCH --in-file <file> -o json
 ```
 
-(`threadId=` joins the other `--route-parameters`.) A thread you disagree with gets a reply and stays `active`. Remove the worktree once the PR's fixes are pushed. Then record the fix commits in the summary thread: read its first comment's `content` (`pullRequestThreads`, the thread with no `threadContext` whose body has `Range:`), add or extend a `Fixed: <sha> …` line after the `Range:` line, and send it back:
+(`threadId=` joins the other `--route-parameters`.) A thread you disagree with gets a reply and stays `active`. Remove the worktree once the PR's fixes are pushed. Then record the fix commits in the summary thread: the one this run posted, by the `id` the POST in step 4 of posting returned (an earlier review's summary also has no `threadContext` and a `Range:` line, so don't look it up by those). Read its first comment's `content`, add or extend a `Fixed: <sha> …` line after the `Range:` line, and send it back:
 
 ```bash
 # {"content": "<the whole summary, with the Fixed: line>"}
@@ -115,4 +115,4 @@ az devops invoke <thread-route> threadId=<summary-thread-id> commentId=1 --resou
 
 ## Ready to merge
 
-`az repos pr show`'s `mergeStatus` (`succeeded`, or `conflicts`), every blocking policy evaluation (`configuration.isBlocking`) `approved` or `notApplicable` (`running`/`queued` → report as pending; a non-blocking one that's `rejected` is worth naming but doesn't block), no `active` or `pending` threads, and the target branch isn't another open PR's source branch. A release or develop branch is a fine target.
+`az repos pr show`'s `mergeStatus` is `succeeded` (`conflicts` or `failure` → not ready; `queued` → report as pending), every blocking policy evaluation (`configuration.isBlocking`) `approved` or `notApplicable` (`running`/`queued` → report as pending; a non-blocking one that's `rejected` is worth naming but doesn't block), no `active` or `pending` threads, and the target branch isn't another open PR's source branch. A release or develop branch is a fine target.
