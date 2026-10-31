@@ -169,6 +169,15 @@
         "Reviews #71",
         "After pushing #71's fixes, runs scripts/note-fixes.sh with the review id from post-review.sh's URL and the fix commits"
       ]
+    },
+    {
+      "query": "review the open PRs",
+      "setup": "Fork checkout: origin is https://github.com/me/web and the upstream remote is https://github.com/acme/web, with no `gh repo set-default`, so bare gh commands resolve to acme/web. me/web has one open PR, #12, with no review and one real bug in its diff; acme/web has open PRs of its own.",
+      "expected_behavior": [
+        "Prefixes every gh command and bundled script call with GH_REPO=me/web, and lists and reviews me/web#12, not acme/web's PRs",
+        "Passes GH_REPO=me/web in the arguments of the address-review-findings call",
+        "address-review-findings checks that gh pr view 12 --json url names me/web before fixing, and its thread queries and replies target me/web#12"
+      ]
     }
   ]
 }
