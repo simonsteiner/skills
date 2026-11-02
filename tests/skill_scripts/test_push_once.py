@@ -143,6 +143,20 @@ class PushOnceTest(unittest.TestCase):
         self.assertIn("same count (1)", result.stderr)
         self.assertNotIn("rerun with 2", result.stderr)
 
+    def test_push_never_prompts_for_a_credential(self):
+        # A git on PATH that records the push's environment, then hands over to the real git.
+        real_git = subprocess.run(["sh", "-c", "command -v git"], capture_output=True, text=True, check=True).stdout.strip()
+        seen = self.tmp / "prompt-setting"
+        wrapper = self.tmp / "gitbin" / "git"
+        wrapper.parent.mkdir()
+        wrapper.write_text(f'#!/bin/sh\n[ "$1" = push ] && printf %s "${{GIT_TERMINAL_PROMPT-unset}}" > "{seen}"\nexec "{real_git}" "$@"\n')
+        wrapper.chmod(0o755)
+        self.commit("fix1")
+        path = f"{wrapper.parent}{os.pathsep}{self.gh.path}"
+        result = self.gh.run(SCRIPT, self.start, 1, "feature", env={**ENV, "PATH": path}, cwd=self.repo)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(seen.read_text(), "0")
+
     def test_failing_pre_push_hook_exits_4(self):
         self.commit("fix1")
         hook = self.repo / ".git" / "hooks" / "pre-push"

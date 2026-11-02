@@ -17,7 +17,8 @@ set -euo pipefail
 # stderr without refusing, since one may be a new file the round forgot to add.
 # A rejected push exits 3: the branch moved, so merge it, run the checks again, and
 # rerun with <commits> one higher for that merge. Any other failed push (login, URL,
-# hook, protected branch) exits 4: fix it and rerun with the same count, no merge.
+# hook, protected branch, a missing credential) exits 4: fix it and rerun with the
+# same count, no merge. Never prompts for an HTTPS credential.
 # Prints the pushed commit.
 
 if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
@@ -61,7 +62,8 @@ if [[ -n "$untracked" ]]; then
 fi
 
 # LC_ALL=C keeps git's rejection wording untranslated, so it can be told apart from other failures.
-if ! err="$(LC_ALL=C git push --quiet "$remote" "HEAD:refs/heads/$branch" 2>&1)"; then
+# GIT_TERMINAL_PROMPT=0 fails a missing HTTPS credential instead of waiting at a prompt nobody answers.
+if ! err="$(LC_ALL=C GIT_TERMINAL_PROMPT=0 git push --quiet "$remote" "HEAD:refs/heads/$branch" 2>&1)"; then
   printf '%s\n' "$err" >&2
   if grep -qE '\[rejected\]|\(fetch first\)|\(non-fast-forward\)' <<<"$err"; then
     echo "error: rejected: $branch moved on $remote. Merge it, run the checks again, and rerun with $((commits + 1)) commits." >&2
