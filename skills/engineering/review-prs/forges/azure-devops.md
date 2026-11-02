@@ -120,7 +120,7 @@ address-review-findings works only on GitHub, so do its loop here yourself, read
    ```bash
    # reply: {"parentCommentId": 1, "commentType": 1, "content": "Fixed in abc1234: …"}
    az devops invoke <thread-route> threadId=<thread-id> --resource pullRequestThreadComments --http-method POST --in-file <file> -o json
-   # resolve, only when a fix landed: {"status": "fixed"}
+   # resolve: {"status": "fixed"} when a fix landed, {"status": "closed"} for a bot's deferred thread
    az devops invoke <thread-route> threadId=<thread-id> --resource pullRequestThreads --http-method PATCH --in-file <file> -o json
    ```
 

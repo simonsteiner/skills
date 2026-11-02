@@ -11,7 +11,7 @@
         "Reviews #3 on the range since the reviewed commit only, after reading its existing threads",
         "Skips #1 and names it in the report as recent enough",
         "Posts one COMMENT review per reviewed PR through the reviews API, not request-changes",
-        "Calls address-review-findings for PRs that got comments and resolves only threads it fixed",
+        "Calls address-review-findings for PRs that got comments and resolves only threads it fixed, plus bot threads it deferred with the reason in the reply",
         "Renames a generic thread title such as 'Review Open Pull Requests' after the reviewed set, when the harness offers a rename tool"
       ]
     },
