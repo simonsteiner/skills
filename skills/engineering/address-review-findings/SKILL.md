@@ -11,7 +11,7 @@ Turn a PR's review threads into fixes, replies, and resolutions — one decision
 
 **Run the whole loop hands-off** — read, triage, fix, commit, push, reply, resolve — and report at the end. Nothing here waits for the user. What keeps that safe is what the run refuses to do, not a checkpoint: a thread is only ever resolved when it was actually addressed, and a thread that needs a human keeps itself open by staying open.
 
-The feedback lives on GitHub, so `gh` must be authenticated (`gh auth status`). The thread queries are bundled as scripts — run them from the repo under review by their path in this skill's directory (`<skill-dir>/scripts/…`). Findings produced in this session by a review skill are a different thing: act on those directly, no PR round-trip needed.
+The feedback lives on GitHub, so `gh` must be authenticated (`gh auth status`). The thread queries and the push are bundled as scripts — run them from the repo under review by their path in this skill's directory (`<skill-dir>/scripts/…`). Findings produced in this session by a review skill are a different thing: act on those directly, no PR round-trip needed.
 
 ---
 
@@ -36,22 +36,21 @@ git fetch --quiet --prune origin && git fetch --quiet origin "pull/<n>/head"   #
 tmp="$(mktemp -d)"; git worktree add --quiet --detach "$tmp/pr-<n>" <headRefOid> && echo "$tmp/pr-<n>"
 ```
 
-Shell variables don't survive between tool calls, so write the printed path into every later command literally, never `$wt`: an empty variable makes `cd "$wt"` a silent no-op, and the push that follows sends the main checkout's HEAD. Run every command for that PR from that path, and push with `git push origin HEAD:<headRefName>` (a fork's PR, `isCrossRepository`, pushes to the fork's URL instead, which needs "allow edits by maintainers"). A rejected push means the branch moved: `git fetch origin && git merge --no-edit origin/<headRefName>` (a fork's PR has no `origin/<headRefName>`: `git fetch origin "pull/<n>/head" && git merge --no-edit FETCH_HEAD`), rerun the checks, push again. Once the stack's fixes are carried up, `git worktree remove --force <path> && rmdir <its parent>`.
+Shell variables don't survive between tool calls, so write the printed path into every later command literally, never `$wt`: an empty variable makes `cd "$wt"` a silent no-op, and the push that follows sends the main checkout's HEAD. Run every command for that PR from that path, and push with `push-once.sh` below (a fork's PR, `isCrossRepository`, passes the fork's URL as its remote, which needs "allow edits by maintainers"). A rejected push (exit 3) means the branch moved: `git fetch origin && git merge --no-edit origin/<headRefName>` (a fork's PR has no `origin/<headRefName>`: `git fetch origin "pull/<n>/head" && git merge --no-edit FETCH_HEAD`), rerun the checks, and run `push-once.sh` again with the count it names, one higher for that merge. Any other failed push exits 4 (a login, a URL, a hook, a protected branch): fix what it prints and rerun with the same count, without merging. Once the stack's fixes are carried up, `git worktree remove --force <path> && rmdir <its parent>`.
 
 A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data). Install or copy what a check needs — never symlink it in, or the link gets committed — or name the check as not run. A running dev server serves the main checkout, not the worktree.
 
 - **Never `git stash`.** The stash is shared by every worktree; a pop can take another session's work.
 - **Delete only exact paths you created** (`mktemp` for scratch files too). Never by pattern: not `rm -rf /tmp/tmp.*`, not a loop over `git worktree list` matching a prefix.
 - **Don't pipe a command whose exit status matters — `git`, `gh`, this skill's scripts — into `| tail`, `| head` or `| wc -l`.** The pipe reports the last command's status, so a failure reads as success or as "0 threads". Capture first, then trim or count: `out="$(<command>)" && printf '%s\n' "$out" | wc -l`.
-- **Commits run the repo's hooks**, and tests a hook runs inherit `GIT_DIR` and `GIT_INDEX_FILE`; a test that runs `git` can then act on this repo instead of its fixture. Never skip hooks with `--no-verify`. Push only in the same command as the commit and these checks, so a failed commit, an extra commit, or a bare repo stops the push instead of printing a warning above it:
+- **Commits run the repo's hooks**, and tests a hook runs inherit `GIT_DIR` and `GIT_INDEX_FILE`; a test that runs `git` can then act on this repo instead of its fixture. Never skip hooks with `--no-verify`.
+- **Push each PR once per run**, after its last commit. A bot reviewer such as CodeRabbit reviews every push, and each push it reviews brings back a new round of threads, so two pushes a minute apart cost two bot reviews. Commits never push; once the last one is made, push with [scripts/push-once.sh](scripts/push-once.sh) alone. Before pushing anything, it refuses a bare repo, uncommitted changes to tracked files, an unfinished merge, cherry-pick or revert, a `<start>` that isn't an ancestor of HEAD, and a commit count that's off, listing the commits it found. It names untracked files without refusing: one may be a new file the round forgot to add, so read the list before replying "Fixed in …":
 
   ```bash
-  git commit -F - <<'EOF' && test "$(git config core.bare)" = false && test "$(git rev-list --count <start>..HEAD)" = <commits you made> && git push origin HEAD:<headRefName>
-  …
-  EOF
+  <skill-dir>/scripts/push-once.sh <start> <commits you made> <headRefName> [<fork URL>]
   ```
 
-  `<start>` is the PR's head before your work: `<headRefOid>`, or the head before a carry-up merge.
+  `<start>` is the PR's head before your work, `<headRefOid>`. `<commits you made>` counts your commits on the PR's branch since then. A carry-up merge (Step 4) counts as one, and the lower layer's commits it brings in don't. A rejected push is the one exception to pushing once (Step 0).
 - **When a PR under fix changes this skill**, the installed skill may be a link into that repo, so its scripts change as fixes land. Copy them first and run them from the printed path: `d="$(mktemp -d)" && cp -r <skill-dir>/scripts "$d" && echo "$d/scripts"`; delete that folder with the worktrees.
 - **Never rewrite pushed history**, even to remove commits a run pushed by mistake: undo them with `git revert`, or stop and report what landed. Force-push only when the user asks for it, then fix every reply that cites a dropped SHA.
 
@@ -75,7 +74,7 @@ Inline threads need GraphQL — the REST endpoint doesn't say whether a thread i
 - `id` is the thread ID — it's what replies and resolutions attach to. Keep it with each finding.
 - **`line` is null on outdated threads.** Use `originalLine` and `diffHunk` to locate what the reviewer was looking at; the code has moved since.
 - Read every comment in a thread, not just the first. A reviewer often answers themselves further down.
-- If nothing is unresolved, say so and move to the next PR (or stop).
+- If nothing is unresolved, say so and move to the next PR (or stop). A stack layer that got a carry-up merge pushes it first (Step 4).
 - `commentCount` above the length of `comments` means the thread outgrew one page — open its `url` and read the rest there.
 - **`awaitingReviewer: true`** means you already replied last in a thread someone else started — an earlier run left it open on purpose. Skip it unless the reviewer has written since; replying again just stacks duplicates. Threads from your own `review-prs` run are never flagged.
 - **No real review is not a clean review.** A stacked layer can arrive with zero threads because no reviewer looked at it, and an automated reviewer that failed ("Copilot encountered an error…", a rate-limit notice) looked at nothing either. A bot's review (CodeRabbit, Copilot) is input, not a review: work through its threads like any other, but all of them resolved still isn't a reviewed PR. The script warns on stderr when a PR has no real review, naming the bots when only they reviewed; say so in the report rather than counting the PR as done, and suggest running `review-prs` on it.
@@ -94,9 +93,20 @@ A thread that points at a screenshot or recording (`github.com/user-attachments/
 | already fixed | a later commit resolved it | verify it really did, then reply with the commit |
 | stale | thread is outdated and the code no longer exists in that form | reply explaining what replaced it |
 | needs a decision | a trade-off or a scope question that isn't yours to settle | reply with the question, leave the thread open, keep going |
+| deferred | the reviewer is right, but the weighing below says not in this PR | reply with what it fails; a bot's thread is resolved, a human's stays open |
 | disagree | the suggestion is wrong or would break something | reply with the reasoning, leave the thread open |
 
 Never convert "disagree" into a silent resolve. An unconvinced reviewer with a closed thread is worse than an open one.
+
+**Weigh a correct finding before fixing it.** "The reviewer is right" means the trigger is real, not that this PR must handle it. Bots, CodeRabbit above all, review every push, and each fix adds lines for the next round to pick at. Fixing everything therefore never converges: each round's findings get more hypothetical and land more on the last fix. Weigh three things together, with no threshold on any one of them:
+
+- **Reach**: does a real user of this code, in a setup it claims to support, get into the triggering state? The code's docs, compatibility line and spec draw that line, not your guess. That someone could construct the state isn't enough.
+- **Consequence**: what happens then? A silent wrong result, lost data or a leaked credential matters even when it's rare. A loud failure that says what to do is acceptable in a rare setup.
+- **Fix**: does the fix close a defect, or make the code handle a case it never claimed to handle (another host form, input shape or mode)? The second is a feature, outside the PR's scope.
+
+All three say fix → **fix**. A rare setup with a loud failure, or a fix that's a new feature → **deferred**. A severe consequence on a narrow reach is the user's call → **needs a decision**. A finding on lines the last fix round wrote gets one extra question: is it a defect in that fix (→ fix), or a request to extend it (→ usually deferred)?
+
+A *deferred* reply names the trigger and what it fails, so the reviewer can push back: "Real, but only with a port-443 SSH config, and it stops with `unsupported` rather than acting on the wrong repo. Deferred, not this PR's scope." A bot's thread gets resolved, so the next run doesn't take it up again. A human's thread stays open, since agreeing to defer is theirs to do.
 
 **Write the fixes straight away** and report the verdicts alongside them in Step 5. A verdict is cheaper to overrule from the diff than from a table of intentions. A *needs a decision* thread doesn't stall the run either — put the question in the thread, leave it open, and carry on with the rest.
 
@@ -107,7 +117,7 @@ Never convert "disagree" into a silent resolve. An unconvinced reviewer with a c
 - Fix **what the comment is about**, not only the line it hangs on. A comment on one duplicated block usually implicates the others.
 - Group into the smallest coherent commits — one concern each, not one commit per thread and not one commit for everything.
 - Run whatever the repo runs (tests, linters, type checks). A review fix that breaks the build is a worse finding than the one it closed.
-- Call the Skill tool with "conventional-commit" to commit. Say what changed and why, referencing the reviewer's point — never a bare "address feedback".
+- Call the Skill tool with "conventional-commit" to commit, without pushing: Step 4 pushes the PR's commits together. Say what changed and why, referencing the reviewer's point — never a bare "address feedback".
 - Stay inside the review's scope. A review is not a mandate to refactor what nobody commented on.
 
 ---
@@ -116,7 +126,7 @@ Never convert "disagree" into a silent resolve. An unconvinced reviewer with a c
 
 These post to a PR other people are watching, and a reply can't be unsent — so write each one as if the reviewer reads it without you there to explain. Then send it; no confirmation step.
 
-Push the commits, then per thread:
+Push all of the PR's commits at once (Step 0), then per thread:
 
 ```bash
 <skill-dir>/scripts/reply-resolve.sh <thread-id> [--resolve] <<'BODY'
@@ -126,12 +136,12 @@ BODY
 
 `--resolve` only when the thread was actually addressed. The script refuses an empty body, so nothing gets resolved silently.
 
-A reply says what changed and where — the commit SHA or the new symbol name — not "done". Resolve only threads you fixed or proved already fixed. Threads left open are the record of what still needs the reviewer.
+A reply says what changed and where — the commit SHA or the new symbol name — not "done". Resolve only threads you fixed or proved already fixed, plus a bot's *deferred* thread with its reason in the reply. Threads left open are the record of what still needs the reviewer.
 
-**In a stack, carry the fixes up** before moving to the next PR. Merge each branch into the one stacked on it, bottom-up, and push — merge, not rebase, so reviewers of the upper PRs don't lose their place:
+**In a stack, carry the fixes up** before moving to the next PR. Merge each branch into the one stacked on it, bottom-up — merge, not rebase, so reviewers of the upper PRs don't lose their place. Don't push the merge on its own: the upper PR's own fixes go on top of it, and its Step 4 pushes the merge and those fixes together. A merge pushed alone is one more bot review of code the lower PR's review already covered. An upper PR with nothing of its own to fix still pushes the merge, with `push-once.sh` and a count of 1, so the PR above it can merge it as pushed. Each layer pushes once:
 
 ```bash
-cd <upper PR's worktree path> && git fetch origin && git merge --no-edit "origin/<lower-head>" && git push origin HEAD:<upper-head>
+cd <upper PR's worktree path> && git fetch origin && git merge --no-edit "origin/<lower-head>"
 ```
 
 The upper PR has no worktree yet on its first carry: create it with the Step 0 recipe and reuse it for that PR's own Steps 1–4. Merge the lower layer as pushed (`origin/…`, or `FETCH_HEAD` after `git fetch origin "pull/<lower-n>/head"` when it's a fork's PR), not a local branch another worktree may hold at an older commit.
@@ -142,7 +152,7 @@ A conflict here is the upper PR's code meeting the fix: resolve it on the upper 
 
 ## Step 5 — Report
 
-The report is the whole of the user's involvement, so it carries what a checkpoint would have: per PR, one line per thread — reviewer, file, verdict, and the commit or the reason it's still open — then what was left unaddressed and why. Link the pushed commits so any verdict can be overruled from the diff. Name any PR that had no review at all. Before reporting, `git worktree list` shows none of the worktrees you created.
+The report is the whole of the user's involvement, so it carries what a checkpoint would have: per PR, one line per thread — reviewer, file, verdict, and the commit or the reason it's still open — then what was left unaddressed and why. List the *deferred* findings together as follow-ups, one line each with the trigger and its thread, so the user can file an issue or overrule the call. Link the pushed commits so any verdict can be overruled from the diff. Name any PR that had no review at all. Before reporting, `git worktree list` shows none of the worktrees you created.
 
 **Every *needs a decision* and *disagree* thread gets spelled out in the report**, not just pointed at — the user should be able to decide without opening GitHub:
 
