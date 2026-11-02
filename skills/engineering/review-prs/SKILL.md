@@ -78,7 +78,7 @@ Each source's commands are in *Outside findings* (forge guide).
 - **SonarQube / SonarCloud** — when the PR's checks or a comment show a Sonar analysis, list its open issues for this PR: the SonarQube MCP tool (`search_sonar_issues_in_projects` with the `pullRequest` key from `list_pull_requests`; the forge guide names that key), else the `sonar` CLI, else, for a public SonarCloud project, `<skill-dir>/scripts/sonar-issues.sh <key> <pr-key>` ([scripts/sonar-issues.sh](scripts/sonar-issues.sh) reads every page, up to the API's 10,000-issue limit, and warns on stderr when it stops short). The project key is in `sonar-project.properties` or the CI config. None reachable → name Sonar as not checked in the summary.
 - **Other failed checks** with a reason but no annotation (a coverage gate, a security scanner's comment).
 
-Each one is a candidate finding like your own: verify it, keep it only if the PR introduced it, and give it the severity it deserves rather than the tool's. One on a line the diff doesn't touch goes in the summary, not fixed here. Don't change an issue's status in SonarQube or dismiss an alert — a fix that lands closes it on the next analysis, and a wrong one is the user's call to dismiss.
+Each one is a candidate finding like your own: verify it, keep it only if the PR introduced it, weigh it as below, and give it the severity it deserves rather than the tool's. One on a line the diff doesn't touch goes in the summary, not fixed here. Don't change an issue's status in SonarQube or dismiss an alert — a fix that lands closes it on the next analysis, and a wrong one is the user's call to dismiss.
 
 Don't regenerate committed artifacts or re-run data pipelines to check outputs; a claim only a re-run could verify goes in the summary as not checked.
 
@@ -86,7 +86,7 @@ Don't regenerate committed artifacts or re-run data pipelines to check outputs; 
 
 Spec source, first match: the PR's linked issues or work items and body → a path the user gave → a file under `docs/`, `specs/` or `.scratch/` matching the branch. None found → skip the Spec axis and say so in the summary.
 
-**Verify before you keep a finding.** Open the code and name the input or state that triggers it. Drop what you can't ground, and style opinions the repo doesn't enforce. Zero findings is a result — say what you checked. In a stack, a finding goes on the **lowest PR that introduces it**.
+**Verify before you keep a finding.** Open the code and name the input or state that triggers it. Drop what you can't ground, and style opinions the repo doesn't enforce. Then weigh what's left as address-review-findings does (*Weigh a correct finding*, its Step 2): reach, consequence, and whether the fix closes a defect or adds a feature. That applies to your own findings and outside ones alike. One that's real but deferred goes in the summary as a follow-up, not as a comment to fix, and a bot thread you defer is resolved in Step 4 with the reason. Zero findings is a result — say what you checked. In a stack, a finding goes on the **lowest PR that introduces it**.
 
 ## Step 3 — Comment (PR mode)
 
@@ -98,7 +98,7 @@ No findings → still post the summary, so the PR stops reading as unreviewed. C
 
 ## Step 4 — Fix and resolve
 
-**PR mode:** fix every posted finding and every bot thread you confirmed, and reply to the ones you disputed: fix and resolve (forge guide). A stack is fixed one layer at a time, bottom-up, each layer's fixes carried up before the next starts — never in parallel; independent PRs may run in parallel. Expect the verdict **fix** nearly every time; if re-reading shows a finding was wrong, reply saying so and resolve it. A bot thread you disputed gets a reply with the reason and stays open. Once a PR's fixes are pushed, record them in your review summary: a `Fixed: <sha> …` line after its `Range:` line, listing the fix commits — record fixes (forge guide). Then re-read the PR's title and body: a fix that changed what they describe → call the Skill tool with "pr-body" and update both.
+**PR mode:** fix every posted finding and every bot thread you confirmed, and reply to the ones you deferred or disputed: fix and resolve (forge guide). A stack is fixed one layer at a time, bottom-up, each layer's fixes carried up before the next starts — never in parallel; independent PRs may run in parallel. Expect the verdict **fix** nearly every time for what survived Step 2's weighing; if re-reading shows a finding was wrong, reply saying so and resolve it. A bot thread you disputed gets a reply with the reason and stays open. Once a PR's fixes are pushed, record them in your review summary: a `Fixed: <sha> …` line after its `Range:` line, listing the fix commits — record fixes (forge guide). Then re-read the PR's title and body: a fix that changed what they describe → call the Skill tool with "pr-body" and update both.
 
 **Local mode:** fix each real finding, run the repo's checks, then call the Skill tool with "conventional-commit" to commit.
 

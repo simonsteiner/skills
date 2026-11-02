@@ -95,9 +95,20 @@ A thread that points at a screenshot or recording (`github.com/user-attachments/
 | already fixed | a later commit resolved it | verify it really did, then reply with the commit |
 | stale | thread is outdated and the code no longer exists in that form | reply explaining what replaced it |
 | needs a decision | a trade-off or a scope question that isn't yours to settle | reply with the question, leave the thread open, keep going |
+| deferred | the reviewer is right, but the weighing below says not in this PR | reply with what it fails; a bot's thread is resolved, a human's stays open |
 | disagree | the suggestion is wrong or would break something | reply with the reasoning, leave the thread open |
 
 Never convert "disagree" into a silent resolve. An unconvinced reviewer with a closed thread is worse than an open one.
+
+**Weigh a correct finding before fixing it.** "The reviewer is right" means the trigger is real, not that this PR must handle it. Bots, CodeRabbit above all, review every push, and each fix adds lines for the next round to pick at. Fixing everything therefore never converges: each round's findings get more hypothetical and land more on the last fix. Weigh three things together, with no threshold on any one of them:
+
+- **Reach**: does a real user of this code, in a setup it claims to support, get into the triggering state? The code's docs, compatibility line and spec draw that line, not your guess. That someone could construct the state isn't enough.
+- **Consequence**: what happens then? A silent wrong result, lost data or a leaked credential matters even when it's rare. A loud failure that says what to do is acceptable in a rare setup.
+- **Fix**: does the fix close a defect, or make the code handle a case it never claimed to handle (another host form, input shape or mode)? The second is a feature, outside the PR's scope.
+
+All three say fix → **fix**. A rare setup with a loud failure, or a fix that's a new feature → **deferred**. A severe consequence on a narrow reach is the user's call → **needs a decision**. A finding on lines the last fix round wrote gets one extra question: is it a defect in that fix (→ fix), or a request to extend it (→ usually deferred)?
+
+A *deferred* reply names the trigger and what it fails, so the reviewer can push back: "Real, but only with a port-443 SSH config, and it stops with `unsupported` rather than acting on the wrong repo. Deferred, not this PR's scope." A bot's thread gets resolved, so the next run doesn't take it up again. A human's thread stays open, since agreeing to defer is theirs to do.
 
 **Write the fixes straight away** and report the verdicts alongside them in Step 5. A verdict is cheaper to overrule from the diff than from a table of intentions. A *needs a decision* thread doesn't stall the run either — put the question in the thread, leave it open, and carry on with the rest.
 
@@ -127,7 +138,7 @@ BODY
 
 `--resolve` only when the thread was actually addressed. The script refuses an empty body, so nothing gets resolved silently.
 
-A reply says what changed and where — the commit SHA or the new symbol name — not "done". Resolve only threads you fixed or proved already fixed. Threads left open are the record of what still needs the reviewer.
+A reply says what changed and where — the commit SHA or the new symbol name — not "done". Resolve only threads you fixed or proved already fixed, plus a bot's *deferred* thread with its reason in the reply. Threads left open are the record of what still needs the reviewer.
 
 **In a stack, carry the fixes up** before moving to the next PR. Merge each branch into the one stacked on it, bottom-up — merge, not rebase, so reviewers of the upper PRs don't lose their place. Don't push the merge on its own: the upper PR's own fixes go on top of it, and its Step 4 pushes the merge and those fixes together. A merge pushed alone is one more bot review of code the lower PR's review already covered. An upper PR with nothing of its own to fix still pushes the merge, so the PR above it can merge it as pushed. Each layer pushes once:
 
@@ -143,7 +154,7 @@ A conflict here is the upper PR's code meeting the fix: resolve it on the upper 
 
 ## Step 5 — Report
 
-The report is the whole of the user's involvement, so it carries what a checkpoint would have: per PR, one line per thread — reviewer, file, verdict, and the commit or the reason it's still open — then what was left unaddressed and why. Link the pushed commits so any verdict can be overruled from the diff. Name any PR that had no review at all. Before reporting, `git worktree list` shows none of the worktrees you created.
+The report is the whole of the user's involvement, so it carries what a checkpoint would have: per PR, one line per thread — reviewer, file, verdict, and the commit or the reason it's still open — then what was left unaddressed and why. List the *deferred* findings together as follow-ups, one line each with the trigger and its thread, so the user can file an issue or overrule the call. Link the pushed commits so any verdict can be overruled from the diff. Name any PR that had no review at all. Before reporting, `git worktree list` shows none of the worktrees you created.
 
 **Every *needs a decision* and *disagree* thread gets spelled out in the report**, not just pointed at — the user should be able to decide without opening GitHub:
 
