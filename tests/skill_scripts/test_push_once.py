@@ -84,6 +84,7 @@ class PushOnceTest(unittest.TestCase):
         (self.repo / ".scratch" / "notes").write_text("scratch")
         result = self.push_once(self.start, 1, "feature")
         self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("untracked", result.stderr)
 
     def test_start_not_an_ancestor_pushes_nothing(self):
         self.git("checkout", "-q", "--orphan", "other")
@@ -120,15 +121,70 @@ class PushOnceTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.remote_head(), self.head())
 
-    def test_rejected_push_exits_3_with_the_next_count(self):
+    def test_rejected_push_exits_3_and_the_rerun_after_the_merge_pushes(self):
         other = self.clone("other")
         self.git("checkout", "-q", "-b", "feature", "origin/feature", cwd=other)
         self.commit("someone-else", cwd=other)
         self.git("push", "-q", "origin", "HEAD:refs/heads/feature", cwd=other)
         self.commit("fix1")
         result = self.push_once(self.start, 1, "feature")
-        self.assertEqual(result.returncode, 3)
+        self.assertEqual(result.returncode, 3, result.stderr)
         self.assertIn("rerun with 2 commits", result.stderr)
+        self.git("fetch", "-q", "origin")
+        self.git("merge", "-q", "--no-edit", "origin/feature")
+        result = self.push_once(self.start, 2, "feature")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.remote_head(), self.head())
+
+    def test_other_push_failure_exits_4_and_keeps_the_count(self):
+        self.commit("fix1")
+        result = self.push_once(self.start, 1, "feature", str(self.tmp / "missing.git"))
+        self.assertEqual(result.returncode, 4, result.stderr)
+        self.assertIn("same count (1)", result.stderr)
+        self.assertNotIn("rerun with 2", result.stderr)
+
+    def test_failing_pre_push_hook_exits_4(self):
+        self.commit("fix1")
+        hook = self.repo / ".git" / "hooks" / "pre-push"
+        hook.write_text("#!/bin/sh\necho 'hook says no' >&2\nexit 1\n")
+        hook.chmod(0o755)
+        result = self.push_once(self.start, 1, "feature")
+        self.assertEqual(result.returncode, 4, result.stderr)
+        self.assertEqual(self.remote_head(), self.start)
+
+    def test_detached_worktree_pushes_to_a_url_remote(self):
+        # Step 0 gives the PR a detached worktree, and a fork's PR passes the fork's URL as the remote.
+        wt = self.tmp / "wt"
+        self.git("worktree", "add", "-q", "--detach", str(wt), self.start)
+        self.commit("fix1", cwd=wt)
+        result = self.push_once(self.start, 1, "feature", str(self.remote), cwd=wt)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.remote_head(), self.head(cwd=wt))
+
+    def test_unfinished_merge_pushes_nothing(self):
+        # Every conflict staged as "ours" leaves an empty status but a MERGE_HEAD.
+        lower = self.clone("lower")
+        self.git("checkout", "-q", "-b", "lower", self.start, cwd=lower)
+        (lower / "base").write_text("lower")
+        self.git("commit", "-q", "-am", "lower", cwd=lower)
+        self.git("push", "-q", "origin", "HEAD:refs/heads/lower", cwd=lower)
+        (self.repo / "base").write_text("upper")
+        self.git("commit", "-q", "-am", "upper")
+        self.git("fetch", "-q", "origin")
+        subprocess.run(["git", "merge", "--no-edit", "origin/lower"], check=False, cwd=self.repo, env=ENV, capture_output=True)  # conflicts on purpose
+        self.git("checkout", "--ours", "base")
+        self.git("add", "base")
+        result = self.push_once(self.start, 1, "feature")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("MERGE_HEAD", result.stderr)
+        self.assertEqual(self.remote_head(), self.start)
+
+    def test_untracked_new_file_is_named_but_doesnt_block(self):
+        self.commit("fix1")
+        (self.repo / "newtest.py").write_text("never added")
+        result = self.push_once(self.start, 1, "feature")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("newtest.py", result.stderr)
 
 
 if __name__ == "__main__":

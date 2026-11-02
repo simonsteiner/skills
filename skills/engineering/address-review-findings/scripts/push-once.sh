@@ -12,9 +12,12 @@ set -euo pipefail
 # the PR's head branch. <remote> defaults to origin; a fork's PR passes the fork's URL.
 #
 # Refuses, before pushing anything, when the repo is bare, the tree has uncommitted
-# changes to tracked files, <start> isn't an ancestor of HEAD, or the count differs.
+# changes to tracked files, a merge, cherry-pick or revert is still in progress,
+# <start> isn't an ancestor of HEAD, or the count differs. Lists untracked files on
+# stderr without refusing, since one may be a new file the round forgot to add.
 # A rejected push exits 3: the branch moved, so merge it, run the checks again, and
-# rerun with <commits> one higher for that merge.
+# rerun with <commits> one higher for that merge. Any other failed push (login, URL,
+# hook, protected branch) exits 4: fix it and rerun with the same count, no merge.
 # Prints the pushed commit.
 
 if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
@@ -33,6 +36,11 @@ start="$1" commits="$2" branch="$3" remote="${4:-origin}"
   || die "not inside a work tree (a bare repo, or the wrong directory) — run this from the PR's worktree"
 [[ -z "$(git status --porcelain --untracked-files=no)" ]] \
   || die "uncommitted changes to tracked files — commit them as part of the round, or they'd be left out of the push"
+for op in MERGE_HEAD CHERRY_PICK_HEAD REVERT_HEAD; do
+  if git rev-parse --quiet --verify "$op" >/dev/null; then
+    die "$op exists: a merge, cherry-pick or revert isn't finished — commit or abort it first"
+  fi
+done
 start_oid="$(git rev-parse --verify --quiet "$start^{commit}")" \
   || die "'$start' isn't a commit here — fetch the PR's head first"
 git merge-base --is-ancestor "$start_oid" HEAD \
@@ -45,8 +53,21 @@ if [[ "$made" != "$commits" ]]; then
   exit 1
 fi
 
-if ! git push --quiet "$remote" "HEAD:refs/heads/$branch"; then
-  echo "error: push to $remote $branch failed. If it was rejected, the branch moved: merge it, run the checks again, and rerun with $((commits + 1)) commits." >&2
-  exit 3
+# A file the round created but never added would be left out silently; .scratch/ is review scratch space.
+untracked="$(git ls-files --others --exclude-standard -- ':(top)' ':(top,exclude).scratch')"
+if [[ -n "$untracked" ]]; then
+  echo "warning: these untracked files are not in the push; if one belongs to the round, add and commit it, then rerun with the new count:" >&2
+  while IFS= read -r f; do echo "  $f" >&2; done <<<"$untracked"
+fi
+
+# LC_ALL=C keeps git's rejection wording untranslated, so it can be told apart from other failures.
+if ! err="$(LC_ALL=C git push --quiet "$remote" "HEAD:refs/heads/$branch" 2>&1)"; then
+  printf '%s\n' "$err" >&2
+  if grep -qE '\[rejected\]|\(fetch first\)|\(non-fast-forward\)' <<<"$err"; then
+    echo "error: rejected: $branch moved on $remote. Merge it, run the checks again, and rerun with $((commits + 1)) commits." >&2
+    exit 3
+  fi
+  echo "error: push failed, and not because $branch moved. Fix the cause above and rerun with the same count ($commits); don't merge." >&2
+  exit 4
 fi
 git rev-parse HEAD
