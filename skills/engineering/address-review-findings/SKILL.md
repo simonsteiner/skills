@@ -36,7 +36,7 @@ git fetch --quiet --prune origin && git fetch --quiet origin "pull/<n>/head"   #
 tmp="$(mktemp -d)"; git worktree add --quiet --detach "$tmp/pr-<n>" <headRefOid> && echo "$tmp/pr-<n>"
 ```
 
-Shell variables don't survive between tool calls, so write the printed path into every later command literally, never `$wt`: an empty variable makes `cd "$wt"` a silent no-op, and the push that follows sends the main checkout's HEAD. Run every command for that PR from that path, and push with `git push origin HEAD:<headRefName>` (a fork's PR, `isCrossRepository`, pushes to the fork's URL instead, which needs "allow edits by maintainers"). A rejected push means the branch moved: `git fetch origin && git merge --no-edit origin/<headRefName>` (a fork's PR has no `origin/<headRefName>`: `git fetch origin "pull/<n>/head" && git merge --no-edit FETCH_HEAD`), rerun the checks, push again. Once the stack's fixes are carried up, `git worktree remove --force <path> && rmdir <its parent>`.
+Shell variables don't survive between tool calls, so write the printed path into every later command literally, never `$wt`: an empty variable makes `cd "$wt"` a silent no-op, and the push that follows sends the main checkout's HEAD. Run every command for that PR from that path, and push with `git push origin HEAD:<headRefName>` (a fork's PR, `isCrossRepository`, pushes to the fork's URL instead, which needs "allow edits by maintainers"). A rejected push means the branch moved: `git fetch origin && git merge --no-edit origin/<headRefName>` (a fork's PR has no `origin/<headRefName>`: `git fetch origin "pull/<n>/head" && git merge --no-edit FETCH_HEAD`), rerun the checks, and push again with the command below, counting that merge as one more commit. Once the stack's fixes are carried up, `git worktree remove --force <path> && rmdir <its parent>`.
 
 A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data). Install or copy what a check needs — never symlink it in, or the link gets committed — or name the check as not run. A running dev server serves the main checkout, not the worktree.
 
@@ -44,12 +44,10 @@ A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data). Instal
 - **Delete only exact paths you created** (`mktemp` for scratch files too). Never by pattern: not `rm -rf /tmp/tmp.*`, not a loop over `git worktree list` matching a prefix.
 - **Don't pipe a command whose exit status matters — `git`, `gh`, this skill's scripts — into `| tail`, `| head` or `| wc -l`.** The pipe reports the last command's status, so a failure reads as success or as "0 threads". Capture first, then trim or count: `out="$(<command>)" && printf '%s\n' "$out" | wc -l`.
 - **Commits run the repo's hooks**, and tests a hook runs inherit `GIT_DIR` and `GIT_INDEX_FILE`; a test that runs `git` can then act on this repo instead of its fixture. Never skip hooks with `--no-verify`.
-- **Push each PR once per run**, after its last commit. A bot reviewer such as CodeRabbit reviews every push, and each push it reviews brings back a new round of threads, so two pushes a minute apart cost two bot reviews. The earlier commits don't push. The last one pushes in the same command as these checks, so a failed commit, an extra commit, or a bare repo stops the push instead of printing a warning above it:
+- **Push each PR once per run**, after its last commit. A bot reviewer such as CodeRabbit reviews every push, and each push it reviews brings back a new round of threads, so two pushes a minute apart cost two bot reviews. Commits never push; once the last one is made, push with this command alone, so a missing or extra commit, or a bare repo, stops the push instead of printing a warning above it:
 
   ```bash
-  git commit -F - <<'EOF' && test "$(git config core.bare)" = false && test "$(git rev-list --count --first-parent <start>..HEAD)" = <commits you made> && git push origin HEAD:<headRefName>
-  …
-  EOF
+  test "$(git config core.bare)" = false && test "$(git rev-list --count --first-parent <start>..HEAD)" = <commits you made> && git push origin HEAD:<headRefName>
   ```
 
   `<start>` is the PR's head before your work, `<headRefOid>`. `<commits you made>` counts your commits on the PR's branch since then. A carry-up merge (Step 4) counts as one, and `--first-parent` leaves out the lower layer's commits that it brings in. A rejected push is the one exception to pushing once (Step 0).
@@ -76,7 +74,7 @@ Inline threads need GraphQL — the REST endpoint doesn't say whether a thread i
 - `id` is the thread ID — it's what replies and resolutions attach to. Keep it with each finding.
 - **`line` is null on outdated threads.** Use `originalLine` and `diffHunk` to locate what the reviewer was looking at; the code has moved since.
 - Read every comment in a thread, not just the first. A reviewer often answers themselves further down.
-- If nothing is unresolved, say so and move to the next PR (or stop).
+- If nothing is unresolved, say so and move to the next PR (or stop). A stack layer that got a carry-up merge pushes it first (Step 4).
 - `commentCount` above the length of `comments` means the thread outgrew one page — open its `url` and read the rest there.
 - **`awaitingReviewer: true`** means you already replied last in a thread someone else started — an earlier run left it open on purpose. Skip it unless the reviewer has written since; replying again just stacks duplicates. Threads from your own `review-prs` run are never flagged.
 - **No real review is not a clean review.** A stacked layer can arrive with zero threads because no reviewer looked at it, and an automated reviewer that failed ("Copilot encountered an error…", a rate-limit notice) looked at nothing either. A bot's review (CodeRabbit, Copilot) is input, not a review: work through its threads like any other, but all of them resolved still isn't a reviewed PR. The script warns on stderr when a PR has no real review, naming the bots when only they reviewed; say so in the report rather than counting the PR as done, and suggest running `review-prs` on it.
@@ -140,7 +138,7 @@ BODY
 
 A reply says what changed and where — the commit SHA or the new symbol name — not "done". Resolve only threads you fixed or proved already fixed, plus a bot's *deferred* thread with its reason in the reply. Threads left open are the record of what still needs the reviewer.
 
-**In a stack, carry the fixes up** before moving to the next PR. Merge each branch into the one stacked on it, bottom-up — merge, not rebase, so reviewers of the upper PRs don't lose their place. Don't push the merge on its own: the upper PR's own fixes go on top of it, and its Step 4 pushes the merge and those fixes together. A merge pushed alone is one more bot review of code the lower PR's review already covered. An upper PR with nothing of its own to fix still pushes the merge, so the PR above it can merge it as pushed. Each layer pushes once:
+**In a stack, carry the fixes up** before moving to the next PR. Merge each branch into the one stacked on it, bottom-up — merge, not rebase, so reviewers of the upper PRs don't lose their place. Don't push the merge on its own: the upper PR's own fixes go on top of it, and its Step 4 pushes the merge and those fixes together. A merge pushed alone is one more bot review of code the lower PR's review already covered. An upper PR with nothing of its own to fix still pushes the merge, with the Step 0 push command and a count of 1, so the PR above it can merge it as pushed. Each layer pushes once:
 
 ```bash
 cd <upper PR's worktree path> && git fetch origin && git merge --no-edit "origin/<lower-head>"
