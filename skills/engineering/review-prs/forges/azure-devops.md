@@ -114,7 +114,7 @@ az devops invoke <thread-route> threadId=<summary-thread-id> commentId=1 --resou
 address-review-findings works only on GitHub, so do its loop here yourself, reading that skill for its rules (verdicts, commits, push safety, carrying fixes up a stack) but not its scripts. Per PR, stacks bottom-up:
 
 1. Keep the review worktree from *Read a PR* after posting, and fix in it. Each posted finding and each bot thread you confirmed gets a fix; run the repo's checks again.
-2. Call the Skill tool with "conventional-commit" to commit, and push with `git push origin HEAD:<source branch>`. A PR from a fork (`forkSource` set) pushes to `forkSource.repository.remoteUrl` instead; when that isn't writable, say so, leave its threads open, and stop fixing that PR.
+2. Call the Skill tool with "conventional-commit" to commit. Then push once with `git push origin HEAD:<source branch>`, after the PR's last commit: each push starts another bot review. A PR from a fork (`forkSource` set) pushes to `forkSource.repository.remoteUrl` instead; when that isn't writable, say so, leave its threads open, and stop fixing that PR.
 3. Per thread — yours and the bots' you confirmed or disputed — reply, and resolve only when a fix landed:
 
    ```bash
@@ -126,7 +126,7 @@ address-review-findings works only on GitHub, so do its loop here yourself, read
 
    (`threadId=` joins the other `--route-parameters`.) A thread you disagree with gets a reply and stays `active`.
 4. Record the fix commits (*Record fixes*).
-5. In a stack, carry the fixes up before the next layer starts: merge the layer as pushed into the one stacked on it, in that layer's worktree, and push — merge, not rebase.
+5. In a stack, carry the fixes up before the next layer starts: merge the layer as pushed into the one stacked on it, in that layer's worktree — merge, not rebase. Don't push the merge yet: it goes out in that layer's own step 2 push, with its fixes. A layer with nothing to fix pushes the merge alone.
 6. Remove the worktree once the PR's fixes are pushed and carried up: `git worktree remove --force <path> && rmdir <its parent>`.
 
 A fix that changed what the PR describes → the "pr-body" skill, then `az repos pr update --org … --id <id> --description "<body>"` and `--title`.

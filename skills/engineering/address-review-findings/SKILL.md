@@ -43,15 +43,16 @@ A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data). Instal
 - **Never `git stash`.** The stash is shared by every worktree; a pop can take another session's work.
 - **Delete only exact paths you created** (`mktemp` for scratch files too). Never by pattern: not `rm -rf /tmp/tmp.*`, not a loop over `git worktree list` matching a prefix.
 - **Don't pipe a command whose exit status matters — `git`, `gh`, this skill's scripts — into `| tail`, `| head` or `| wc -l`.** The pipe reports the last command's status, so a failure reads as success or as "0 threads". Capture first, then trim or count: `out="$(<command>)" && printf '%s\n' "$out" | wc -l`.
-- **Commits run the repo's hooks**, and tests a hook runs inherit `GIT_DIR` and `GIT_INDEX_FILE`; a test that runs `git` can then act on this repo instead of its fixture. Never skip hooks with `--no-verify`. Push only in the same command as the commit and these checks, so a failed commit, an extra commit, or a bare repo stops the push instead of printing a warning above it:
+- **Commits run the repo's hooks**, and tests a hook runs inherit `GIT_DIR` and `GIT_INDEX_FILE`; a test that runs `git` can then act on this repo instead of its fixture. Never skip hooks with `--no-verify`.
+- **Push each PR once per run**, after its last commit. A bot reviewer such as CodeRabbit reviews every push, and each push it reviews brings back a new round of threads, so two pushes a minute apart cost two bot reviews. The earlier commits don't push. The last one pushes in the same command as these checks, so a failed commit, an extra commit, or a bare repo stops the push instead of printing a warning above it:
 
   ```bash
-  git commit -F - <<'EOF' && test "$(git config core.bare)" = false && test "$(git rev-list --count <start>..HEAD)" = <commits you made> && git push origin HEAD:<headRefName>
+  git commit -F - <<'EOF' && test "$(git config core.bare)" = false && test "$(git rev-list --count --first-parent <start>..HEAD)" = <commits you made> && git push origin HEAD:<headRefName>
   …
   EOF
   ```
 
-  `<start>` is the PR's head before your work: `<headRefOid>`, or the head before a carry-up merge.
+  `<start>` is the PR's head before your work, `<headRefOid>`. `<commits you made>` counts your commits on the PR's branch since then. A carry-up merge (Step 4) counts as one, and `--first-parent` leaves out the lower layer's commits that it brings in. A rejected push is the one exception to pushing once (Step 0).
 - **When a PR under fix changes this skill**, the installed skill may be a link into that repo, so its scripts change as fixes land. Copy them first and run them from the printed path: `d="$(mktemp -d)" && cp -r <skill-dir>/scripts "$d" && echo "$d/scripts"`; delete that folder with the worktrees.
 - **Never rewrite pushed history**, even to remove commits a run pushed by mistake: undo them with `git revert`, or stop and report what landed. Force-push only when the user asks for it, then fix every reply that cites a dropped SHA.
 
@@ -107,7 +108,7 @@ Never convert "disagree" into a silent resolve. An unconvinced reviewer with a c
 - Fix **what the comment is about**, not only the line it hangs on. A comment on one duplicated block usually implicates the others.
 - Group into the smallest coherent commits — one concern each, not one commit per thread and not one commit for everything.
 - Run whatever the repo runs (tests, linters, type checks). A review fix that breaks the build is a worse finding than the one it closed.
-- Call the Skill tool with "conventional-commit" to commit. Say what changed and why, referencing the reviewer's point — never a bare "address feedback".
+- Call the Skill tool with "conventional-commit" to commit, without pushing: Step 4 pushes the PR's commits together. Say what changed and why, referencing the reviewer's point — never a bare "address feedback".
 - Stay inside the review's scope. A review is not a mandate to refactor what nobody commented on.
 
 ---
@@ -116,7 +117,7 @@ Never convert "disagree" into a silent resolve. An unconvinced reviewer with a c
 
 These post to a PR other people are watching, and a reply can't be unsent — so write each one as if the reviewer reads it without you there to explain. Then send it; no confirmation step.
 
-Push the commits, then per thread:
+Push all of the PR's commits at once (Step 0), then per thread:
 
 ```bash
 <skill-dir>/scripts/reply-resolve.sh <thread-id> [--resolve] <<'BODY'
@@ -128,10 +129,10 @@ BODY
 
 A reply says what changed and where — the commit SHA or the new symbol name — not "done". Resolve only threads you fixed or proved already fixed. Threads left open are the record of what still needs the reviewer.
 
-**In a stack, carry the fixes up** before moving to the next PR. Merge each branch into the one stacked on it, bottom-up, and push — merge, not rebase, so reviewers of the upper PRs don't lose their place:
+**In a stack, carry the fixes up** before moving to the next PR. Merge each branch into the one stacked on it, bottom-up — merge, not rebase, so reviewers of the upper PRs don't lose their place. Don't push the merge on its own: the upper PR's own fixes go on top of it, and its Step 4 pushes the merge and those fixes together. A merge pushed alone is one more bot review of code the lower PR's review already covered. An upper PR with nothing of its own to fix still pushes the merge, so the PR above it can merge it as pushed. Each layer pushes once:
 
 ```bash
-cd <upper PR's worktree path> && git fetch origin && git merge --no-edit "origin/<lower-head>" && git push origin HEAD:<upper-head>
+cd <upper PR's worktree path> && git fetch origin && git merge --no-edit "origin/<lower-head>"
 ```
 
 The upper PR has no worktree yet on its first carry: create it with the Step 0 recipe and reuse it for that PR's own Steps 1–4. Merge the lower layer as pushed (`origin/…`, or `FETCH_HEAD` after `git fetch origin "pull/<lower-n>/head"` when it's a fork's PR), not a local branch another worktree may hold at an older commit.
