@@ -165,7 +165,7 @@
         {
           "name": "wizard",
           "path": "skills/engineering/wizard",
-          "why": "Generates a bash wizard for steps only a human can do — dashboard clicks, secrets into .env and gh — with WSL-aware URL opening. Fits the Cloudflare/GitHub setup chores that come up per project."
+          "why": "Generates a bash wizard for steps only a human can do — dashboard clicks, secrets into .env and gh. Fits the Cloudflare/GitHub setup chores that come up per project. On WSL its pages open in the browser only through wslview, which dev-setup's setup-linux.sh provides (Ubuntu 26.04 dropped wslu); the explorer.exe fallback opens File Explorer for a URL with a query, see mattpocock/skills#963."
         }
       ],
       "archived": [
