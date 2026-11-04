@@ -4,11 +4,14 @@ The smell baseline, the Standards and Spec axes, and the "standards files must b
 
 The rule that a test expectation changed alongside the code it tests needs a reason from the intended behaviour is an idea from the `ship-pr` and `autopilot` skills in <https://github.com/kentcdodds/kcd-skills>, reworded; no text is carried over.
 
+The Security lens in `LENSES.md` — the boundary-and-result test, the defense-in-depth and source-visibility rules, the severity anchors and the last-decision-point fix — is adapted from the MIT-licensed `security-audit` skill in <https://github.com/cloudflare/security-audit-skill> (commit `c1c8a8c`), which is curated whole for full codebase audits. Its audit workflow, findings schema and attack-class companions are not carried over.
+
 ---
 
 MIT License
 
 Copyright (c) 2026 Matt Pocock
+Copyright (c) 2025-2026 Cloudflare, Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

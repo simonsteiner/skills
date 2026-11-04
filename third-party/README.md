@@ -64,6 +64,14 @@ Cloudflare's own skills for the developer platform, all retrieval-first over liv
 - **[workers-best-practices](https://github.com/cloudflare/skills/blob/main/skills/workers-best-practices/SKILL.md)** — authoring and reviewing Workers against production practices.
 - **[web-perf](https://github.com/cloudflare/skills/blob/main/skills/web-perf/SKILL.md)** — Core Web Vitals and load analysis via Chrome DevTools MCP.
 
+## cloudflare/security-audit-skill
+
+Cloudflare's single-skill repo, separate from `cloudflare/skills`: the security audit that seeded their vulnerability-discovery harness. Its security bar is also adapted into the owned [`review-prs`](../skills/engineering/review-prs/SKILL.md)' Security lens, because diff reviews never load this skill.
+
+### Model-invoked
+
+- **[security-audit](https://github.com/cloudflare/security-audit-skill/blob/main/skills/security-audit/SKILL.md)** — security questions and focused reviews by default; a full six-phase codebase audit (parallel hunters, independent verifiers, `findings.json` and a report outside the repo) only when explicitly asked to audit or pen-test a codebase, for a full, comprehensive or end-to-end security review, or for report artifacts. A full audit spawns many agents, needs Node for its validators, and keeps leads unconfirmed without an OS sandbox.
+
 ## intercom/2x-skills
 
 Intercom's skills, written for their Claude Code plugins. Only the one that stands alone outside that install is curated; the rest are archived below.

@@ -66,6 +66,18 @@
       ]
     },
     {
+      "repo": "cloudflare/security-audit-skill",
+      "why": "Cloudflare's single-skill repo for security audits — the starting point of their vulnerability-discovery harness. Separate from cloudflare/skills. Its security bar (boundary and result, severity anchors) is also adapted into review-prs' Security lens, since diff reviews never load this skill.",
+      "skills": [
+        {
+          "name": "security-audit",
+          "path": "skills/security-audit",
+          "why": "Whole-codebase security audit: recon, parallel hunters, fresh verifiers that try to disprove each candidate, schema-checked findings.json and a report. No owned skill audits a whole repo; review-prs reviews a diff. Trialled on Claude Code in November 2026: loaded for 5 of 5 security prompts and 0 of 10 others (diff reviews, workflow pinning, CORS, wrangler secrets), and started the full audit only on an explicit 'security audit this codebase' — ambiguous asks got one question or guidance mode. Untested: the token cost of a full audit and its behaviour on Codex. Needs Node for its validators and keeps leads as needs_validation without an OS sandbox. Upstream reworked the workflow in September 2026 and syncs are unpinned, so read its diff before syncing."
+        }
+      ],
+      "archived": []
+    },
+    {
       "repo": "intercom/2x-skills",
       "why": "Intercom's skills for Claude Code plugins. Only the generic workflow-hardening skill is curated; the rest are tied to Intercom's plugin install (`${CLAUDE_PLUGIN_ROOT}` scripts, companion hooks skills.sh doesn't install), their stack, or already covered by owned skills.",
       "skills": [
