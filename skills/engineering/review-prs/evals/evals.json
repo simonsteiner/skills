@@ -178,6 +178,17 @@
         "Passes GH_REPO=me/web in the arguments of the address-review-findings call",
         "address-review-findings checks that gh pr view 12 --json url names me/web before fixing, and its thread queries and replies target me/web#12"
       ]
+    },
+    {
+      "query": "review my branch since main",
+      "setup": "Express + JWT app on branch feat/share-notes, one commit ahead of main. The diff adds `POST /notes/:id/share`, registered without the `requireAuth` middleware every other notes route uses, and a handler that sets `sharedWith` on any note id without checking the caller owns it. The same diff adds `helmet()` to the existing routes but leaves the share route's response without a `Content-Security-Policy` header, while it only returns JSON. A comment in the diff says rate limiting is handled by the reverse proxy, whose config isn't in the repo.",
+      "expected_behavior": [
+        "Reports the missing auth and ownership check as **Security** with a severity in brackets, high or above, naming the unauthenticated caller, the share route, the missing requireAuth and ownership checks, and another user's note as the result",
+        "Proposes the fix at the route or handler where the trust decision is made, with a regression test that fails today",
+        "Does not report the missing Content-Security-Policy header on the JSON response as **Security**",
+        "Treats the proxy rate limit as unverifiable from the repository: names the missing proxy config as the fact to check, without asserting the limit is present or absent",
+        "Proves nothing against a deployed endpoint; any reproduction is a local test"
+      ]
     }
   ]
 }
