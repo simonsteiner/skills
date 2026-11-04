@@ -90,7 +90,7 @@ Spec source, first match: the PR's linked issues or work items and body → a pa
 
 ## Step 3 — Comment (PR mode)
 
-One review per PR, with a summary and inline comments: post the review (forge guide). Each comment is one finding: bold severity (**Bug**, **Security**, **Test**, **Standards**, **Spec**, **Smell**, **Nit**), the problem, the trigger, the fix. An outside finding names its source and rule after the severity: ``**Bug** (SonarQube `java:S2259`) — …``, ``**Standards** (eslint `no-unused-vars`) — …``, ``**Bug** (CodeRabbit nitpick) — …``.
+One review per PR, with a summary and inline comments: post the review (forge guide). Each comment is one finding: bold severity (**Bug**, **Security**, **Test**, **Standards**, **Spec**, **Smell**, **Nit**), the problem, the trigger, the fix. A **Security** finding adds its rating in brackets (*Security*, [LENSES.md](LENSES.md)): ``**Security** (high) — …``. An outside finding names its source and rule after the severity, behind any rating: ``**Bug** (SonarQube `java:S2259`) — …``, ``**Standards** (eslint `no-unused-vars`) — …``, ``**Bug** (CodeRabbit nitpick) — …``.
 
 The summary leads with the count by severity, then the axes (Spec matched or which source was missing), the checks run, outside findings confirmed or disputed, what wasn't checked, and the range reviewed (`Range: <base-oid>..<head-oid>`). A comment whose line falls outside the diff moves into the summary. Post one PR at a time, after the payload is final.
 
