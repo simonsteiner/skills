@@ -87,6 +87,31 @@ class CoChangeTest(unittest.TestCase):
             self.commit("src/a.py", "src/b.py", "docs/x.md")
         self.assertEqual(self.rows("src"), [["3", "100%", "src/a.py", "src/b.py"]])
 
+    def test_sweep_cap_counts_files_outside_the_paths(self):
+        for _ in range(3):
+            self.commit("src/a.py", "src/b.py", "docs/x.md", "docs/y.md")
+        self.assertEqual(self.rows("--max-files", "3", "src"), [])
+
+    def test_paths_are_relative_to_the_current_directory(self):
+        for _ in range(3):
+            self.commit("src/a.py", "src/b.py", "docs/x.md")
+        result = self.run_script(".", cwd=self.repo / "src")
+        self.assertEqual(result.stdout.splitlines(), ["3\t100%\tsrc/a.py\tsrc/b.py"])
+
+    def test_non_ascii_and_spaced_names_are_kept(self):
+        for _ in range(3):
+            self.commit("ä.py", "my file.py")
+        self.assertEqual(self.rows(), [["3", "100%", "my file.py", "ä.py"]])
+
+    def test_a_repo_without_commits_prints_nothing(self):
+        self.assertEqual(self.rows(), [])
+
+    def test_a_since_that_is_not_a_date_exits_2(self):
+        self.commit("a.py")
+        result = self.run_script("--since", "--output=/tmp/x")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--since", result.stderr)
+
     def test_top_limits_the_output(self):
         for _ in range(3):
             self.commit("a.py", "b.py", "c.py")
