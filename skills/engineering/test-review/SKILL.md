@@ -18,7 +18,7 @@ Find where the tests miss behaviour that keeps changing, and where they cost tim
 - **Keep contexts small.** Every brief carries the [context rules](#context-rules). Test files are the longest files in most repos; nobody reads one whole.
 - **One run at a time**, and not beside an `/arch-review` run on the same repo: both stack PRs on the same code.
 
-Call the Skill tool with "codebase-design" before anything else, and use its vocabulary (module, interface, seam, adapter, depth, locality) everywhere. `tdd` and `prune-tests` speak it too.
+Call the Skill tool with "codebase-design" before anything else, and use its vocabulary (module, interface, seam, adapter, depth, locality) everywhere; `tdd` speaks it too. For waste, use prune-tests' own words: a test guards a behaviour, or it depends on the past, on nothing, or on the implementation.
 
 **Pick the entry from what was asked:**
 
@@ -33,17 +33,17 @@ Call the Skill tool with "codebase-design" before anything else, and use its voc
 These numbers go in the report's **Vitals** and feed the infrastructure lens. Record the command behind each one.
 
 - **Where tests run.** CI (`.github/workflows/`, or the project's CI config), git hooks (`lefthook dump` shows the merged config; else `.husky/`, `.pre-commit-config.yaml`), and the documented local command (`package.json` scripts, `pyproject.toml`, `Makefile`, `justfile`).
-- **The suite, once, timed**, with the runner's slowest-tests report (`pytest --durations=25`, `vitest --reporter=verbose`, `jest --verbose`, `go test -json`). Note the test count and the wall time. A suite that won't run locally (needs a service, a secret, a manual step) is the first infrastructure finding; record why and keep going on static evidence.
+- **The suite, once, timed**, with per-test times sorted slowest first: `pytest --durations=25` prints them; elsewhere take them from the runner's JSON (`vitest --reporter=json`, `jest --json`, `go test -json`) and sort. Note the test count and the wall time. A suite that won't run locally (needs a service, a secret, a manual step) is the first infrastructure finding; record why and keep going on static evidence.
 - **One test file, timed** — the `tdd` loop runs this dozens of times per slice. Over ~5 seconds for a unit-level file is a finding.
 - **CI history** (GitHub): `gh run list --limit 200 --json workflowName,conclusion,attempt,startedAt,updatedAt` gives the test workflow's median duration, runs per week, and reruns (`attempt > 1`), each rerun a flakiness suspect.
 - **Coverage, only if the project already produces it** (a coverage config, `coverage.xml`, `lcov.info`, `coverage-final.json`, a JaCoCo report) or a SonarQube project is configured (`sonar-project.properties`, `.sonarlint/connectedMode.json`): then call the Skill tool with "sonar-coverage" (the SonarQube plugin's; `sonarqube:sonar-coverage` in Claude Code) for the uncovered lines in the hot files. Don't add coverage tooling for the review. Coverage locates; it never ranks (see Rules of thumb).
-- **Disabled tests**: `git grep -nE` for the stack's skip, focus and retry markers (`\.skip\(|\bxit\(|\.only\(|@pytest\.mark\.(skip|xfail|flaky)|t\.Skip\(|@Disabled|@Ignore|retry`). `git blame` dates each one.
+- **Disabled tests**: `git grep -nE` over the test paths only, for the stack's skip, focus and retry markers (`\.skip\(|\bxit\(|\.only\(|@pytest\.mark\.(skip|xfail|flaky)|@flaky|t\.Skip\(|@Disabled|@Ignore|retryTimes\(`), plus a `retries`/`retry:` setting in the runner's config. `git blame` dates each one.
 
 ---
 
 ## Step 2 — Scope, then scan
 
-- A direction from the user wins. Otherwise churn decides: `git log --since=6.months --name-only --format= | sort | uniq -c | sort -rn | head -40`. Tests pay off where change keeps landing; a cold module with no tests is not a blind spot worth a PR.
+- A direction from the user wins. Otherwise churn decides: `git log --since=6.months --name-only --format= | grep . | sort | uniq -c | sort -rn | head -40`. Tests pay off where change keeps landing; a cold module with no tests is not a blind spot worth a PR.
 - Read the glossary (`GLOSSARY.md`), the ADRs under `docs/adr/`, and earlier reports in `docs/test-review/`. Don't re-suggest what an ADR or a `dropped` row settled unless the evidence is new; then say which and why.
 - Gather the history evidence with [scripts/test-history.py](scripts/test-history.py) — run `--help` first; it explains every column and how it tells tests from source:
 
@@ -127,7 +127,7 @@ Put these in every brief:
 Branch the planned name off the base (or check out the Design phase's branch). A `one-way` row stops before the change that crosses the door: mark it `blocked` with the question in Notes and move on to the next candidate. Then by kind:
 
 - **Blind spot.** Call the Skill tool with "tdd". The seams are the card's, already confirmed in Step 5; don't ask again. Pin one behaviour per cycle, through the seam's public interface, mocking only at system boundaries. Existing code usually passes a new test at once, so **prove each test can fail**: make the smallest change to the code under test that breaks the behaviour, watch the test go red, revert, and name that mutation in the commit body. A test that's red against the unchanged code found a live defect: keep it, fix the code in this PR, mark the row 🔴, and call the Skill tool with "diagnosing-bugs" when the cause isn't plain from the failure.
-- **Waste.** Time the affected tests first. Call the Skill tool with "prune-tests" on the card's test files. Before each deletion, the card says what still guards the behaviour; a test that's the only guard of a behaviour something relies on is rewritten against that behaviour, not deleted. Time them again.
+- **Waste.** Time the affected tests first. Call the Skill tool with "prune-tests", limited to the card's Prune rows: it prunes every test in whatever path it's given, and only those rows were confirmed in Step 5. A test it would also cut that the card doesn't list becomes a new `S` row, not part of this PR. Before each deletion, the card says what still guards the behaviour; a test that's the only guard of a behaviour something relies on is rewritten against that behaviour, not deleted. Time them again.
 - **Infra.** Implement the Decisions. Re-measure what the card said it should move (suite time, single-file time, reruns, an order-shuffled run passing).
 
 Then run what the repo runs — typecheck, lint, the full suite — and call the Skill tool with "conventional-commit" to commit.
@@ -145,7 +145,7 @@ Then run what the repo runs — typecheck, lint, the full suite — and call the
 **Loose ends.** Don't report until this comes back empty, or every gap is fixed or a new row:
 
 - Every batch row is `pr-open`, `merged`, `dropped` or `blocked`, the last two with a reason.
-- Every behaviour a blind-spot card listed has a test that was seen red, its mutation recorded. Every test a waste card listed is gone, rewritten, or explained in a Departure.
+- Every behaviour a blind-spot card listed has a test that was seen red, its mutation recorded. Every test a waste card listed is gone, rewritten, or explained in a Departure, and no test the card didn't list was deleted.
 - No test added in the batch mocks a module the project owns, reads private state, or is skipped; no `TODO` without a row.
 - Waste and infra rows carry before/after numbers.
 - CI is green on every PR (`gh pr checks`), and each PR's base is the branch below it.

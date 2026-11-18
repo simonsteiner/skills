@@ -56,7 +56,7 @@ The PR isn't done while any of these hold, unless the report's Departures explai
 - A new test that was never seen red: no mutation named, or it passes with the behaviour removed.
 - A new test that mocks a module the project owns, reads private state, or asserts a value recomputed the way the code computes it.
 - A new test at a seam the card didn't name, or at a lower level than the card said.
-- A deleted test whose behaviour something relies on and nothing else guards.
+- A deleted test whose behaviour something relies on and nothing else guards, or a deleted test the card didn't list.
 - Production code kept only for tests the PR deleted.
 - Waste or infra without before/after numbers, or numbers that got worse.
 - A skip, retry, or `.only` added, or a timeout raised to make a test pass.
