@@ -17,7 +17,8 @@ e2e, or its name looks like one (test_x.py, x_test.go, x.test.ts, x.spec.js, XTe
 XTests.cs, x_spec.rb, conftest.py), or it matches a --test-pattern regex. A source file
 is any other file with a code extension. A source file's own tests are the tests at HEAD
 whose name, minus the test affixes, equals its name (for index, __init__, mod, main and
-lib: its folder's name). The pairing is a heuristic: check it before you cite it.
+lib: its name or its folder's name). The pairing is a heuristic, by name across the whole
+repo: check it before you cite it.
 
 drift — the most-changed source files at HEAD, one per line:
 
@@ -27,16 +28,20 @@ drift — the most-changed source files at HEAD, one per line:
 has none), <any> the share that changed any test. A hot file with no own test, or a low
 <own>, is behaviour that changes while nothing checks it.
 
-fixes — fix commits (subject `fix:`/`fix(scope):`, or containing fix, fixes, fixed,
-bug or hotfix) that changed a source file and no test, newest first:
+A subject with a Conventional Commits type is classified by its type alone: fix, bugfix
+and hotfix are fixes, refactor is a refactor, anything else (feat, chore, docs, …) is
+neither. A subject without a type falls back to its words. Reverts are neither.
+
+fixes — fix commits (typed, or untyped containing fix, fixes, fixed, bug, bugfix or
+hotfix) that changed a source file and no test, newest first:
 
     <sha>  <date>  <subject>  <source files, comma-separated>
 
 then `# <n> of <m> fix commits changed no test`.
 
-refactors — test files at HEAD changed by refactor commits (subject `refactor:`, or
-containing refactor, rename, restructure or extract), which should leave behaviour and
-so tests alone, most often first:
+refactors — test files at HEAD changed by refactor commits (typed, or untyped containing
+refactor, rename, restructure or extract), which should leave behaviour and so tests
+alone, most often first:
 
     <commits>  <test file>  <shas, comma-separated>
 
@@ -62,11 +67,12 @@ CODE = {".py", ".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts", ".v
 TEST_DIRS = {"test", "tests", "__tests__", "spec", "specs", "e2e"}
 TEST_NAME = re.compile(r"^test_.+\.py$|^conftest\.py$|_test\.\w+$|_spec\.rb$|\.(test|spec)\.\w+$"
                        r"|(Test|Tests|Spec|IT)\.(java|kt|scala|groovy|cs|fs|swift)$")
-AFFIXES = re.compile(r"^test_|(_test|_spec|\.test|\.spec|Tests?|Spec|IT)$")
+AFFIXES = re.compile(r"(?:^test_)|(?:(?:_test|_spec|\.test|\.spec|Tests?|Spec|IT)$)")
 FOLDER_STEMS = {"index", "__init__", "mod", "main", "lib"}
-FIX = re.compile(r"^(fix|bugfix|hotfix)(\([^)]*\))?!?:|\b(fix|fixes|fixed|bug|hotfix)\b", re.IGNORECASE)
-REFACTOR = re.compile(r"^refactor(\([^)]*\))?!?:|\b(refactor\w*|renam\w*|restructur\w*|extract\w*)\b",
-                      re.IGNORECASE)
+TYPED = re.compile(r"^(?P<type>[A-Za-z]+)(?:\([^)]*\))?!?:")
+FIX_TYPES = {"fix", "bugfix", "hotfix"}
+FIX_WORDS = re.compile(r"\b(?:fix|fixes|fixed|bug|bugfix|hotfix)\b", re.IGNORECASE)
+REFACTOR_WORDS = re.compile(r"\b(?:refactor\w*|renam\w*|restructur\w*|extract\w*)\b", re.IGNORECASE)
 
 
 class GitError(Exception):
@@ -86,14 +92,40 @@ class Kinds:
         return PurePosixPath(path).suffix.lower() in CODE and not self.is_test(path)
 
 
-def stem(path, test):
+def normal(name):
+    return name.lower().replace("-", "_")
+
+
+def test_stem(path):
+    p = PurePosixPath(path)
+    return normal(AFFIXES.sub("", p.name[: -len(p.suffix)] if p.suffix else p.name))
+
+
+def source_stems(path):
+    """The names a source file's tests may carry: its own, and its folder's for index, main, …."""
     p = PurePosixPath(path)
     name = p.name[: -len(p.suffix)] if p.suffix else p.name
-    if test:
-        name = AFFIXES.sub("", name)
-    elif name in FOLDER_STEMS and len(p.parts) > 1:
-        name = p.parts[-2]
-    return name.lower().replace("-", "_")
+    stems = {normal(name)}
+    if name in FOLDER_STEMS and len(p.parts) > 1:
+        stems.add(normal(p.parts[-2]))
+    return stems
+
+
+def subject_kind(subject):
+    """"fix", "refactor", or None: by Conventional Commits type when there is one, else by words."""
+    if subject.startswith("Revert"):
+        return None
+    typed = TYPED.match(subject)
+    if typed:
+        kind = typed["type"].lower()
+        return "fix" if kind in FIX_TYPES else "refactor" if kind == "refactor" else None
+    if FIX_WORDS.search(subject):
+        return "fix"
+    return "refactor" if REFACTOR_WORDS.search(subject) else None
+
+
+def pct(part, whole):
+    return int(100 * part / whole + 0.5)  # half up, as a reader rounds; round() goes half to even
 
 
 def commits(since):
@@ -117,9 +149,12 @@ def in_scope(path, scopes):
 def drift(history, kinds, scopes, root, args):
     tracked = subprocess.run(["git", "-c", "core.quotePath=false", "ls-files"], capture_output=True,
                              text=True, check=False, cwd=root).stdout.splitlines()
-    own = defaultdict(list)
+    by_stem = defaultdict(set)
     for t in (f for f in tracked if kinds.is_test(f)):
-        own[stem(t, True)].append(t)
+        by_stem[test_stem(t)].add(t)
+
+    def own(source):
+        return set().union(*(by_stem[s] for s in source_stems(source)))
     total, with_own, with_any = Counter(), Counter(), Counter()
     for _, _, _, files in history:
         tests = {f for f in files if kinds.is_test(f)}
@@ -127,20 +162,20 @@ def drift(history, kinds, scopes, root, args):
             if kinds.is_source(f) and in_scope(f, scopes):
                 total[f] += 1
                 with_any[f] += bool(tests)
-                with_own[f] += bool(tests.intersection(own[stem(f, False)]))
+                with_own[f] += bool(tests & own(f))
     rows = sorted(((n, f) for f, n in total.items() if n >= args.min and (root / f).exists()),
                   key=lambda r: (-r[0], r[1]))
     for n, f in rows[:args.top]:
-        mine = sorted(own[stem(f, False)])
-        share = f"{round(100 * with_own[f] / n)}%" if mine else "-"
-        print(f"{n}\t{share}\t{round(100 * with_any[f] / n)}%\t{f}\t{','.join(mine) or '-'}")
+        mine = sorted(own(f))
+        share = f"{pct(with_own[f], n)}%" if mine else "-"
+        print(f"{n}\t{share}\t{pct(with_any[f], n)}%\t{f}\t{','.join(mine) or '-'}")
 
 
 def fixes(history, kinds, scopes, args):
     fix_commits, untested = 0, []
     for sha, date, subject, files in history:
         sources = [f for f in files if kinds.is_source(f) and in_scope(f, scopes)]
-        if not FIX.search(subject) or not sources:
+        if subject_kind(subject) != "fix" or not sources:
             continue
         fix_commits += 1
         if not any(kinds.is_test(f) for f in files):
@@ -153,7 +188,7 @@ def fixes(history, kinds, scopes, args):
 def refactors(history, kinds, scopes, root, args):
     seen, touched, shas = 0, 0, defaultdict(list)
     for sha, _, subject, files in history:
-        if not REFACTOR.search(subject) or not any(kinds.is_source(f) and in_scope(f, scopes) for f in files):
+        if subject_kind(subject) != "refactor" or not any(kinds.is_source(f) and in_scope(f, scopes) for f in files):
             continue
         seen += 1
         tests = [f for f in files if kinds.is_test(f)]
@@ -167,7 +202,7 @@ def refactors(history, kinds, scopes, root, args):
     print(f"# {touched} of {seen} refactor commits changed a test")
 
 
-def main(argv):
+def parse_args(argv):
     parser = argparse.ArgumentParser(prog="test-history.py", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("mode", choices=["drift", "fixes", "refactors"])
@@ -181,25 +216,35 @@ def main(argv):
     args = parser.parse_args(argv)
     if args.min is None:
         args.min = 3 if args.mode == "drift" else 2
-
     if not SINCE.fullmatch(args.since):
         parser.error(f"--since: not a date or relative time: {args.since!r}")
     try:
-        kinds = Kinds(args.test_pattern)
+        args.kinds = Kinds(args.test_pattern)
     except re.error as err:
         parser.error(f"--test-pattern: {err}")
-    top = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=False)
-    if top.returncode:
-        print("test-history.py: not inside a git repository", file=sys.stderr)
-        return 2
-    root = Path(top.stdout.strip()).resolve()
+    return parser, args
+
+
+def resolve_scopes(parser, paths, root):
+    """Each path as a repo-root-relative prefix ("" for the root); exits 2 for one outside the repo."""
     scopes = set()
-    for path in args.paths:
+    for path in paths:
         scope = Path(os.path.realpath(path))
         if not scope.is_relative_to(root):
             parser.error(f"path outside the repository: {path}")
         rel = scope.relative_to(root).as_posix()
         scopes.add("" if rel == "." else rel)
+    return scopes
+
+
+def main(argv):
+    parser, args = parse_args(argv)
+    top = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=False)
+    if top.returncode:
+        print("test-history.py: not inside a git repository", file=sys.stderr)
+        return 2
+    root = Path(top.stdout.strip()).resolve()
+    scopes = resolve_scopes(parser, args.paths, root)
     head = subprocess.run(["git", "rev-parse", "--verify", "--quiet", "HEAD"], capture_output=True, check=False)
     if head.returncode:
         return 0
@@ -210,11 +255,11 @@ def main(argv):
         print(f"test-history.py: git log failed: {err}", file=sys.stderr)
         return 2
     if args.mode == "drift":
-        drift(history, kinds, scopes, root, args)
+        drift(history, args.kinds, scopes, root, args)
     elif args.mode == "fixes":
-        fixes(history, kinds, scopes, args)
+        fixes(history, args.kinds, scopes, args)
     else:
-        refactors(history, kinds, scopes, root, args)
+        refactors(history, args.kinds, scopes, root, args)
     return 0
 
 

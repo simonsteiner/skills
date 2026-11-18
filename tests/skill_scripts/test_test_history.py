@@ -75,6 +75,33 @@ class TestHistoryTest(unittest.TestCase):
         got = {row[3]: (row[1], row[4]) for row in self.rows("drift")}
         self.assertEqual(got, {source: ("100%", test) for source, test in cases.items()})
 
+    def test_drift_pairs_a_test_beside_an_index_or_main_file_by_either_name(self):
+        for _ in range(3):
+            self.commit("feat: x", "src/utils/index.ts", "src/utils/index.test.ts",
+                        "cmd/tool/main.go", "cmd/tool/main_test.go")
+        got = {row[3]: (row[1], row[4]) for row in self.rows("drift")}
+        self.assertEqual(got, {"src/utils/index.ts": ("100%", "src/utils/index.test.ts"),
+                               "cmd/tool/main.go": ("100%", "cmd/tool/main_test.go")})
+
+    def test_drift_rounds_shares_half_up(self):
+        for i in range(8):
+            self.commit("feat: x", "a.py", *(["tests/test_a.py"] if i < 5 else []))
+        self.assertEqual(self.rows("drift"), [["8", "63%", "63%", "a.py", "tests/test_a.py"]])
+
+    def test_drift_keeps_non_ascii_and_spaced_paths(self):
+        for _ in range(3):
+            self.commit("feat: x", "src/größe.py", "src/my module.py")
+        self.assertEqual(sorted(r[3] for r in self.rows("drift")), ["src/größe.py", "src/my module.py"])
+
+    def test_drift_scope_is_relative_to_the_current_directory_and_top_caps_rows(self):
+        for _ in range(4):
+            self.commit("feat: x", "pkg/api/route.py", "pkg/api/auth.py", "web/page.py")
+        result = self.run_script("drift", "api", cwd=self.repo / "pkg")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual([line.split("\t")[3] for line in result.stdout.splitlines()],
+                         ["pkg/api/auth.py", "pkg/api/route.py"])
+        self.assertEqual(len(self.rows("drift", "--top", "1")), 1)
+
     def test_drift_ranks_by_commits_and_drops_files_under_min_or_gone(self):
         for _ in range(4):
             self.commit("feat: a", "a.py")
@@ -111,8 +138,18 @@ class TestHistoryTest(unittest.TestCase):
         self.assertEqual(self.lines("fixes")[-1], "# 2 of 3 fix commits changed no test")
 
     def test_fixes_does_not_take_words_that_only_contain_fix_or_bug(self):
-        self.commit("feat: debug panel and fixtures", "src/panel.py")
+        self.commit("Add debug panel and fixtures", "src/panel.py")
         self.assertEqual(self.lines("fixes"), ["# 0 of 0 fix commits changed no test"])
+
+    def test_a_conventional_type_decides_over_the_words_and_reverts_count_as_neither(self):
+        self.commit("chore: fix lint warnings", "src/a.py")
+        self.commit('Revert "fix: round totals"', "src/a.py")
+        self.commit("feat(pdf): extract tables", "src/pdf.py", "tests/test_pdf.py")
+        self.commit("feat: let users rename files", "src/files.py", "tests/test_pdf.py")
+        bugfix = self.commit("Bugfix for login", "src/login.py")
+        typed = self.commit("Fix(auth)!: drop the legacy token", "src/auth.py")
+        self.assertEqual([r[0] for r in self.rows("fixes")], [typed, bugfix])
+        self.assertEqual(self.lines("refactors"), ["# 0 of 0 refactor commits changed a test"])
 
     # refactors
 
@@ -125,6 +162,12 @@ class TestHistoryTest(unittest.TestCase):
         self.assertEqual(self.rows("refactors", "--min", "1"),
                          [["2", "tests/test_cart.py", f"{b},{a}"], ["1", "tests/test_util.py", b]])
         self.assertEqual(self.lines("refactors")[-1], "# 2 of 3 refactor commits changed a test")
+
+    def test_refactors_counts_only_commits_touching_a_source_in_scope(self):
+        a = self.commit("refactor: split cart", "src/cart.py", "tests/test_cart.py")
+        self.commit("refactor: split admin", "admin/panel.py", "tests/test_cart.py")
+        self.assertEqual(self.rows("refactors", "--min", "1", "src"), [["1", "tests/test_cart.py", a]])
+        self.assertEqual(self.lines("refactors", "src")[-1], "# 1 of 1 refactor commits changed a test")
 
     # shared
 
