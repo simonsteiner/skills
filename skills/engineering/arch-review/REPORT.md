@@ -28,7 +28,7 @@ Only three parts: the **Status** table and **Departures** in the overview, and e
 
 One file per candidate, `C<n>-<card-slug>.md` beside the overview — the centrepiece of the report. If a diagram needs a paragraph to be understood, redraw the diagram.
 
-- **Heading** — `# C1 · <title>`, a short title naming the deepening ("Collapse the order intake pipeline"), with a `[← Report](README.md)` back link under it.
+- **Heading** — `# C1 · <title>`, a short title naming the fix ("Collapse the order intake pipeline", "Move checkout into one module"), with a `[← Report](README.md)` back link under it.
 - **Badge line** — strength (🟢 Strong · 🟡 Worth exploring · ⚪ Speculative), 🔴 live defect when a bug was reproduced, the dependency category in code font (`in-process`, `local-substitutable`, `ports & adapters`, `mock`), the door (↔ `two-way` · 🚪 `one-way`: hard to reverse once merged — a data migration, a published wire or file format, deleted user data), and what it builds on.
 - **Files** — code-font paths with line ranges, on one line.
 - **Before / After** — one Mermaid flowchart with two subgraphs side by side (`flowchart LR`, each subgraph `direction TB`, `before ~~~ after` to keep them apart). It's the only way GitHub puts two diagrams next to each other.

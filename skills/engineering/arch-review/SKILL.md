@@ -1,6 +1,6 @@
 ---
 name: arch-review
-description: Scans the codebase for deepening and maintainability candidates, saves a ranked Markdown report with diagrams and a status table to docs/arch-review/, then implements the batch you confirm — one stacked PR per candidate, decisions recorded, loose ends audited.
+description: Scans the codebase for deepening, coupling, and maintainability candidates, saves a ranked Markdown report with diagrams and a status table to docs/arch-review/, then implements the batch you confirm — one stacked PR per candidate, decisions recorded, loose ends audited.
 disable-model-invocation: true
 metadata:
   credits:
@@ -52,7 +52,7 @@ Call the Skill tool with "codebase-design" before anything else. Use its vocabul
 
 The report is a folder, `docs/arch-review/YYYY-MM-DD-<slug>/`, so no file in it outgrows the token budget an agent can read whole. Copy [assets/report-template.md](assets/report-template.md) to its `README.md` (status table, friction map, smaller findings, recommendation) and [assets/card-template.md](assets/card-template.md) to one `C<n>-<card-slug>.md` per candidate, with its before/after diagram; fill them in following [REPORT.md](REPORT.md). Check every file against the budget (`wc -c`, bytes / 4) before committing. Add the report to the top of `docs/arch-review/README.md` (create the index if it's missing).
 
-- **Candidates** (`C1…`) are deepenings, each with Files, the symptoms it removes (the special cases and links from the scan, each with `path:line`), Problem, Solution, Wins, a before/after diagram, strength (`Strong` / `Worth exploring` / `Speculative`), dependency category, door (`two-way`, or `one-way` when it needs a data migration, a change to a published wire or file format, or deletes user data — the Step 6 list), and `live defect` when it hides a bug you reproduced.
+- **Candidates** (`C1…`) are structural fixes from the deepening or coupling lens, each with Files, the symptoms it removes (the special cases and links from the scan, each with `path:line`), Problem, Solution, Wins, a before/after diagram, strength (`Strong` / `Worth exploring` / `Speculative`), dependency category, door (`two-way`, or `one-way` when it needs a data migration, a change to a published wire or file format, or deletes user data — the Step 6 list), and `live defect` when it hides a bug you reproduced.
 - **Smaller findings** (`S1…`) are local maintainability fixes from the second lens — two sentences each.
 - Don't design interfaces here. That's Step 6.
 

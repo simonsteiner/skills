@@ -37,9 +37,9 @@ flowchart LR
 
 The backlog, in rank order. After the scan only three parts of the report change: this table, each card's **Decisions**, and **Departures**. The findings stay as found.
 
-| ID | Deepening | Strength | Door | Lens | Status | Branch | PR | Breaking | Notes |
+| ID | Candidate | Strength | Door | Lens | Status | Branch | PR | Breaking | Notes |
 |---|---|---|---|---|---|---|---|---|---|
-| [C1](C1-<card-slug>.md) | <names the deepening> | 🟢 Strong · 🔴 live defect | ↔ two-way | deepening | todo | `refactor/<slug>` | | | |
+| [C1](C1-<card-slug>.md) | <names the fix> | 🟢 Strong · 🔴 live defect | ↔ two-way | deepening | todo | `refactor/<slug>` | | | |
 | [S1](#s1--title) | <smaller finding> | — | ↔ two-way | maintainability | todo | rides with C1 | | | |
 
 Strength: 🟢 Strong · 🟡 Worth exploring · ⚪ Speculative · 🔴 live defect (a bug reproduced during the scan).
