@@ -303,6 +303,24 @@
           "why": "Never curated: its guidance and review rubrics are adapted into the owned frontend-craft skill (docs/adr/0007). Through skills.sh it would arrive without its hooks or sub-agents, yet still download and run an unpinned native engine every session and write PRODUCT.md/DESIGN.md into projects. For its detector and live mode on one project, install its Claude Code plugin there instead."
         }
       ]
+    },
+    {
+      "repo": "caldoai/skills",
+      "why": "Two skills on agent-friendly codebases. Only prune-tests is curated; untangle-codebase's lens was adapted into the owned arch-review. The repo was a day old when curated (one commit, 17 November 2026) and syncs are unpinned, so read its diff before syncing.",
+      "skills": [
+        {
+          "name": "prune-tests",
+          "path": "skills/prune-tests",
+          "why": "Deletes or rewrites tests that guard no behavior: ones asserting removed code, ones that can't fail (testing the browser, the mock, the type system), and ones tied to the implementation; plus duplicates and production code that exists only for tests. Complements tdd, which writes tests at the interface but never prunes. arch-review's Build step calls it on the test files a candidate touched. Model-invoked and destructive, with a one-line description, so it may fire rarely or on a loose 'clean up the tests'; untested for triggering."
+        }
+      ],
+      "archived": [
+        {
+          "name": "untangle-codebase",
+          "path": "skills/untangle-codebase",
+          "why": "Never curated: a one-pass whole-codebase refactor that competes with the owned arch-review's backlog of stacked PRs. Its coupling lens (hidden links, needless links, surplus), special cases as evidence, git co-change and the comments rule were adapted into arch-review instead (MIT, credited in its CREDITS.md)."
+        }
+      ]
     }
   ]
 }
