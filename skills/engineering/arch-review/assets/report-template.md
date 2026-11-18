@@ -44,6 +44,7 @@ The backlog, in rank order. After the scan only three parts of the report change
 
 Strength: 🟢 Strong · 🟡 Worth exploring · ⚪ Speculative · 🔴 live defect (a bug reproduced during the scan).
 Door: ↔ two-way (a revert undoes it) · 🚪 one-way (a data migration, a published wire or file format, deleted user data; stops at Step 6 for the user).
+Lens: `deepening` · `maintainability` · `coupling`.
 Status: `todo` · `in-progress` · `pr-open` · `merged` · `blocked` · `dropped`. `blocked` and `dropped` always carry a reason in Notes.
 
 ## Where it hurts
