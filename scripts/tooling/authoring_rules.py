@@ -226,6 +226,7 @@ def _command_problems(folder, text):
             out.append(f"unpinned one-off command for {pkg!r}; pin a version (pkg@1.2.3)")
     return out
 
+
 METADATA_ENTRY = re.compile(r"\s+([^\s:#-][^:]*):\s+(\S.*)$")
 BLOCK_INDICATOR = re.compile(r"[|>][1-9+-]{0,2}")  # |, >-, |2, >+1, …
 
