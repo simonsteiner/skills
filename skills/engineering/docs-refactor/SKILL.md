@@ -31,7 +31,7 @@ For each, note who reads it (agent or human), what it repeats from another doc, 
 
 A file, function or field the doc names that doesn't exist is drift too. A major component that no doc mentions goes in the report as a gap; don't write a doc for it unasked. When finding the code a doc describes takes a search, add a link from the doc to the source, so the next check doesn't have to search again.
 
-An ADR records a decision as it was made, so it is never rewritten, not even to add a link: drift in an ADR goes in the report, with a proposed superseding ADR when the code shows the decision itself changed. Any other doc that disagrees with the code is a bug: fix the doc and record the claim, the evidence and the fix for the report. When the code looks wrong instead, don't change it; ask.
+An ADR records a decision as it was made, so it is never rewritten, not even to add a link: drift in an ADR goes in the report (*Drift in ADRs*). When the code shows the decision itself changed, propose a superseding ADR there — its title and the new decision in a sentence or two — but don't write it: recording that the decision changed is the user's call. Any other doc that disagrees with the code is a bug: fix the doc and record the claim, the evidence and the fix for the report. When the code looks wrong instead, don't change it; ask.
 
 Also record instructions that contradict each other across files: an agent given both picks one arbitrarily.
 
@@ -104,6 +104,7 @@ Stage everything with `git add`; don't commit. Then report:
 - **Moved:** what moved where.
 - **Deleted:** what, and why.
 - **Wrong against the code:** each claim, the evidence, and the fix.
+- **Drift in ADRs:** each ADR, what the code does instead, and the superseding ADR proposed where the decision itself changed (proposed, not written).
 - **Undocumented:** major components no doc mentions.
 - **Enforce, don't instruct:** the hard constraints a hook or a permission deny could enforce.
 - **Commits:** a proposed split — the bare `git mv` of each instruction file first, so git still sees the rename after the rewrite, then the one-home moves, then the glossary.
