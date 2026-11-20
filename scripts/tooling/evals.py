@@ -197,7 +197,7 @@ def _pass_rate(run, iteration):
     grading = _read_json(run / GRADING_FILE, iteration, ["summary.pass_rate"])
     results = grading.get("assertion_results") or []
     if not isinstance(results, list) or not all(isinstance(r, dict) for r in results):
-        raise ValueError(f"{(run / 'grading.json').relative_to(iteration)}: assertion_results must be a list of objects")
+        raise ValueError(f"{(run / GRADING_FILE).relative_to(iteration)}: assertion_results must be a list of objects")
     rate = (grading.get("summary") or {}).get("pass_rate")
     if rate is None:
         rate = sum(r.get("passed") is True for r in results) / len(results) if results else 0.0
