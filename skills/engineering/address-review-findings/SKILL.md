@@ -1,6 +1,6 @@
 ---
 name: address-review-findings
-compatibility: Requires git and an authenticated gh CLI.
+compatibility: Requires git, jq and an authenticated gh CLI.
 description: >
   Works through the review feedback on GitHub pull requests — one PR, several, or a stack — pulling the unresolved threads, fixing what's real, then replying and resolving. Use when the user wants to address review comments or PR feedback, respond to a reviewer, resolve review threads or conversations, asks what's left on the PR(s), or says the review came back.
 ---
