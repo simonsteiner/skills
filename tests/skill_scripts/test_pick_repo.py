@@ -178,6 +178,12 @@ class PickRepoForPrsTest(unittest.TestCase):
         self.assertEqual(out, "")
         self.assertIn("could not look up PR #12 on acme/web: HTTP 502", err)
 
+    def test_a_failed_head_lookup_exits_1_not_gh_s_code(self):
+        self.gh.on("pr", "list", stderr="To get started with GitHub CLI, please run:  gh auth login\n", exit=4)
+        out, err = self.map("--head", "feat/x", code=1)
+        self.assertEqual(out, "")
+        self.assertIn("could not list PRs for feat/x on acme/web: To get started", err)
+
     def test_head_with_no_open_pr_exits_4(self):
         self.gh.on("pr", "list", json=[])
         self.map("--head", "feat/x", code=4)

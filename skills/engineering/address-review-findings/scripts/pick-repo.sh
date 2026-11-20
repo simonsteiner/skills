@@ -107,12 +107,19 @@ status=0
 # Report a PR that couldn't be placed; an ambiguous one (3) outranks a missing one (4).
 miss() { echo "$2" >&2; [[ $status -eq 3 ]] || status="$1"; }
 
+errors="$(mktemp)"
+trap 'rm -f "$errors"' EXIT
+
 if [[ ${#prs[@]} -eq 0 ]]; then
   found=() owner=""
   [[ -z "$origin" ]] || owner="$(lower "$(awk -F/ '{ print $(NF-1) }' <<<"$origin")")"
   for r in "${repos[@]}"; do
-    out="$(gh pr list --head "$head" --state open --repo "$r" --json number,url,headRepositoryOwner \
-      --jq '.[] | [.number, .url, (.headRepositoryOwner.login // "")] | @tsv')"
+    if ! out="$(gh pr list --head "$head" --state open --repo "$r" --json number,url,headRepositoryOwner \
+      --jq '.[] | [.number, .url, (.headRepositoryOwner.login // "")] | @tsv' 2>"$errors")"; then
+      # gh's own exit code (4: auth required) would read as "no PR" (exit 4)
+      echo "error: could not list PRs for $head on $r: $(cat "$errors")" >&2
+      exit 1
+    fi
     while IFS=$'\t' read -r n url o; do
       [[ -n "$n" ]] || continue
       [[ -z "$owner" || "$(lower "$o")" == "$owner" ]] || continue  # another fork's branch of that name
@@ -133,8 +140,6 @@ if [[ ${#repos[@]} -eq 1 ]]; then
 fi
 
 [[ -n "$head" ]] || head="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
-errors="$(mktemp)"
-trap 'rm -f "$errors"' EXIT
 for n in "${prs[@]}"; do
   hits=() matches=()
   for r in "${repos[@]}"; do
