@@ -19,7 +19,7 @@ Each round costs one sub-agent per lens, and a doc with findings takes at least 
 - **Target.** A path the user gave → that file. None → the doc this thread just wrote or edited, if there's exactly one; otherwise ask for the path. A plan that exists only in chat is saved first, to the path the user names or else `.scratch/<slug>.md`, since a reviewer reads only files.
 - **Reading list.** Every relative link in the doc that resolves to an existing file inside the repo. Links that leave the repo, and URLs: list them and ask which to include. Save each included URL's page to `.scratch/` and list the saved file, so every reviewer can read it. Add any files the user names.
 - **Never on the list:** a summary of the conversation, the brief the doc came from, or notes on what the author meant. That's the context the review exists to remove.
-- **Baseline.** If the doc has uncommitted changes, say the review edits on top of them; `git diff -- <doc>` at the end then shows both.
+- **Baseline.** Copy the doc to `.scratch/<slug>.orig.md` before the first round. The report's record is `git diff --no-index <orig> <doc>`, which works whether the doc is tracked, untracked or gitignored, and shows only this review's edits even when the doc already had uncommitted changes.
 
 ---
 
@@ -50,9 +50,9 @@ Use the session's model: a doc review is judgment, not lookup. A sub-agent that 
 
 ## Step 4 — Verify and settle
 
-**Verify.** Open the doc at each finding's line and, for a claim about code, the code. Drop a finding you can't ground, and note why for the report. Merge duplicates across lenses, keeping the higher severity.
+**Verify.** Open the doc at each finding's line and, for a claim about code, the code. A finding you can't ground is dropped: put it on the settled list (Step 5) with why, so a later reviewer raising the same claim doesn't keep rounds from coming back clean. Merge duplicates across lenses, keeping the higher severity.
 
-**Check the paraphrase.** Compare the Paraphrase lens's two paragraphs with what the doc is meant to say, as this thread and the user know it. A wrong paraphrase is a Blocker on the section it got wrong, even when every term was defined.
+**Check the paraphrase.** Compare the Paraphrase lens's two paragraphs with what the doc is meant to say. When this thread helped write the doc, compare them with what it knows of the intent. When it didn't (a doc the user pointed at in a fresh session), it knows only the doc, which proves nothing: put the paraphrase to the user as the first question of the round's batch, asking whether it matches what they meant. A wrong paraphrase is a Blocker on the section it got wrong, even when every term was defined.
 
 **Give each finding one verdict:**
 
@@ -61,7 +61,7 @@ Use the session's model: a doc review is judgment, not lookup. A sub-agent that 
 | fix | the finding is right | edit the doc |
 | contest | the finding is wrong, and a line or file shows it | record the evidence; no edit |
 | needs a decision | the fix is a choice between designs or a scope call, or the evidence lives only in someone's head | ask the user |
-| decline | a Nit not worth the edit, or context only a zero-history reader would need | record why; no edit |
+| decline | a Nit not worth the edit; never a comprehension finding | record why; no edit |
 
 **Contest only with evidence:**
 
@@ -80,9 +80,9 @@ The doc is the only file this skill edits, apart from what it saves to `.scratch
 
 ## Step 5 — Loop until clean
 
-Keep a **settled list** across rounds: each finding contested, declined or decided against, with its scope. A later round that raises a settled finding again (same scope, same issue) doesn't reopen it. A finding that comes back after a *fix* does: the fix didn't work.
+Keep a **settled list** across rounds: each finding dropped as ungrounded, contested, declined or decided against, with its scope and reason. A later round that raises a settled finding again (same scope, same issue) doesn't reopen it. A finding that comes back after a *fix* does: the fix didn't work.
 
-A round is **clean** when every lens ran and none raised a Blocker or Major that isn't settled. Decide that from the round's findings, before applying its fixes.
+A round is **clean** when every lens ran and none raised a verified Blocker or Major that isn't settled. Decide that from the round's findings, before applying its fixes.
 
 - **Converged:** two clean rounds in a row. One isn't enough, since the next fresh reader can find a different gap in the same text.
 - **Next round's lenses:** Paraphrase always, since any edit can break comprehension, plus each lens that raised an unsettled Blocker or Major last round.
@@ -95,8 +95,8 @@ A round is **clean** when every lens ran and none raised a Blocker or Major that
 
 - **Doc:** its path, the rounds run, and how it ended: converged, accepted at the cap or on churn, or stopped by the user.
 - **Lenses:** per round, which ran and which were not run.
-- **Changed:** one line per fixed finding; `git diff -- <doc>` is the full record.
-- **Contested and declined:** each with its evidence or reason, so the user can overrule it.
+- **Changed:** one line per fixed finding; `git diff --no-index <orig> <doc>` (Step 1) is the full record.
+- **Dropped, contested and declined:** each with its evidence or reason, so the user can overrule it.
 - **Decided:** each question asked, and the answer.
 - **Still open:** findings left at the cap or on churn, by severity, and code the findings show is wrong.
 - **Paraphrase:** the last round's, so the user can hold it against their intent one more time.
