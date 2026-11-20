@@ -209,6 +209,17 @@ def _metadata_entry(line):
     return "block" if BLOCK_INDICATOR.fullmatch(_uncommented(entry.group(2))) else "scalar"
 
 
+def _metadata_lines(lines):
+    """(depth, line) for each line of the block, up to the next top-level key; blank and comment lines skipped."""
+    for line in lines:
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        depth = len(line) - len(line.lstrip(" "))
+        if depth == 0:
+            return
+        yield depth, line
+
+
 def metadata_is_strings(text):
     """Whether the frontmatter's `metadata:` block is a flat map of scalar values."""
     lines = re.match(r"---\n(.*?)\n---\n", text, re.DOTALL).group(1).split("\n")
@@ -216,12 +227,7 @@ def metadata_is_strings(text):
     if _uncommented(lines[start][len("metadata:"):]):
         return False  # an inline value: a string or a flow collection, not a block map
     indent, block = None, False
-    for line in lines[start + 1:]:
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue  # blank, or a comment line
-        depth = len(line) - len(line.lstrip(" "))
-        if depth == 0:
-            break  # the next top-level key
+    for depth, line in _metadata_lines(lines[start + 1:]):
         if indent is not None and depth > indent:
             if block:
                 continue  # a block scalar's text
