@@ -28,8 +28,8 @@
       "query": "push and open pr",
       "setup": "Node repo with a local bare repo as origin (no GitHub remote). Branch chore/bump-vitest, cut from main, has one commit bumping vitest from 1.6.0 to 2.1.0 in package.json and package-lock.json, and a second commit adding notes/scratch.md, a personal to-do list nobody mentioned in this session. `npm test` passes.",
       "expected_behavior": [
-        "Names notes/scratch.md to the user and asks whether it belongs before writing around it",
-        "Writes a Small body: two to five lines, no headings and no Merge Danger section",
+        "Names notes/scratch.md to the user and asks whether it belongs, rather than silently describing it or leaving it out",
+        "Drafts a Small body for the vitest bump: two to five lines, no headings and no Merge Danger section",
         "Shows the version change as a short diff sketch or states 1.6.0 → 2.1.0",
         "Doesn't invent a reason for the bump that nobody gave"
       ]

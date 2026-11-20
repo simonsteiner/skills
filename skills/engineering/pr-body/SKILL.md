@@ -1,7 +1,7 @@
 ---
 name: pr-body
 description: >
-  Writes a pull request's title and body, shaped by the kind of change — a fix shows before → after, a feature shows it working, a refactor shows nothing changed, a chore stays a few lines. Use before every `gh pr create`, even for a PR that seems too small to need it — when the user says "open a PR", "commit and open a PR", "push and open a PR" or "open it as a stacked PR", when opening a PR is the last step of a bigger ask, and when another workflow reaches its open-a-PR step. Also use when writing, rewriting or updating a PR description.
+  Writes a pull request's title and body, shaped by the kind of change — a fix shows before → after, a feature shows it working, a refactor shows nothing changed, a chore stays a few lines. Use before every `gh pr create`, even for a PR that seems too small to need it — when the user says "open a PR", "commit and open a PR", "push and open a PR" or "open it as a stacked PR", when opening a PR is the last step of a bigger ask, and when another workflow reaches its open-a-PR step. Also use when writing, rewriting or updating a PR description. Not for reading, reviewing or merging an existing PR.
 ---
 
 # PR Body
