@@ -35,16 +35,7 @@ def main(argv):
     cmd, args = argv[0], argv[1:]
     try:
         if cmd == "prepare" and len(args) in (1, 3) and (len(args) == 1 or args[1] == "--baseline"):
-            skills = {s.name: s for s in inventory().skills}
-            if args[0] not in skills:
-                print(f"error: no owned skill {args[0]!r}; known: {', '.join(sorted(skills))}", file=sys.stderr)
-                return 1
-            iteration, runs = evals.prepare(REPO, skills[args[0]], baseline=args[2] if len(args) == 3 else None)
-            for name, config, task in runs:
-                print(json.dumps({"eval": name, "config": config, "task": str(task),
-                                  "grade": str(task.with_name("grade.md"))}))
-            print(f"prepared {iteration}", file=sys.stderr)
-            return 0
+            return prepare(args[0], args[2] if len(args) == 3 else None)
         if cmd == "benchmark" and len(args) == 1:
             print(json.dumps(evals.benchmark(Path(args[0])), indent=2))
             return 0
@@ -53,6 +44,20 @@ def main(argv):
         return 1
     print(USAGE, file=sys.stderr)
     return 2
+
+
+def prepare(skill, baseline):
+    """Lay out the next iteration of `skill`'s evals and print one JSON line per run."""
+    skills = {s.name: s for s in inventory().skills}
+    if skill not in skills:
+        print(f"error: no owned skill {skill!r}; known: {', '.join(sorted(skills))}", file=sys.stderr)
+        return 1
+    iteration, runs = evals.prepare(REPO, skills[skill], baseline=baseline)
+    for name, config, task in runs:
+        print(json.dumps({"eval": name, "config": config, "task": str(task),
+                          "grade": str(task.with_name("grade.md"))}))
+    print(f"prepared {iteration}", file=sys.stderr)
+    return 0
 
 
 if __name__ == "__main__":
