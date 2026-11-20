@@ -20,15 +20,20 @@ PUBLISHED = ("engineering", "productivity", "misc")
 UNPUBLISHED = ("personal", "in-progress", "deprecated")
 
 
+def uncommented(value):
+    """A plain value without its trailing ` # comment`."""
+    return re.sub(r"\s#.*", "", value).strip()
+
+
 def scalar(value):
     """A top-level value: quotes removed, or a trailing ` # comment` cut from a plain one.
 
     A block indicator (`>`, `|`, …) starts empty; its indented lines are appended.
     """
-    quoted = re.match(r"""(['"])((?:(?!\1).)*)\1\s*(#.*)?$""", value)
-    if quoted:
-        return quoted.group(2)
-    value = re.sub(r"\s+#.*$", "", value).strip()
+    quoted = re.match(r"'([^']*)'|\"([^\"]*)\"", value)
+    if quoted and not uncommented(value[quoted.end():]):
+        return quoted.group(1) if quoted.group(1) is not None else quoted.group(2)
+    value = uncommented(value)
     return "" if value in (">", "|", ">-", "|-") else value
 
 

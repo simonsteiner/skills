@@ -46,6 +46,7 @@ ext_of() {
     image/png) echo png ;; image/jpeg) echo jpg ;; image/gif) echo gif ;; image/webp) echo webp ;;
     image/svg+xml) echo svg ;; video/mp4) echo mp4 ;; video/quicktime) echo mov ;; video/webm) echo webm ;;
     application/pdf) echo pdf ;; application/zip) echo zip ;; text/plain) echo txt ;;
+    *) ;;  # unknown type: keep the name as it is
   esac
 }
 
