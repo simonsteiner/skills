@@ -2,17 +2,6 @@
 name: arch-review
 description: Scans the codebase for deepening, coupling, and maintainability candidates, saves a ranked Markdown report with diagrams and a status table to docs/arch-review/, then implements the batch you confirm — one stacked PR per candidate, decisions recorded, loose ends audited.
 disable-model-invocation: true
-metadata:
-  credits:
-    - skill: improve-codebase-architecture
-      author: Matt Pocock
-      url: "https://github.com/mattpocock/skills/tree/main/skills/engineering/improve-codebase-architecture"
-    - skill: thermo-nuclear-code-quality-review
-      author: Cursor
-      url: "https://github.com/cursor/plugins/tree/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review"
-    - skill: untangle-codebase
-      author: Maze
-      url: "https://github.com/caldoai/skills/tree/main/skills/untangle-codebase"
 ---
 
 # Arch Review
