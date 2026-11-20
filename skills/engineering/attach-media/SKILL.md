@@ -31,8 +31,11 @@ Walkthrough:
 ![](./flow.mp4)
 EOF
 gh pr edit 12 --body-file "$shots/body.md" \
-  --attach "$shots/before.png" --attach "$shots/after.png" --attach "$shots/flow.mp4"
+  --attach "$shots/before.png" --attach "$shots/after.png" --attach "$shots/flow.mp4" \
+  && rm -r "$shots"
 ```
+
+- **One command:** run the block in one call. `$shots` doesn't survive into the next tool call, and an empty one writes the body to `/body.md`; split it up only with the path `mktemp -d` printed written in literally.
 
 - **Paths** in a `--body-file` resolve from that file's folder, so either write the body next to the captures or reference them by absolute path. With `--body`, they resolve from the working directory.
 - **Alt text:** write what the image shows, not the file name. For an appended file give it after `#`: `--attach './login.png#The login error state'`.
