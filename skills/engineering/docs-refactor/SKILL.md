@@ -93,7 +93,7 @@ Mark every hard constraint a hook or a permission deny could enforce. Instructio
 
 1. Run the repo's formatters and Markdown linters on every changed doc.
 2. `git grep` every old path one more time; only historical records may still name it.
-3. **Cold read.** Spawn a fresh sub-agent that reads only the new `AGENTS.md`, without opening other files. First it writes, in its own words and in 2–5 sentences, what the project is and how its code is laid out. Then it answers four questions: how to run one test file, where a core concern lives (pick one from the conventions), one thing it must never do, and which doc covers deployment. Compare the paraphrase with the code: a wrong paraphrase means `AGENTS.md` misleads even where every answer is right, and a missing one means its parts don't connect. Fix `AGENTS.md` for a wrong paraphrase and for each answer it gets wrong or can't give.
+3. **Cold read.** Spawn a fresh sub-agent that reads only the new `AGENTS.md`, without opening other files. First it writes, in its own words and in 2–5 sentences, what the project is and how its code is laid out. Then it answers four questions: how to run one test file, where a core concern lives (pick one from the conventions), one thing it must never do, and which doc covers deployment. Compare the paraphrase with the code: a wrong paraphrase means `AGENTS.md` misleads even where every answer is right, and a missing one means its parts don't connect. Fix `AGENTS.md` for a wrong paraphrase and for each answer it gets wrong or can't give. No sub-agent tool → do the cold read yourself from `AGENTS.md` alone, writing the paraphrase before looking at anything else, and say in the report that it wasn't a fresh reader.
 
 ---
 
