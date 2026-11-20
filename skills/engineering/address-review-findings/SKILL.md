@@ -98,6 +98,12 @@ A thread that points at a screenshot or recording (`github.com/user-attachments/
 
 Never convert "disagree" into a silent resolve. An unconvinced reviewer with a closed thread is worse than an open one.
 
+**Disagree with evidence.** A *disagree* cites something the reviewer can open: a file and symbol, a test, a spec line, a recorded decision. "This was intentional" isn't evidence; when the reason lives only in someone's head (a team convention, a call made in a meeting), the verdict is *needs a decision*, not *disagree*. Three more rules:
+
+- **A misreading is a finding.** When the reviewer misread what the code does, their bug claim can be wrong while the code is still unclear: the next reader will misread it the same way. Disagree with the claim, and fix the clarity — a name, a comment, a smaller function — in the same reply.
+- **Don't re-grade quietly.** Fix a finding as raised or disagree with it out loud. A fix that only covers a smaller version of the finding, without saying so, is a silent downgrade.
+- **The author's wish isn't evidence.** You (or the thread you're in) wrote the code under review. Wanting the reviewer to be wrong doesn't make them wrong; re-read the code as if someone else wrote it.
+
 **Weigh a correct finding before fixing it.** "The reviewer is right" means the trigger is real, not that this PR must handle it. Bots, CodeRabbit above all, review every push, and each fix adds lines for the next round to pick at. Fixing everything therefore never converges: each round's findings get more hypothetical and land more on the last fix. Weigh three things together, with no threshold on any one of them:
 
 - **Reach**: does a real user of this code, in a setup it claims to support, get into the triggering state? The code's docs, compatibility line and spec draw that line, not your guess. That someone could construct the state isn't enough.
