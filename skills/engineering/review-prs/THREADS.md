@@ -23,4 +23,4 @@ Rename the thread or session **only if its title is generic** — one that names
 
 **Model.** When the sub-agent tool takes a model, pick it per PR: finding the bug is the sub-agent's whole job, and verifying can drop a false finding but never recover a missed one, so default to the session's model. A mid-tier model (Sonnet) is enough for a PR that's docs, config, tests only, or under about 100 changed lines of code touching no auth, money, data migration, concurrency or public API. Never the smallest tier (Haiku) for a review.
 
-**Returns.** A sub-agent that comes back cancelled (a harness restart) or without a result gets relaunched once; don't move on to posting or report until every one has returned.
+**Returns.** A sub-agent that comes back cancelled (a harness restart), errored, timed out or without a result gets relaunched once; don't move on to posting or report until every one has returned. One that fails again didn't review: post nothing for that PR, and name it in the report as **not reviewed**, with the error. Never count it as a review with zero findings — a PR that reads as reviewed and clean is worse than one that reads as unreviewed.

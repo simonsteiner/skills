@@ -36,6 +36,10 @@ Applies even when the repo documents nothing. Two rules bind it: a documented re
 
 Look for these Fowler smells: Mysterious Name, Duplicated Code, Feature Envy, Data Clumps, Primitive Obsession, Repeated Switches, Shotgun Surgery, Divergent Change, Speculative Generality, Message Chains, Middle Man, Refused Bequest. Name the smell and the refactoring it points to.
 
+Duplicated Code reaches past the diff. When the diff adds a helper, utility, hook or module, search the repo for one that already does the job — `git grep` its verb and noun, and look in the folders where the repo keeps shared code. A match is **Smell** (Duplicated Code): quote both and name the one to keep.
+
 ## Spec
 
-Compare the diff to what was asked, quoting the spec line for each finding: (a) requirements missing or partial, (b) behaviour nobody asked for (scope creep), (c) requirements that look implemented but are wrong. Report as **Spec**. A change can pass Standards and fail Spec, or the reverse; keep the axes distinct in the summary instead of netting them out.
+**Paraphrase first.** Write two or three sentences on what the diff does, from the code alone — before reading the spec source if you haven't yet, and without leaning on it if you have. Then hold the whole spec source against it — the PR body and its linked issues (Local mode: the commit messages and any spec file found): behaviour the spec source claims and the diff doesn't show, or behaviour the diff has that nothing in the spec source accounts for, is a **Spec** finding — quote the spec line, or the hunk it leaves out. A one-line body like "Fixes #12" leaves the issue to account for the behaviour; that isn't a finding per hunk. A paraphrase you can't write is a finding too: the change doesn't hang together, or it hides behind its description.
+
+Then compare the diff to what was asked, quoting the spec line for each finding: (a) requirements missing or partial, (b) behaviour nobody asked for (scope creep), (c) requirements that look implemented but are wrong. Report as **Spec**. A change can pass Standards and fail Spec, or the reverse; keep the axes distinct in the summary instead of netting them out.

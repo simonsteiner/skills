@@ -1,0 +1,28 @@
+{
+  "skills": ["review-doc"],
+  "evals": [
+    {
+      "query": "/review-doc docs/designs/webhooks.md",
+      "setup": "TypeScript repo with src/events/bus.ts exporting a retry helper `withBackoff`. docs/designs/webhooks.md proposes webhook delivery: a design section that refers to 'the Friday rule' without defining it, proposes a new `retryWithDelay` helper, and says `src/events/queue.ts` already exists (it doesn't). It ends with an Implementation plan section listing steps but no file list and no tests.",
+      "expected_behavior": [
+        "Runs the Paraphrase, Simplicity and Readiness lenses, each in its own fresh sub-agent given only the doc path, reading list, repo root and its lens text",
+        "Gives no sub-agent a summary of the conversation or the author's intent",
+        "Reports the undefined 'Friday rule' as a comprehension finding and fixes or asks about it rather than contesting it",
+        "Reports `retryWithDelay` as duplicating `withBackoff` in src/events/bus.ts",
+        "Reports the claim that src/events/queue.ts exists as a Blocker",
+        "Edits only docs/designs/webhooks.md, never source files, and doesn't commit",
+        "Runs further rounds with new sub-agents and ends after two clean rounds in a row, at five rounds, or on churn, saying which",
+        "Ends with a report that includes the final paraphrase and the contested or declined findings with their evidence"
+      ]
+    },
+    {
+      "query": "/review-doc",
+      "setup": "Earlier in the thread the agent and user worked out a plan for a CSV export feature in chat only; no file holds it. The repo has no implementation-plan doc.",
+      "expected_behavior": [
+        "Saves the plan to a file (a path the user names, else .scratch/) before spawning any reviewer",
+        "Runs the Paraphrase lens and says which other lenses run and why",
+        "Treats a reviewer that fails twice as not run, and doesn't call that round clean"
+      ]
+    }
+  ]
+}
