@@ -2,17 +2,6 @@
 name: arch-review
 description: Scans the codebase for deepening, coupling, and maintainability candidates, saves a ranked Markdown report with diagrams and a status table to docs/arch-review/, then implements the batch you confirm — one stacked PR per candidate, decisions recorded, loose ends audited.
 disable-model-invocation: true
-metadata:
-  credits:
-    - skill: improve-codebase-architecture
-      author: Matt Pocock
-      url: "https://github.com/mattpocock/skills/tree/main/skills/engineering/improve-codebase-architecture"
-    - skill: thermo-nuclear-code-quality-review
-      author: Cursor
-      url: "https://github.com/cursor/plugins/tree/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review"
-    - skill: untangle-codebase
-      author: Maze
-      url: "https://github.com/caldoai/skills/tree/main/skills/untangle-codebase"
 ---
 
 # Arch Review
@@ -25,24 +14,24 @@ Find where the code fights its maintainers, write it down in the repo as a backl
 
 - **Tier the models.** Judgement — this session and the Design sub-agent — runs on the strongest model. Everything else — scanner, Build, and Ship sub-agents, and every nested sub-agent any of them spawns (design-it-twice's designers) — runs on the mid-tier model (`model: "sonnet"` in Claude Code). Say so in every brief, including that nested sub-agents inherit the rule.
 - **Keep contexts small.** Every brief carries the [context rules](#context-rules). Prefer a fresh sub-agent over a long one.
-- **One run at a time.** Two arch-reviews in parallel multiply the burn rate; queue the next repo instead.
+- **One run at a time**, and not beside a `/test-review` run on the same repo: both stack PRs on the same code. Two arch-reviews in parallel multiply the burn rate; queue the next repo instead.
 
 Call the Skill tool with "codebase-design" before anything else. Use its vocabulary exactly — module, interface, implementation, depth, seam, adapter, leverage, locality — in the report, the decisions, commits, and PR bodies.
 
 **Pick the entry from what was asked:**
 
 - `/arch-review [direction]` — new scan (Step 1) through the loose-ends audit (Step 8).
-- `/arch-review next` — resume: Step 3's reconcile on the newest report with open rows, then Step 4.
+- `/arch-review next` — resume: Step 3's reconcile on the newest report with open rows, then Step 4 — or straight to Step 5 when the status table already holds a confirmed batch (an `in-progress` row): the user confirmed it once, so don't ask again.
 - `/arch-review report` — Steps 1–3 only.
 
 ---
 
 ## Step 1 — Scope, then scan
 
-- A direction from the user wins. Otherwise find the hot spots: `git log --since=3.months --name-only --format= | sort | uniq -c | sort -rn | head -40`. Deepening pays off only where change keeps landing — weight those paths first; widen only if churn is scattered.
+- A direction from the user wins. Otherwise find the hot spots over the last six months, the same window `co-change.py` uses by default: `git log --since=6.months --name-only --format= | sort | uniq -c | sort -rn | head -40`. Deepening pays off only where change keeps landing — weight those paths first; widen only if churn is scattered.
 - Read the domain glossary (`GLOSSARY.md`; a repo still on `CONTEXT.md` should rename it — say so in the report), the ADRs under `docs/adr/`, and the previous reports in `docs/arch-review/` (a folder each; older reports are single files). Don't re-suggest what an ADR or an earlier `dropped` row already settled, unless the friction is real enough to reopen it — then say which ADR and why.
 - Find the project's token budget: a `file-tokens` job in its lefthook config is the pre-commit check that blocks any staged file over it. `lefthook dump` shows the merged config (remotes and `lefthook-local.yml` included); the budget is the `--max-tokens <N>` in the job's `args:` (5,000 when absent). Run the job over the scope through lefthook, so it uses the project's pinned script and budget: `lefthook run pre-commit --job file-tokens --file <path> [--file …]`, or `--all-files` for the whole repo, invoked the way the project installs lefthook (`uv run lefthook`, `npm exec -- lefthook`, `lefthook`). Every file it lists fails the next commit that touches it, so each one gets a row (LENSES.md, "Size as a pointer"). A project not yet migrated keeps a copy of the script instead (`git ls-files '*check-file-tokens.py'`): run that over the scope with its job's limit (`git ls-files -z <scope> | xargs -0 python3 <path> --max-tokens <N>`). Neither → the budget for the report alone is 5,000 tokens.
-- Gather the coupling evidence: `<skill-dir>/scripts/co-change.py [<scope>…]` ([scripts/co-change.py](scripts/co-change.py)) lists the file pairs that keep changing in the same commit, with how often one never changes without the other. Hand the list to the Lens 3 sub-agent.
+- Gather the coupling evidence: `<skill-dir>/scripts/co-change.py [<scope>…]` ([scripts/co-change.py](scripts/co-change.py)) lists the file pairs that keep changing in the same commit, with how often one never changes without the other; lockfiles, changelogs and generated files are left out, and `--exclude <glob>` drops more noise (run `--help` for the columns). Hand the list to whichever sub-agent runs the coupling lens (Lens 3).
 - Spawn mid-tier sub-agents to walk the scoped code with the three lenses in [LENSES.md](LENSES.md) — one per lens, or one per hot area in a large repo. Give each the scope, the vocabulary, its lens, and the [context rules](#context-rules); ask for evidence (file:line, counts, a failing input) behind every claim, and a findings list under 800 words — not file contents.
 - Apply the deletion test to every suspected shallow module. Verify each sub-agent claim yourself before it becomes a candidate.
 
@@ -127,7 +116,7 @@ Branch `refactor/<candidate-slug>` (the planned name) off the base. Map the cand
 
 1. Work on the candidate branch from Step 6.
 2. **Live defect:** pin it with a failing test first, then move code.
-3. Implement the decisions. Replace, don't layer: write tests at the new interface, delete the tests and shallow modules it makes redundant, update docs and code maps that name moved files. Then call the Skill tool with "prune-tests" on the test files the candidate touched, so no test of the old internals, or one that can't fail, survives the move.
+3. Implement the decisions. Replace, don't layer: write tests at the new interface, delete the tests and shallow modules it makes redundant, update docs and code maps that name moved files. Then call the Skill tool with "prune-tests", limited to the tests of the internals this candidate replaces, so none of them survives the move. It prunes every test in whatever path it's given, so never hand it a whole test file or folder the candidate only touched; any other test it would cut becomes a new `S` row, not part of this PR.
 4. Run what the repo runs — typecheck, lint, the full suite. Where the project has golden outputs, show they're byte-identical, or explain the intended difference. Call the Skill tool with "conventional-commit" to commit.
 
 **Ship** (7.5–7):
