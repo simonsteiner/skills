@@ -75,7 +75,7 @@ Per candidate, spawn **three sub-agents in sequence**, each with a fresh context
 
 | Phase | Model | Brief file | Hands back |
 |---|---|---|---|
-| **Design** | strongest | [phases/design.md](phases/design.md) | Decisions committed to the report on the candidate branch, or the row `blocked` |
+| **Design** | strongest | [phases/design.md](phases/design.md) | Decisions committed to the report on the candidate branch, or the row `blocked` or `dropped` |
 | **Build** | mid-tier | [phases/build.md](phases/build.md) | Branch committed with checks green, or what failed |
 | **Ship** | mid-tier | [phases/ship.md](phases/ship.md) | PR number, base, row updated and pushed |
 
@@ -83,7 +83,7 @@ Each phase file is self-contained: its steps and the rules that phase needs. Bri
 
 Run candidates in sequence; each branch stacks on the previous one. A batch of smaller findings is one candidate without a Design phase; its Build sub-agent cuts the branch. When the harness has no sub-agents, read each phase file yourself and do it inline, still finishing one candidate completely before starting the next.
 
-Between phases, check the hand-back — Decisions in the report, checks green, PR open against the right base, row updated. A gap goes back to a fresh sub-agent of the same phase with the gap named; don't patch it from this session's context.
+Between phases, check the hand-back — Decisions in the report, checks green, PR open against the right base, row updated. A row Design handed back `blocked` or `dropped` gets no Build or Ship; go on to the next candidate. A gap goes back to a fresh sub-agent of the same phase with the gap named; don't patch it from this session's context.
 
 ### Context rules
 
