@@ -153,21 +153,27 @@ def main(argv):
         per_file.update(files)
         pairs.update(itertools.combinations(files, 2))
 
-    if args.churn:
-        hot = [(n, f) for f, n in per_file.items() if n >= args.min and (root / f).exists()]
-        hot.sort(key=lambda r: (-r[0], r[1]))
-        for n, f in hot[:args.top]:
-            print(f"{n}\t{f}")
-        return 0
-
-    rows = [(n, a, b) for (a, b), n in pairs.items()
-            if n >= args.min and (root / a).exists() and (root / b).exists()]
-    rows.sort(key=lambda r: (-r[0], r[1], r[2]))
-    for n, a, b in rows[:args.top]:
-        share = round(100 * n / min(per_file[a], per_file[b]))
-        print(f"{n}\t{share}%\t{a}\t{b}")
+    print_rows = print_churn if args.churn else print_pairs
+    print_rows(per_file, pairs, root, args.min, args.top)
     return 0
 
+
+def print_churn(per_file, _pairs, root, least, top):
+    """The --top live files changed in at least `least` commits, most first."""
+    hot = [(n, f) for f, n in per_file.items() if n >= least and (root / f).exists()]
+    hot.sort(key=lambda r: (-r[0], r[1]))
+    for n, f in hot[:top]:
+        print(f"{n}\t{f}")
+
+
+def print_pairs(per_file, pairs, root, least, top):
+    """The --top live pairs changed together at least `least` times, with the share of the rarer file."""
+    rows = [(n, a, b) for (a, b), n in pairs.items()
+            if n >= least and (root / a).exists() and (root / b).exists()]
+    rows.sort(key=lambda r: (-r[0], r[1], r[2]))
+    for n, a, b in rows[:top]:
+        share = round(100 * n / min(per_file[a], per_file[b]))
+        print(f"{n}\t{share}%\t{a}\t{b}")
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
