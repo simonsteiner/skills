@@ -7,12 +7,12 @@
       "expected_behavior": [
         "Runs the Paraphrase, Simplicity and Readiness lenses, each in its own fresh sub-agent given only the doc path, reading list, repo root and its lens text",
         "Gives no sub-agent a summary of the conversation or the author's intent",
-        "Reports the undefined 'Friday rule' as a comprehension finding and fixes or asks about it rather than contesting it",
+        "Reports the undefined 'Friday rule' as a comprehension finding and fixes or asks about it rather than disagreeing with it",
         "Reports `retryWithDelay` as duplicating `withBackoff` in src/events/bus.ts",
         "Reports the claim that src/events/queue.ts exists as a Blocker",
         "Edits only docs/designs/webhooks.md, never source files, and doesn't commit",
         "Runs further rounds with new sub-agents and ends after two clean rounds in a row, at five rounds, or on churn, saying which",
-        "Ends with a report that includes the final paraphrase and the contested or declined findings with their evidence"
+        "Ends with a report that includes the final paraphrase and the findings it disagreed with or declined with their evidence"
       ]
     },
     {
@@ -21,7 +21,20 @@
       "expected_behavior": [
         "Saves the plan to a file (a path the user names, else .scratch/) before spawning any reviewer",
         "Runs the Paraphrase lens and says which other lenses run and why",
-        "Treats a reviewer that fails twice as not run, and doesn't call that round clean"
+        "Checks the paraphrase against the plan as worked out in the thread, since this thread helped write it, rather than asking the user whether it matches",
+        "After the report, deletes what it saved under .scratch/ except the saved plan, and says where the plan is"
+      ]
+    },
+    {
+      "query": "/review-doc docs/rfc/cache.md",
+      "setup": "A fresh session with no earlier conversation. Python repo; docs/rfc/cache.md proposes an in-process read-through cache for src/catalog/lookup.py. Its Alternatives section rejects Redis because the deployment has none, and infra/compose.yml indeed has no Redis service. The doc uses 'TTL' and 'stale window' without defining either. A Simplicity reviewer is likely to suggest Redis in every round.",
+      "expected_behavior": [
+        "Puts the Paraphrase lens's paragraphs to the user as the first question of round 1's batch, asking whether they match what the user meant, because this thread didn't write the doc",
+        "Disagrees with the 'use Redis' finding by citing the Alternatives section and infra/compose.yml, records it on the settled list with that evidence, and doesn't edit the doc for it",
+        "Fixes the undefined 'TTL' and 'stale window' in the doc rather than disagreeing with them",
+        "Gives every later round's fresh reviewers the settled list along with the doc path and reading list",
+        "When a later round raises Redis again, keeps it settled: doesn't reopen it, doesn't ask the user about it again, and still counts that round clean if nothing else unsettled is a Blocker or Major",
+        "Lists the Redis finding under the report's disagreed-with findings with its evidence, so the user can overrule it"
       ]
     }
   ]
