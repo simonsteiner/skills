@@ -1,6 +1,6 @@
 ---
 name: arch-review
-description: Scans the codebase for deepening and maintainability candidates, saves a ranked Markdown report with diagrams and a status table to docs/arch-review/, then implements the batch you confirm — one stacked PR per candidate, decisions recorded, loose ends audited.
+description: Scans the codebase for deepening, coupling, and maintainability candidates, saves a ranked Markdown report with diagrams and a status table to docs/arch-review/, then implements the batch you confirm — one stacked PR per candidate, decisions recorded, loose ends audited.
 disable-model-invocation: true
 metadata:
   credits:
@@ -10,6 +10,9 @@ metadata:
     - skill: thermo-nuclear-code-quality-review
       author: Cursor
       url: "https://github.com/cursor/plugins/tree/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review"
+    - skill: untangle-codebase
+      author: Maze
+      url: "https://github.com/caldoai/skills/tree/main/skills/untangle-codebase"
 ---
 
 # Arch Review
@@ -39,7 +42,8 @@ Call the Skill tool with "codebase-design" before anything else. Use its vocabul
 - A direction from the user wins. Otherwise find the hot spots: `git log --since=3.months --name-only --format= | sort | uniq -c | sort -rn | head -40`. Deepening pays off only where change keeps landing — weight those paths first; widen only if churn is scattered.
 - Read the domain glossary (`GLOSSARY.md`; a repo still on `CONTEXT.md` should rename it — say so in the report), the ADRs under `docs/adr/`, and the previous reports in `docs/arch-review/` (a folder each; older reports are single files). Don't re-suggest what an ADR or an earlier `dropped` row already settled, unless the friction is real enough to reopen it — then say which ADR and why.
 - Find the project's token budget: a `file-tokens` job in its lefthook config is the pre-commit check that blocks any staged file over it. `lefthook dump` shows the merged config (remotes and `lefthook-local.yml` included); the budget is the `--max-tokens <N>` in the job's `args:` (5,000 when absent). Run the job over the scope through lefthook, so it uses the project's pinned script and budget: `lefthook run pre-commit --job file-tokens --file <path> [--file …]`, or `--all-files` for the whole repo, invoked the way the project installs lefthook (`uv run lefthook`, `npm exec -- lefthook`, `lefthook`). Every file it lists fails the next commit that touches it, so each one gets a row (LENSES.md, "Size as a pointer"). A project not yet migrated keeps a copy of the script instead (`git ls-files '*check-file-tokens.py'`): run that over the scope with its job's limit (`git ls-files -z <scope> | xargs -0 python3 <path> --max-tokens <N>`). Neither → the budget for the report alone is 5,000 tokens.
-- Spawn mid-tier sub-agents to walk the scoped code with both lenses in [LENSES.md](LENSES.md) — one per lens, or one per hot area in a large repo. Give each the scope, the vocabulary, its lens, and the [context rules](#context-rules); ask for evidence (file:line, counts, a failing input) behind every claim, and a findings list under 800 words — not file contents.
+- Gather the coupling evidence: `<skill-dir>/scripts/co-change.py [<scope>…]` ([scripts/co-change.py](scripts/co-change.py)) lists the file pairs that keep changing in the same commit, with how often one never changes without the other. Hand the list to the Lens 3 sub-agent.
+- Spawn mid-tier sub-agents to walk the scoped code with the three lenses in [LENSES.md](LENSES.md) — one per lens, or one per hot area in a large repo. Give each the scope, the vocabulary, its lens, and the [context rules](#context-rules); ask for evidence (file:line, counts, a failing input) behind every claim, and a findings list under 800 words — not file contents.
 - Apply the deletion test to every suspected shallow module. Verify each sub-agent claim yourself before it becomes a candidate.
 
 ---
@@ -48,7 +52,7 @@ Call the Skill tool with "codebase-design" before anything else. Use its vocabul
 
 The report is a folder, `docs/arch-review/YYYY-MM-DD-<slug>/`, so no file in it outgrows the token budget an agent can read whole. Copy [assets/report-template.md](assets/report-template.md) to its `README.md` (status table, friction map, smaller findings, recommendation) and [assets/card-template.md](assets/card-template.md) to one `C<n>-<card-slug>.md` per candidate, with its before/after diagram; fill them in following [REPORT.md](REPORT.md). Check every file against the budget (`wc -c`, bytes / 4) before committing. Add the report to the top of `docs/arch-review/README.md` (create the index if it's missing).
 
-- **Candidates** (`C1…`) are deepenings, each with Files, Problem, Solution, Wins, a before/after diagram, strength (`Strong` / `Worth exploring` / `Speculative`), dependency category, door (`two-way`, or `one-way` when it needs a data migration, a change to a published wire or file format, or deletes user data — the Step 6 list), and `live defect` when it hides a bug you reproduced.
+- **Candidates** (`C1…`) are structural fixes from the deepening or coupling lens, each with Files, the symptoms it removes (the special cases and links from the scan, each with `path:line`), Problem, Solution, Wins, a before/after diagram, strength (`Strong` / `Worth exploring` / `Speculative`), dependency category, door (`two-way`, or `one-way` when it needs a data migration, a change to a published wire or file format, or deletes user data — the Step 6 list), and `live defect` when it hides a bug you reproduced.
 - **Smaller findings** (`S1…`) are local maintainability fixes from the second lens — two sentences each.
 - Don't design interfaces here. That's Step 6.
 
@@ -123,7 +127,7 @@ Branch `refactor/<candidate-slug>` (the planned name) off the base. Map the cand
 
 1. Work on the candidate branch from Step 6.
 2. **Live defect:** pin it with a failing test first, then move code.
-3. Implement the decisions. Replace, don't layer: write tests at the new interface, delete the tests and shallow modules it makes redundant, update docs and code maps that name moved files.
+3. Implement the decisions. Replace, don't layer: write tests at the new interface, delete the tests and shallow modules it makes redundant, update docs and code maps that name moved files. Then call the Skill tool with "prune-tests" on the test files the candidate touched, so no test of the old internals, or one that can't fail, survives the move.
 4. Run what the repo runs — typecheck, lint, the full suite. Where the project has golden outputs, show they're byte-identical, or explain the intended difference. Call the Skill tool with "conventional-commit" to commit.
 
 **Ship** (7.5–7):
@@ -139,7 +143,7 @@ Branch `refactor/<candidate-slug>` (the planned name) off the base. Map the cand
 Don't report until this audit comes back empty, or every gap it finds is fixed or has become a new row:
 
 - Every batch row is `pr-open`, `merged`, `dropped`, or `blocked` — the last two with a reason in Notes.
-- Every Solution bullet and every Decision is in a diff. Departures are written up.
+- Every Solution bullet and every Decision is in a diff, and every symptom a card listed is gone or explained in a Departure. Departures are written up.
 - No old shallow module, its tests, or its re-export survives beside the new one. `git grep` the old names and paths.
 - No `TODO`, `FIXME`, or skipped test added in the batch's diffs without a row tracking it.
 - CI is green on every PR (`gh pr checks`), and every PR's base is the branch below it.
@@ -155,6 +159,7 @@ Running low on budget? Stop at a candidate boundary, commit the table, and say e
 ## Rules of thumb
 
 - Delete complexity; don't move it. A refactor that leaves the reader holding the same number of concepts isn't a candidate.
+- Look for the one fix behind several problems. A candidate that removes one special case is a smaller finding; one that removes five is the point.
 - File size says nothing about depth. A long deep module is a good module; a 300-line file of special cases isn't. But a file over the project's token budget gets a row whatever its depth, because its next commit is blocked: the row plans the split along the module's internal seams and leaves its interface where it is.
 - One candidate, one PR. A PR that needs "and also" in its title is two.
 - The report is a dated record: after the scan, only the status table, Decisions, and Departures change. Never rewrite a finding; a new scan is a new folder.

@@ -1,0 +1,42 @@
+{
+  "skills": [
+    "test-review"
+  ],
+  "evals": [
+    {
+      "query": "/test-review report",
+      "setup": "A small Python repo with pytest, a git history of about 40 commits, and no GitHub remote. src/billing/invoice.py changed in 12 commits, 3 with 'fix:' subjects that touched no test, and no test imports it. tests/test_orders.py mocks src/orders/repo.py (an owned module) and asserts save() call order; 4 'refactor:' commits changed it. tests/test_cart.py and tests/test_checkout.py both assert the same cart total. One test calls time.sleep(3). There is no coverage config and no CI.",
+      "expected_behavior": [
+        "Times the full suite and a single test file and records both commands in a Vitals table",
+        "Runs scripts/test-history.py drift, fixes and refactors rather than hand-rolling git log pipelines",
+        "Files a blind-spot candidate for src/billing/invoice.py that names a seam with what it catches and misses, and cites the untested fix commits by SHA",
+        "Files a waste candidate for tests/test_orders.py that names the prune-tests category (tied to the implementation) and what still guards the behaviour",
+        "Reports the duplicated cart-total assertion and the sleep as waste with a cost",
+        "Does not add coverage tooling to the project",
+        "Writes docs/test-review/<date>-<slug>/README.md plus one card per candidate, adds the review to docs/test-review/README.md, commits them on a docs/test-review-<slug> branch, and stops there without implementing anything (opening the PR needs GitHub, which this setup lacks)"
+      ]
+    },
+    {
+      "query": "/test-review next",
+      "setup": "A TypeScript repo with vitest and no GitHub remote. Its newest report under docs/test-review/ is committed, with a status table whose batch the user already confirmed: C1 (blind spot at parsePrice(input), behaviours: rejects negative amounts, rounds to cents) and C2 (waste: three tests in src/__tests__/format.test.ts asserting a private helper). parsePrice currently accepts negative amounts.",
+      "expected_behavior": [
+        "Calls the Skill tool with tdd for C1 and does not ask the user to confirm the seam again",
+        "For the rounding behaviour, which already passes, breaks the code temporarily to see the new test fail, reverts, and names the mutation in the commit body",
+        "Treats the negative-amount test failing against unchanged code as a live defect: keeps the test, fixes parsePrice in the same PR, and marks the row as a live defect",
+        "Calls the Skill tool with prune-tests for C2 and times the affected tests before and after",
+        "Builds C1 on test/<slug> and C2 on a branch cut from C1's, one commit series per candidate, and never merges (the PR steps need GitHub, which this setup lacks)",
+        "Updates the status table with each PR and ends with a loose-ends audit before reporting"
+      ]
+    },
+    {
+      "query": "/test-review src/payments",
+      "setup": "A Python repo where src/payments/gateway.py builds its HTTP client inside charge() with no way to inject it, and the only tests patch gateway._build_client and gateway._sign. The suite runs on pre-commit via lefthook and takes 45 seconds.",
+      "expected_behavior": [
+        "Lists gateway.py under Hand-offs with a /arch-review src/payments line instead of filing a blind-spot candidate that mocks internals",
+        "Files an infra candidate to move the 45-second suite from pre-commit to pre-push, routed through setup-lefthook",
+        "Marks the tests patching private functions as waste tied to the implementation, with a rewrite rather than delete action when they are the only guard of charging behaviour",
+        "Keeps the scan scoped to src/payments and says so in the report header"
+      ]
+    }
+  ]
+}

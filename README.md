@@ -24,6 +24,7 @@ Skills live in buckets under [`skills/`](./skills/) and split on one axis — wh
 
 - **[arch-review](./skills/engineering/arch-review/SKILL.md)** — scan for deepening and maintainability candidates, save a ranked backlog to `docs/arch-review/`, then ship the batch you confirm as stacked PRs.
 - **[docs-refactor](./skills/engineering/docs-refactor/SKILL.md)** — give each kind of doc exactly one home, fix doc claims the code contradicts, and rewrite the agent instructions into a short `AGENTS.md`; staged on a new branch with a report and a PR body.
+- **[test-review](./skills/engineering/test-review/SKILL.md)** — find the blind spots and the wasted effort in a project's tests and how they run, save a ranked backlog to `docs/test-review/`, then ship the batch you confirm as stacked PRs: `tdd` for blind spots, `prune-tests` for waste.
 
 #### Model-invoked
 
