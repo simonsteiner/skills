@@ -22,7 +22,16 @@ List every doc and every instruction file:
 - `AGENTS.md`, `CLAUDE.md`, `.claude/CLAUDE.md`, `CLAUDE.local.md` and nested copies in subfolders, `.claude/rules/`
 - `GLOSSARY.md`, `GLOSSARY-MAP.md`, `CONTEXT.md`, `docs/adr/`
 
-For each, note who reads it (agent or human), what it repeats from another doc, and what is stale. Check claims against the code, the project manifest or task runner (`package.json`, `pyproject.toml`, `Makefile`, `justfile`, …), the CI config, the git hook config and the deploy config. A command or hook claim copied from an old doc stays unverified until you have checked it, including when it lands in `AGENTS.md`. A doc that disagrees with the code is a bug: fix the doc and record the claim, the evidence and the fix for the report. When the code looks wrong instead, don't change it; ask.
+For each, note who reads it (agent or human), what it repeats from another doc, and what is stale. Check claims against the code, the project manifest or task runner (`package.json`, `pyproject.toml`, `Makefile`, `justfile`, …), the CI config, the git hook config and the deploy config. A command or hook claim copied from an old doc stays unverified until you have checked it, including when it lands in `AGENTS.md`. For a design doc, ADR or README section that describes how the code works, look for four kinds of drift:
+
+- **Missing behaviour** — something the doc describes that the code doesn't do.
+- **Incomplete models** — fields, columns or message types the doc specifies that the code's types lack.
+- **Shortcuts** — a hardcoded value where the doc describes dynamic logic.
+- **Divergent design** — a different pattern, library or component boundary than the doc proposed.
+
+A file, function or field the doc names that doesn't exist is drift too. A major component that no doc mentions goes in the report as a gap; don't write a doc for it unasked. When finding the code a doc describes takes a search, add a link from the doc to the source, so the next check doesn't have to search again.
+
+A doc that disagrees with the code is a bug: fix the doc and record the claim, the evidence and the fix for the report. When the code looks wrong instead, don't change it; ask.
 
 Also record instructions that contradict each other across files: an agent given both picks one arbitrarily.
 
@@ -84,7 +93,7 @@ Mark every hard constraint a hook or a permission deny could enforce. Instructio
 
 1. Run the repo's formatters and Markdown linters on every changed doc.
 2. `git grep` every old path one more time; only historical records may still name it.
-3. **Cold read.** Spawn a fresh sub-agent that reads only the new `AGENTS.md` and answers four questions without opening other files: how to run one test file, where a core concern lives (pick one from the conventions), one thing it must never do, and which doc covers deployment. Fix `AGENTS.md` for each answer it gets wrong or can't give.
+3. **Cold read.** Spawn a fresh sub-agent that reads only the new `AGENTS.md`, without opening other files. First it writes, in its own words and in 2–5 sentences, what the project is and how its code is laid out. Then it answers four questions: how to run one test file, where a core concern lives (pick one from the conventions), one thing it must never do, and which doc covers deployment. Compare the paraphrase with the code: a wrong paraphrase means `AGENTS.md` misleads even where every answer is right, and a missing one means its parts don't connect. Fix `AGENTS.md` for a wrong paraphrase and for each answer it gets wrong or can't give.
 
 ---
 
@@ -95,6 +104,7 @@ Stage everything with `git add`; don't commit. Then report:
 - **Moved:** what moved where.
 - **Deleted:** what, and why.
 - **Wrong against the code:** each claim, the evidence, and the fix.
+- **Undocumented:** major components no doc mentions.
 - **Enforce, don't instruct:** the hard constraints a hook or a permission deny could enforce.
 - **Commits:** a proposed split — the bare `git mv` of each instruction file first, so git still sees the rename after the rewrite, then the one-home moves, then the glossary.
 - **Warnings:** a `CLAUDE.local.md` that hides `AGENTS.md`, contradictions you couldn't settle, questions still open.
