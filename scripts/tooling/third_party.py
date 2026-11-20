@@ -317,6 +317,7 @@ def _link_findings(manifest, home):
         found.append(Finding("drift", want.name, detail))
     return found
 
+
 def listing(manifest):
     """The curated list with the reason for each skill, as lines."""
     lines = []
