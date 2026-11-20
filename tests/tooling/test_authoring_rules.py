@@ -4,10 +4,11 @@
 """
 
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
-from tooling.authoring_rules import check
+from tooling.authoring_rules import UNPINNED, check
 from tooling.skill_inventory import inventory
 
 GOOD = "name: {name}\ndescription: Does it. Use when asked."
@@ -78,6 +79,12 @@ class AuthoringRulesTest(unittest.TestCase):
                         "In prose uvx is handy.\n\n```bash\nbunx tsc --noEmit\n```\n")
         self.assertEqual([p.split("command for ")[1].split(";")[0] for p in self.problems() if "unpinned" in p],
                          ["'eslint'", "'prettier@latest'", "'tsc'"])
+
+    def test_unpinned_pattern_stays_linear_on_a_long_run_of_flags(self):
+        # each `--x` used to split two ways (`-` + `-x` or `--` + `x`): 2^n tries on a miss
+        started = time.monotonic()
+        self.assertIsNone(UNPINNED.search("npx " + "--ab " * 40 + "!"))
+        self.assertLess(time.monotonic() - started, 1)
 
     def test_unmentioned_and_nested_files(self):
         self.skill(files={"NOTES.md": "x\n", "references/deep/x.md": "x\n", "README.md": "x\n"})

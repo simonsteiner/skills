@@ -48,9 +48,10 @@ def entries(text):
     """
     found, group = [], None
     for n, line in prose(text):
-        heading = re.match(r"#+\s+(.*?)\s*$", line)
+        heading = re.match(r"#+\s+(.*)", line)
         if heading:
-            group = heading.group(1) if heading.group(1) in GROUPS else None
+            title = heading.group(1).strip()
+            group = title if title in GROUPS else None
             continue
         item = re.match(r"[-*]\s+\*\*\[([^\]]+)\]\(([^)\s]+)\)\*\*", line)
         if item:

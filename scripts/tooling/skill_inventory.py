@@ -25,10 +25,10 @@ def scalar(value):
 
     A block indicator (`>`, `|`, …) starts empty; its indented lines are appended.
     """
-    quoted = re.match(r"""(['"])((?:(?!\1).)*)\1\s*(#.*)?$""", value)
+    quoted = re.match(r"""'([^']*)'\s*(?:#.*)?$|"([^"]*)"\s*(?:#.*)?$""", value)
     if quoted:
-        return quoted.group(2)
-    value = re.sub(r"\s+#.*$", "", value).strip()
+        return quoted.group(1) if quoted.group(1) is not None else quoted.group(2)
+    value = re.sub(r"\s#.*$", "", value).strip()
     return "" if value in (">", "|", ">-", "|-") else value
 
 
