@@ -76,15 +76,24 @@ def main(argv):
         return 0
 
     if mode == "check":
-        if not home.lock.exists():
-            print(f"error: no skills.sh lock file at {home.lock} — nothing installed yet. Run without --check.",
-                  file=sys.stderr)
-            return 1
-        findings = third_party.check(manifest, home, [s.name for s in inv.skills])
-        for f in findings:
-            print(f)
-        return 1 if any(f.fails for f in findings) else 0
+        return check(manifest, home, [s.name for s in inv.skills])
+    return sync(manifest, home)
 
+
+def check(manifest, home, owned):
+    """Report how the installed skills differ from the manifest; 1 when any finding fails."""
+    if not home.lock.exists():
+        print(f"error: no skills.sh lock file at {home.lock} — nothing installed yet. Run without --check.",
+              file=sys.stderr)
+        return 1
+    findings = third_party.check(manifest, home, owned)
+    for f in findings:
+        print(f)
+    return 1 if any(f.fails for f in findings) else 0
+
+
+def sync(manifest, home):
+    """Install every curated skill; 1 when any source failed."""
     failed = third_party.sync(manifest, home)
     print()
     if failed:
@@ -92,7 +101,6 @@ def main(argv):
         return 1
     print(f"Synced. Verify with: {sys.argv[0]} --check")
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
