@@ -25,7 +25,7 @@
         "Treats the negative-amount test failing against unchanged code as a live defect: keeps the test, fixes parsePrice in the same PR, and marks the row as a live defect",
         "Calls the Skill tool with prune-tests for C2 and times the affected tests before and after",
         "Builds C1 on test/<slug> and C2 on a branch cut from C1's, one commit series per candidate, and never merges (the PR steps need GitHub, which this setup lacks)",
-        "Updates the status table with each PR and ends with a loose-ends audit before reporting"
+        "Leaves C1 and C2 `in-progress` in the committed status table rather than recording a PR, and reports that no PR was opened because there is no GitHub remote"
       ]
     },
     {

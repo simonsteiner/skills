@@ -19,7 +19,7 @@ Every file stays under the project's token budget: what its lefthook `file-token
 
 ## What changes after the scan
 
-Only the **Status** table and **Departures** in the overview, each card's **Decisions**, and the numbers a Ship phase fills in (the card's **After**, the Status row's PR). Everything else is the dated record of what the scan found. A new review is a new folder.
+Only the **Status** table (including `S` rows a Build phase adds, with their **Smaller findings** entries) and **Departures** in the overview, each card's **Decisions** and any **Seams** the user moved at the batch checkpoint, and the numbers a Ship phase fills in (the card's **After**, the Status row's PR). Everything else is the dated record of what the scan found. A new review is a new folder.
 
 ## Overview sections, in order
 
@@ -47,7 +47,7 @@ One file per candidate, `C<n>-<card-slug>.md`. The template carries all three ki
   - *Infra* — **Now**, **Change**, and **Measure** (the number it should move, with its current value and the command).
 - **Problem / Fix / Wins** — a one-row table: one sentence, one sentence, ≤ 6-word wins separated by `<br>`.
 - **After** — filled at Ship: tests added or removed, mutations that turned new tests red, the Measure's new value.
-- **Decisions** — a collapsed `<details>`, filled by an infra card's Design phase, or by a Build phase recording a choice.
+- **Decisions** — a collapsed `<details>`, filled by an infra card's Design phase. A Build phase's choices go in its commit body, and the Ship phase writes them up as Departures.
 
 ## Diagram
 

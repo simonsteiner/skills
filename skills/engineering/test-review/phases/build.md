@@ -12,4 +12,4 @@ Branch the planned name off the base, or check out the Design phase's branch for
 
 Then run what the repo runs — typecheck, lint, the full suite — and call the Skill tool with "conventional-commit" to commit.
 
-**Hand back:** the branch committed with checks green and the before/after numbers, or what failed and the trimmed output that shows it.
+**Hand back:** the branch committed with checks green and the before/after numbers, the row `blocked` with its question, or what failed and the trimmed output that shows it.

@@ -1,7 +1,7 @@
 """arch-review and test-review own copies of the same report-and-stack machinery
 (docs/adr/0008-own-test-review-beside-arch-review.md). This guards the parts that
 must not drift apart: the status values, the reconcile command, the shared
-loose-ends checks, and how a Ship phase ends.
+loose-ends checks, how a Ship phase ends, and that a `blocked` row stops its candidate.
 
     python3 -m unittest discover -s tests -t .
 """
@@ -67,6 +67,12 @@ class ReviewSkillsAgreeTest(unittest.TestCase):
             for step in ('"review-prs" in local mode', "gh pr create --base <base>", '"pr-body"', "Never merge"):
                 self.assertIn(step, ship, f"{skill} ship phase lost {step}")
             self.assertTrue(section(ship, "Approval bar"), f"{skill} ship phase has no approval bar")
+
+    def test_a_blocked_row_stops_its_candidate(self):
+        for skill in SKILLS:
+            self.assertRegex(read(skill, "SKILL.md"), r"handed back `blocked`[^.]*gets no", skill)
+            self.assertIn("the row `blocked`", read(skill, "phases/design.md"), skill)
+        self.assertIn("the row `blocked`", read("test-review", "phases/build.md"))
 
     def test_every_phase_brief_is_linked_and_carries_the_context_rules(self):
         for skill in SKILLS:

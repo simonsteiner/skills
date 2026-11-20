@@ -106,12 +106,12 @@ Per candidate, fresh sub-agents in sequence, one per phase:
 | Phase | Model | When | Brief file | Hands back |
 |---|---|---|---|---|
 | **Design** | strongest | `infra` rows only | [phases/design.md](phases/design.md) | Decisions committed on the branch, or the row `blocked` |
-| **Build** | mid-tier | every row | [phases/build.md](phases/build.md) | Branch committed, checks green, or what failed |
+| **Build** | mid-tier | every row | [phases/build.md](phases/build.md) | Branch committed, checks green, or what failed, or the row `blocked` |
 | **Ship** | mid-tier | every row | [phases/ship.md](phases/ship.md) | PR number, base, row updated and pushed |
 
 Each phase file is self-contained: its steps and the rules that phase needs. Brief each sub-agent with pointers, not copies: the path to its phase file (`<skill-dir>/phases/<phase>.md`), the report path, the candidate ID, the branch and its base, the [context rules](#context-rules), and the model rule for anything it spawns.
 
-Blind spots and waste skip Design: the seams and the tests to prune were decided at scan time and confirmed in Step 5. A batch of smaller findings is one candidate without a Design phase, on `test/smaller-findings-<n>`; its Build sub-agent cuts the branch. Between phases, check the hand-back; a gap goes back to a fresh sub-agent of the same phase with the gap named. Candidates run in sequence, each branch stacked on the previous one. Without sub-agents, read each phase file yourself and do it inline, one candidate completely before the next.
+Blind spots and waste skip Design: the seams and the tests to prune were decided at scan time and confirmed in Step 5. A batch of smaller findings is one candidate without a Design phase, on `test/smaller-findings-<n>`; its Build sub-agent cuts the branch. Between phases, check the hand-back. A row a phase handed back `blocked` gets no later phase; go on to the next candidate. A gap goes back to a fresh sub-agent of the same phase with the gap named. Candidates run in sequence, each branch stacked on the previous one. Without sub-agents, read each phase file yourself and do it inline, one candidate completely before the next.
 
 ### Context rules
 
