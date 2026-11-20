@@ -13,20 +13,33 @@ set -euo pipefail
 # true when the thread's opener is a GitHub App or bot account (CodeRabbit, Copilot).
 # line is null on an outdated or file-level thread. Pages through every thread.
 # Set GH_REPO=[HOST/]owner/repo to target another repo, e.g. a fork with an upstream remote.
+# Without GH_REPO, the checkout's repo and its host, GitHub Enterprise included.
 
 if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
   sed -n '/^# [A-Z]/,/^$/{/^$/q;s/^# \{0,1\}//p;}' "$0"  # the comment above
   exit 0
 fi
 
-# gh api takes its host from GH_HOST, never from GH_REPO, so carry a host-qualified GH_REPO's over.
-[[ "${GH_REPO:-}" == */*/* ]] && export GH_HOST="${GH_REPO%%/*}"
-
 pr="${1:-}"
 [[ "$pr" =~ ^[0-9]+$ ]] || { echo "error: expected a PR number, got '$pr'" >&2; exit 1; }
 
+# Twin: this repo-and-host resolution is duplicated on purpose in
+# address-review-findings/scripts/unresolved-threads.sh, so each skill stays self-contained. Change both together.
+#
 # GH_REPO wins: `gh repo view` ignores it, and in a fork with an upstream remote names the upstream.
-owner_repo="${GH_REPO:-$(gh repo view --json nameWithOwner --jq .nameWithOwner)}"
+# gh api takes its host from GH_HOST, never from GH_REPO or the checkout, so pass the host on: a
+# host-qualified GH_REPO's, else (no GH_REPO) the checkout's, or a GitHub Enterprise checkout would
+# query github.com. An unqualified GH_REPO means github.com or GH_HOST, as it does to gh.
+if [[ -n "${GH_REPO:-}" ]]; then
+  owner_repo="$GH_REPO"
+  if [[ "$GH_REPO" == */*/* ]]; then export GH_HOST="${GH_REPO%%/*}"; fi
+else
+  url="$(gh repo view --json url --jq .url)"  # https://HOST/OWNER/REPO
+  url="${url#*://}"
+  owner_repo="${url#*/}"
+  export GH_HOST="${GH_HOST:-${url%%/*}}"
+fi
+
 repo="${owner_repo##*/}"
 owner="${owner_repo%/*}"
 owner="${owner##*/}"
