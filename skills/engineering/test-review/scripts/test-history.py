@@ -68,7 +68,8 @@ CODE = {".py", ".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts", ".v
 TEST_DIRS = {"test", "tests", "__tests__", "spec", "specs", "e2e"}
 TEST_NAME = re.compile(r"^test_.+\.py$|^conftest\.py$|_test\.\w+$|_spec\.rb$|\.(test|spec)\.\w+$"
                        r"|(Test|Tests|Spec|IT)\.(java|kt|scala|groovy|cs|fs|swift)$")
-AFFIXES = re.compile(r"^test_|(?:_test|_spec|\.test|\.spec|Tests?|Spec|IT)$")
+TEST_PREFIX = re.compile(r"^test_")
+TEST_SUFFIX = re.compile(r"(?:_test|_spec|\.test|\.spec|Tests?|Spec|IT)$")
 FOLDER_STEMS = {"index", "__init__", "mod", "main", "lib"}
 TYPED = re.compile(r"^(?P<type>[A-Za-z]+)(?:\([^)]*\))?!?:")
 FIX_TYPES = {"fix", "bugfix", "hotfix"}
@@ -102,7 +103,8 @@ def normal(name):
 
 def test_stem(path):
     p = PurePosixPath(path)
-    return normal(AFFIXES.sub("", p.name[: -len(p.suffix)] if p.suffix else p.name))
+    stem = p.name[: -len(p.suffix)] if p.suffix else p.name
+    return normal(TEST_SUFFIX.sub("", TEST_PREFIX.sub("", stem)))
 
 
 def source_stems(path):

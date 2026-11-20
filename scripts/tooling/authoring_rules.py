@@ -67,7 +67,7 @@ VAGUE = (
     "as appropriate",
 )
 MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
-UNPINNED = re.compile(r"\b(?:npx|bunx|uvx|pipx run)\s+(?:--?(?:\w[\w-]*(?:=\S+)?)?\s+)*(@?[a-z][\w./-]*(?:[@=]=?\S+)?)")
+UNPINNED = re.compile(r"\b(?:npx|bunx|uvx|pipx run)\s+(?:-\S*\s+)*(@?[a-z][\w./-]*(?:[@=]=?\S+)?)")
 # a fenced block: ``` or ~~~, three or more, indented or not (list items), closed by a line of
 # nothing but at least the same run; a fence line with an info string inside is content (CommonMark)
 FENCED = re.compile(r"^[ \t]*(`{3,}|~{3,})[^\n]*\n(.*?)^[ \t]*\1(?:(?<=`)`*|(?<=~)~*)[ \t]*$", re.DOTALL | re.MULTILINE)
@@ -232,8 +232,21 @@ METADATA_ENTRY = re.compile(r"\s+([^\s:#-][^:]*):\s+(\S.*)$")
 BLOCK_INDICATOR = re.compile(r"[|>][1-9+-]{0,2}")  # |, >-, |2, >+1, …
 # plain scalars YAML 1.1 or 1.2 loads as null, a bool, a number or a date rather than a string
 NOT_STRING_WORDS = {"~", "null", "true", "false", "yes", "no", "on", "off", ".inf", "-.inf", "+.inf", ".nan"}
-NUMBER = re.compile(r"[-+]?(?:\d[\d_]*\.?\d*|\.\d+)(?:[eE][-+]?\d+)?|0[xo][\da-fA-F_]+")
 DATE = re.compile(r"\d{4}-\d\d?-\d\d?(?:[Tt ].*)?")
+
+
+def _is_number(value):
+    """Whether a plain scalar reads as an int or a float: 3, -1.5, 1e3, 1_000, .5, 0x1F, 0o17."""
+    digits = value.replace("_", "")
+    if not digits.lstrip("+-")[:1] or digits.lstrip("+-")[0] not in "0123456789.":
+        return False  # float() would also take inf, nan and infinity, which YAML reads as strings
+    for parse in (float, lambda v: int(v, 0)):
+        try:
+            parse(digits)
+            return True
+        except ValueError:
+            pass
+    return False
 
 
 def _is_string(value):
@@ -242,7 +255,7 @@ def _is_string(value):
     if value[:1] in "'\"":
         return True
     return bool(value) and value[0] not in "#!" and value.lower() not in NOT_STRING_WORDS \
-        and not NUMBER.fullmatch(value) and not DATE.fullmatch(value)
+        and not _is_number(value) and not DATE.fullmatch(value)
 
 
 def _metadata_entry(line):
