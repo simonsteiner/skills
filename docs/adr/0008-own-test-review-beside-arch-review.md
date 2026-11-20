@@ -24,6 +24,6 @@ Three ways to get a test review:
 
 ## Consequences
 
-- **Two skills now carry the report-and-stack workflow.** A change to that shape in one (the status values, the reconcile step, the loose-ends audit) should be considered for the other. `tests/tooling/test_review_skills_agree.py` fails when the status values, the reconcile command, the shared loose-ends checks, the end of the Ship phase or the stop on a `blocked` row drift apart. If a third skill wants it, extract the shape into a model-invoked skill both can call.
+- **Two skills now carry the report-and-stack workflow.** A change to that shape in one (the status values, the reconcile step, the loose-ends audit) should be considered for the other. `tests/skills/test_review_skills_agree.py` fails when the status values, the reconcile command, the shared loose-ends checks, the end of the Ship phase or the stop on a `blocked` row drift apart. If a third skill wants it, extract the shape into a model-invoked skill both can call.
 - **The scope line with arch-review is "is there a seam?"**: test-review writes and prunes tests where a seam exists, arch-review creates the seam. Running both on one repo at once stacks PRs on the same code; the skill says not to.
 - **`test-history.py`'s test/source pairing is a name heuristic** (`test_x.py`, `x.test.ts`, `XTest.java`, `index` → folder name). Repos with other layouts pass `--test-pattern`; the skill tells the agent to check pairings before citing them.

@@ -23,7 +23,7 @@ jobs:
         run: python3 scripts/lint-skills.py
 
       # tests/tooling: the scripts/tooling package; tests/skill_scripts: the scripts
-      # bundled in skills, against a fake gh.
+      # bundled in skills, against a fake gh; tests/skills: the skills' prose.
       - name: Test the tooling and the bundled scripts
         run: python3 -m unittest discover -s tests -t .
 
