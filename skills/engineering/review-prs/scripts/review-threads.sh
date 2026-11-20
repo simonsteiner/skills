@@ -11,7 +11,7 @@ set -euo pipefail
 #
 # The REST comments list can't say whether a thread is resolved; GraphQL can. bot is
 # true when the thread's opener is a GitHub App or bot account (CodeRabbit, Copilot).
-# line is null on an outdated thread. Pages through every thread.
+# line is null on an outdated or file-level thread. Pages through every thread.
 # Set GH_REPO=[HOST/]owner/repo to target another repo, e.g. a fork with an upstream remote.
 
 if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then

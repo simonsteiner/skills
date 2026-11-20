@@ -49,6 +49,10 @@ class ReviewThreadsTest(unittest.TestCase):
         ])
         [graphql] = [c["args"] for c in self.gh.calls if c["args"][:2] == ["api", "graphql"]]
         self.assertIn("--paginate", graphql)
+        # the fake returns every page whatever the query asks; real gh pages only on these
+        [query] = [a for a in graphql if a.startswith("query=")]
+        self.assertRegex(query, r"after:\s*\$endCursor")
+        self.assertIn("pageInfo { hasNextPage endCursor }", query)
         self.assertIn("number=7", graphql)
         self.assertIn("owner=o", graphql)
         self.assertIn("repo=r", graphql)
