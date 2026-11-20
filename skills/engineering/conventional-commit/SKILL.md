@@ -1,12 +1,12 @@
 ---
 name: conventional-commit
 description: >
-  Writes Conventional Commits v1.0.0 messages and makes the commits — one, or several atomic ones when the work spans concerns. Use before running any `git commit`, including when the user says "commit", "commit and push", "commit in logical chunks", or when another workflow (review fixes, refactors, releases) reaches its commit step. Also use when asked to write or improve a commit message.
+  Makes the agent's git commits: writes Conventional Commits v1.0.0 messages and splits the work into atomic commits when it spans concerns. Use before every `git commit`, even a one-line one the agent could write unaided — when the user says "commit", "commit and push", "commit in logical chunks" or "commit directly to main", when committing is one step of a bigger ask (commit and open a PR, put the work on a new branch, then push), and when another workflow (review fixes, refactors, releases) reaches its commit step. Also use when asked to write or improve a commit message. Not for git work that makes no commit.
 ---
 
 # Conventional Commit
 
-Turn the current worktree into **Conventional Commits v1.0.0**-compliant commits (staged changes; fall back to unstaged tracked changes if nothing is staged). Spec: <https://www.conventionalcommits.org/en/v1.0.0/>
+Turn the current worktree into **Conventional Commits v1.0.0**-compliant commits (staged changes; when nothing is staged, the unstaged changes plus the untracked files that belong to them). Spec: <https://www.conventionalcommits.org/en/v1.0.0/>
 
 **Pick the mode from what was asked:**
 
@@ -68,7 +68,7 @@ If the worktree mixes logically unrelated changes, plan one commit per concern �
 
 - **What** and **why**, not how (the diff shows how). As long as it needs to be.
 - `-` bullets for distinct points. Each bullet or paragraph starts lowercase and ends without a period; sentences inside it keep theirs.
-- **Do not hard-wrap body lines.** Write each bullet or paragraph as one continuous line and let the editor soft-wrap it — never insert manual newlines at ~72 chars or any other column. The ≤ 72 char limit applies only to the header; body and footer lines run as long as they need to. (A multi-line bullet wraps only because the content has a real line break, not to hit a width.)
+- **Do not hard-wrap body lines** — the rule most often broken by habit. Write each bullet or paragraph as one continuous line and let the editor soft-wrap it; never insert newlines at ~72 chars or any other column. The ≤ 72 char limit applies only to the header; body and footer lines run as long as they need to.
 
 **Footers** — one per line: `Closes #42`, `Refs PROJ-7`, `Reviewed-by: Name <email>`. A branch that encodes a ticket (`feature/PROJ-42-login`) gets `Refs PROJ-42`.
 
@@ -110,7 +110,7 @@ EOF
 ```
 
 - Stage by path. `git add -p` is interactive and won't work here.
-- A file holding two concerns: commit it whole with the dominant one and mention the other in the body — unless the separation matters (a fix that must be revertible alone). Then stage just its hunks non-interactively: `git diff -- <file> > /tmp/hunks.patch`, cut the patch down to the hunks you want, `git apply --cached /tmp/hunks.patch`.
+- A file holding two concerns: commit it whole with the dominant one and mention the other in the body — unless the separation matters (a fix that must be revertible alone). Then stage just its hunks non-interactively: run `mktemp` and write the path it prints into the next commands — `git diff -- <file> > <patch>`, cut the patch down to the hunks you want, `git apply --cached <patch>`.
 - Never fold in files the user didn't touch in this work (stray build output, someone else's edits). Leave them unstaged and say so.
 
 **Verify** after the last commit:
@@ -121,7 +121,7 @@ git log -1 --format=%B              # body unwrapped
 git status --short                  # nothing left behind by accident
 ```
 
-If a body came out hard-wrapped, `git commit --amend -F -` it before pushing — never after.
+A hard-wrapped body gets `git commit --amend -F -` before pushing — never after.
 
 ---
 
@@ -146,4 +146,3 @@ For a planned split, one code block per commit, in commit order, each with the p
 
 - For very large diffs (>500 lines), summarise by file/module, not line by line.
 - One logical change per commit; never commit known-broken code.
-- The no-hard-wrap rule is the one most often broken by habit. Check the body before committing, not after pushing.

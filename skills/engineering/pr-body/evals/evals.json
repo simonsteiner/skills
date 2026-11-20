@@ -1,0 +1,38 @@
+{
+  "skills": ["pr-body"],
+  "evals": [
+    {
+      "query": "hours parse wrong for 1h30m. fix it, commit and open pr",
+      "setup": "Python repo using uv and pytest, with a local bare repo as origin (default branch main, no GitHub remote, so `gh pr create` can't reach a server). Current branch fix/duration-parse, cut from main. src/timesheet/duration.py has `parse_duration` returning 30 minutes for '1h30m' because the regex drops the hours group. tests/ has 12 passing tests and none for mixed units.",
+      "expected_behavior": [
+        "Treats the PR as a Fix and shows before → after on the same input ('1h30m': 30 minutes on main, 90 after)",
+        "Names the new test and says it fails on main",
+        "Gives a one-line Checks entry with the actual pytest result, never a vague 'tested locally'",
+        "Includes a Merge Danger section with a blast radius picked from the fixed scale",
+        "Writes a title that follows the repo's Conventional Commits history and says what the fix changes for the user",
+        "Since `gh pr create` can't reach GitHub, hands over the title and the finished body and says the PR wasn't opened"
+      ]
+    },
+    {
+      "query": "open a PR for this branch against main",
+      "setup": "TypeScript repo with a local bare repo as origin (no GitHub remote). Branch refactor/split-exporter has three commits that move CSV and JSON export out of src/exporter.ts into src/export/csv.ts and src/export/json.ts, keeping every public export. test/golden/ holds expected export files; `npm test` compares against them and passes on both main and the branch.",
+      "expected_behavior": [
+        "Reads `git diff origin/main...HEAD` rather than relying on the conversation",
+        "Treats the PR as a Refactor and its Evidence shows nothing changed: golden outputs identical to main, with how they were compared",
+        "States behaviour changes on purpose as none",
+        "Shows the move with a file tree or diff sketch in Summary, not a prose list of files",
+        "Contains no feature-style 'Run' or 'Measured' section and nothing left in angle brackets"
+      ]
+    },
+    {
+      "query": "push and open pr",
+      "setup": "Node repo with a local bare repo as origin (no GitHub remote). Branch chore/bump-vitest, cut from main, has one commit bumping vitest from 1.6.0 to 2.1.0 in package.json and package-lock.json, and a second commit adding notes/scratch.md, a personal to-do list nobody mentioned in this session. `npm test` passes.",
+      "expected_behavior": [
+        "Names notes/scratch.md to the user and asks whether it belongs, rather than silently describing it or leaving it out",
+        "Drafts a Small body for the vitest bump: two to five lines, no headings and no Merge Danger section",
+        "Shows the version change as a short diff sketch or states 1.6.0 → 2.1.0",
+        "Doesn't invent a reason for the bump that nobody gave"
+      ]
+    }
+  ]
+}
