@@ -153,12 +153,14 @@ def main(argv):
         per_file.update(files)
         pairs.update(itertools.combinations(files, 2))
 
-    print_rows = print_churn if args.churn else print_pairs
-    print_rows(per_file, pairs, root, args.min, args.top)
+    if args.churn:
+        print_churn(per_file, root, args.min, args.top)
+    else:
+        print_pairs(per_file, pairs, root, args.min, args.top)
     return 0
 
 
-def print_churn(per_file, _pairs, root, least, top):
+def print_churn(per_file, root, least, top):
     """The --top live files changed in at least `least` commits, most first."""
     hot = [(n, f) for f, n in per_file.items() if n >= least and (root / f).exists()]
     hot.sort(key=lambda r: (-r[0], r[1]))
@@ -174,6 +176,7 @@ def print_pairs(per_file, pairs, root, least, top):
     for n, a, b in rows[:top]:
         share = round(100 * n / min(per_file[a], per_file[b]))
         print(f"{n}\t{share}%\t{a}\t{b}")
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
