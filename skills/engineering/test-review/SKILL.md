@@ -95,7 +95,7 @@ Propose the batch and **wait for the user's answer** — the run's one checkpoin
 - Name what's left out (`Worth exploring`, `Speculative`), and the hand-offs to `/arch-review`.
 - Smaller findings ride with the candidate touching the same test file, or go in final PRs of at most five `S` rows each.
 
-The user can accept, add or drop rows, reorder, or move a seam. Write the confirmed batch and any changed seam into the report (`in-progress` for the first row), then go.
+The user can accept, add or drop rows, reorder, or move a seam. Write the confirmed batch and any changed seam into the report, every confirmed row `in-progress`, so a `next` after a stop at a candidate boundary still sees the batch as confirmed. Then go.
 
 ---
 
