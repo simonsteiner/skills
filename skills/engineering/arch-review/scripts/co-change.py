@@ -51,8 +51,6 @@ from collections import Counter
 from pathlib import Path
 
 SINCE = re.compile(r"[A-Za-z0-9][A-Za-z0-9 .:,_+-]*")
-# The %x1e that starts each commit's header in the log; a path starting with it would read as a header.
-RECORD = "\x1e"
 
 # File names that change with every dependency bump or release, whatever the design.
 DEFAULT_EXCLUDES = (
@@ -76,24 +74,12 @@ def commits(since):
         capture_output=True, text=True, check=False)
     if result.returncode:
         raise GitError(result.stderr.strip())
-    for _, files in records(result.stdout):
+    # Each commit is its %x1e header, then "\0\n" and its paths, each ended by "\0". A path that
+    # starts with \x1e would read as a header.
+    for record in ("\0" + result.stdout).split("\0\x1e")[1:]:
+        files = sorted({f for f in record.removeprefix("\0\n").split("\0") if f})
         if files:
-            yield sorted(files)
-
-
-def records(log):
-    """(header, set of paths) per commit in `git log -z --name-only` output whose format starts with RECORD."""
-    header, files, first = None, set(), False
-    for field in log.split("\0"):
-        if field.startswith(RECORD):
-            if header is not None:
-                yield header, files
-            header, files, first = field[len(RECORD):], set(), True
-        elif field:
-            files.add(field[1:] if first else field)  # the first path follows the header's newline
-            first = False
-    if header is not None:
-        yield header, files
+            yield files
 
 
 def in_scope(path, scopes):
@@ -121,13 +107,9 @@ def generated(paths, root):
 
 def count(value):
     """An argparse type: a whole number, zero or more."""
-    try:
-        n = int(value)
-    except ValueError:
-        n = -1
-    if n < 0:
+    if not (value.isascii() and value.isdigit()):
         raise argparse.ArgumentTypeError(f"not a whole number, zero or more: {value!r}")
-    return n
+    return int(value)
 
 
 def main(argv):

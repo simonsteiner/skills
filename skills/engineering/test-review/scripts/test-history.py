@@ -77,8 +77,6 @@ FIX_TYPES = {"fix", "bugfix", "hotfix"}
 TYPES = FIX_TYPES | {"feat", "feature", "refactor", "docs", "doc", "chore", "style", "perf", "test", "tests",
                      "build", "ci", "revert"}
 FIX_WORDS = re.compile(r"\b(?:fix|fixes|fixed|bug|bugfix|hotfix)\b", re.IGNORECASE)
-# The %x1e that starts each commit's header in the log; a path starting with it would read as a header.
-RECORD = "\x1e"
 REFACTOR_WORDS = re.compile(r"\b(?:refactor\w*|renam\w*|restructur\w*|extract\w*)\b", re.IGNORECASE)
 
 
@@ -147,24 +145,12 @@ def commits(since):
         capture_output=True, text=True, check=False)
     if result.returncode:
         raise GitError(result.stderr.strip())
-    for head, files in records(result.stdout):
+    # Each commit is its %x1e header, then "\0\n" and its paths, each ended by "\0". A path that
+    # starts with \x1e would read as a header.
+    for record in ("\0" + result.stdout).split("\0\x1e")[1:]:
+        head, _, paths = record.partition("\0")
         sha, date, subject = (head.split("\t", 2) + ["", ""])[:3]
-        yield sha, date, subject, sorted(files)
-
-
-def records(log):
-    """(header, set of paths) per commit in `git log -z --name-only` output whose format starts with RECORD."""
-    header, files, first = None, set(), False
-    for field in log.split("\0"):
-        if field.startswith(RECORD):
-            if header is not None:
-                yield header, files
-            header, files, first = field[len(RECORD):], set(), True
-        elif field:
-            files.add(field[1:] if first else field)  # the first path follows the header's newline
-            first = False
-    if header is not None:
-        yield header, files
+        yield sha, date, subject, sorted({f for f in paths.removeprefix("\n").split("\0") if f})
 
 
 def in_scope(path, scopes):
@@ -229,13 +215,9 @@ def refactors(history, kinds, scopes, root, args):
 
 def count(value):
     """An argparse type: a whole number, zero or more."""
-    try:
-        n = int(value)
-    except ValueError:
-        n = -1
-    if n < 0:
+    if not (value.isascii() and value.isdigit()):
         raise argparse.ArgumentTypeError(f"not a whole number, zero or more: {value!r}")
-    return n
+    return int(value)
 
 
 def parse_args(argv):
