@@ -32,11 +32,12 @@ jobs:
 
       # Same version as lefthook; config in ruff.toml.
       - name: Ruff
-        run: uvx ruff@0.17.0 check scripts tests
+        run: uvx --no-build ruff@0.17.0 check scripts tests
 
       - name: Shellcheck
         run: shellcheck skills/*/*/scripts/*.sh
 
-      # Same version as package.json pins; config in .rumdl.toml.
+      # Same version as package.json pins; config in .rumdl.toml. PyPI's wheels rather
+      # than npx, which could fetch a package and run its install scripts.
       - name: Markdown
-        run: npx --yes rumdl@0.2.79 check .
+        run: uvx --no-build rumdl@0.2.79 check .
