@@ -6,7 +6,7 @@
       "setup": "Clone of a local bare repo whose default branch is `trunk` (there is no `main`). The clone is on trunk, three commits behind origin/trunk; those commits touch src/api/, not src/export.ts. Uncommitted edits in src/export.ts add a JSON export option.",
       "expected_behavior": [
         "Fetches and finds the default branch with the bundled default-branch.sh, using `trunk` rather than assuming `main`",
-        "Writes the printed branch name literally into later commands instead of relying on a shell variable from an earlier call",
+        "Reports the new branch by its literal name and shows it checked out (`git branch --show-current` or `git status` output in the reply)",
         "Cuts the branch from origin/trunk with `--no-track`, so it contains the three new commits and has no upstream",
         "Names the branch `feat/<slug>` from what the src/export.ts diff does",
         "Carries the src/export.ts edits onto the new branch without stash, reset or a patch file",
@@ -19,7 +19,7 @@
       "expected_behavior": [
         "Cuts the new branch from origin/feat/3d-map, not from main, with `--no-track`",
         "Carries the uncommitted changes onto the new branch",
-        "Calls the Skill tool with conventional-commit and makes more than one commit, split by concern",
+        "Makes more than one commit, split by concern, with Conventional Commits headers shown in the reply's `git log`",
         "Says the PR targets feat/3d-map, and since there's no GitHub remote, says the PR wasn't opened rather than claiming it was"
       ]
     },
@@ -27,7 +27,7 @@
       "query": "branch off fresh main and commit this",
       "setup": "Clone of a local bare repo with default branch main. The clone is on main, one commit behind origin/main; that commit rewrites src/config.ts. Uncommitted edits also change src/config.ts, in the same lines.",
       "expected_behavior": [
-        "Attempts the switch to a new branch from origin/main and stops when git refuses it",
+        "Quotes git's refusal to switch to a new branch from origin/main, and stops there",
         "Reports the overlap: src/config.ts changed both on origin/main and in the uncommitted work",
         "Leaves the decision to merge to the user and doesn't stash, reset, force or merge",
         "Makes no commit and leaves the uncommitted edits in place"

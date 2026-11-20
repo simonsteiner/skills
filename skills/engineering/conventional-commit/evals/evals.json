@@ -10,7 +10,7 @@
         "Types the fix commit `fix` with the `reports` scope the log already uses, and the README commit `docs`",
         "Writes every header at 72 characters or fewer, imperative, lowercase first letter, no trailing period",
         "Writes no body line that is hard-wrapped mid-sentence",
-        "Runs the verify step (`git log`, `git status --short`) after the last commit and doesn't push"
+        "Shows the verify step's output in the reply (the new `git log` headers and `git status --short` with dist/bundle.js still untracked) and doesn't push"
       ]
     },
     {
@@ -20,7 +20,7 @@
         "Commits only the staged auth change, and leaves src/ui/banner.ts unstaged and says so",
         "Marks the commit as breaking with `!` before the colon, a `BREAKING CHANGE:` footer, or both",
         "Gives a migration path for callers of `login` in the breaking-change text",
-        "Passes the message to git through `git commit -F -` with a quoted heredoc, not several `-m` flags",
+        "Shows the committed message in the reply (`git log -1 --format=%B`) with its body paragraphs and `BREAKING CHANGE:` footer intact, as one message rather than pieces from several `-m` flags",
         "Doesn't push"
       ]
     },
