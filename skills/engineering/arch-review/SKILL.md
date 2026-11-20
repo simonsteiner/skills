@@ -30,7 +30,7 @@ Call the Skill tool with "codebase-design" before anything else. Use its vocabul
 
 - A direction from the user wins. Otherwise find the hot spots over the last six months, the same window `co-change.py` uses by default: `git log --since=6.months --name-only --format= | sort | uniq -c | sort -rn | head -40`. Deepening pays off only where change keeps landing — weight those paths first; widen only if churn is scattered.
 - Read the domain glossary (`GLOSSARY.md`; a repo still on `CONTEXT.md` should rename it — say so in the report), the ADRs under `docs/adr/`, and the previous reports in `docs/arch-review/` (a folder each; older reports are single files). Don't re-suggest what an ADR or an earlier `dropped` row already settled, unless the friction is real enough to reopen it — then say which ADR and why.
-- Find the project's token budget: a `file-tokens` job in its lefthook config is the pre-commit check that blocks any staged file over it. `lefthook dump` shows the merged config (remotes and `lefthook-local.yml` included); the budget is the `--max-tokens <N>` in the job's `args:` (5,000 when absent). Run the job over the scope through lefthook, so it uses the project's pinned script and budget: `lefthook run pre-commit --job file-tokens --file <path> [--file …]`, or `--all-files` for the whole repo, invoked the way the project installs lefthook (`uv run lefthook`, `npm exec -- lefthook`, `lefthook`). Every file it lists fails the next commit that touches it, so each one gets a row (LENSES.md, "Size as a pointer"). A project not yet migrated keeps a copy of the script instead (`git ls-files '*check-file-tokens.py'`): run that over the scope with its job's limit (`git ls-files -z <scope> | xargs -0 python3 <path> --max-tokens <N>`). Neither → the budget for the report alone is 5,000 tokens.
+- Find the project's token budget and the files over it in the scope, as [REPORT.md](REPORT.md) says under "Token budget". Each file over it gets a row (LENSES.md, "Size as a pointer").
 - Gather the coupling evidence: `<skill-dir>/scripts/co-change.py [<scope>…]` ([scripts/co-change.py](scripts/co-change.py)) lists the file pairs that keep changing in the same commit, with how often one never changes without the other; lockfiles, changelogs and generated files are left out, and `--exclude <glob>` drops more noise (run `--help` for the columns). Hand the list to whichever sub-agent runs the coupling lens (Lens 3).
 - Spawn mid-tier sub-agents to walk the scoped code with the three lenses in [LENSES.md](LENSES.md) — one per lens, or one per hot area in a large repo. Give each the scope, the vocabulary, its lens, and the [context rules](#context-rules); ask for evidence (file:line, counts, a failing input) behind every claim, and a findings list under 800 words — not file contents.
 - Apply the deletion test to every suspected shallow module. Verify each sub-agent claim yourself before it becomes a candidate.
@@ -41,9 +41,8 @@ Call the Skill tool with "codebase-design" before anything else. Use its vocabul
 
 The report is a folder, `docs/arch-review/YYYY-MM-DD-<slug>/`, so no file in it outgrows the token budget an agent can read whole. Copy [assets/report-template.md](assets/report-template.md) to its `README.md` (status table, friction map, smaller findings, recommendation) and [assets/card-template.md](assets/card-template.md) to one `C<n>-<card-slug>.md` per candidate, with its before/after diagram; fill them in following [REPORT.md](REPORT.md). Check every file against the budget (`wc -c`, bytes / 4) before committing. Add the report to the top of `docs/arch-review/README.md` (create the index if it's missing).
 
-- **Candidates** (`C1…`) are structural fixes from the deepening or coupling lens, each with Files, the symptoms it removes (the special cases and links from the scan, each with `path:line`), Problem, Solution, Wins, a before/after diagram, strength (`Strong` / `Worth exploring` / `Speculative`), dependency category, door (`two-way`, or `one-way` when it needs a data migration, a change to a published wire or file format, or deletes user data — the Step 6 list), and `live defect` when it hides a bug you reproduced.
+- **Candidates** (`C1…`) are structural fixes from the deepening or coupling lens, one card each, with the fields REPORT.md lists under "Candidate card".
 - **Smaller findings** (`S1…`) are local maintainability fixes from the second lens — two sentences each.
-- Don't design interfaces here. That's Step 6.
 
 Rank: strength, then live defect, then churn, then dependency order (a candidate another one builds on goes first). Plan the branch name for every row now — the status table carries it, so a later session can find the work.
 
@@ -52,7 +51,7 @@ Rank: strength, then live defect, then churn, then dependency order (a candidate
 ## Step 3 — Land the report as the backlog
 
 - **New report:** cut `docs/arch-review-<slug>` from the fresh default branch (`git fetch origin && git switch --no-track -c docs/arch-review-<slug> origin/<default>`), then call the Skill tool with "conventional-commit" to commit the report and index. Push and open a PR. This is the base of the stack — merging it puts the backlog on the default branch for every later session.
-- **Resume:** reconcile the report's status table (its `README.md`; an older single-file report is resumed as it is, not converted — if it's over the budget, add `<path> linguist-generated` to `.gitattributes` in the first commit that touches it, or the check blocks that commit) against reality first — `gh pr list --state all --head <branch>` for each open row, and `git branch -a`. Fix rows that lag (a merged PR still marked `pr-open`). The next base is the tip of the highest open branch in the stack, or the default branch if everything merged.
+- **Resume:** reconcile the report's status table (its `README.md`; an older single-file report stays one file, as REPORT.md's "Token budget" says) against reality first — `gh pr list --state all --head <branch>` for each open row, and `git branch -a`. Fix rows that lag (a merged PR still marked `pr-open`). The next base is the tip of the highest open branch in the stack, or the default branch if everything merged.
 
 `/arch-review report` stops here and reports the PR.
 
@@ -74,17 +73,17 @@ The user can accept as is, add or drop rows, or reorder. Write the confirmed bat
 
 Per candidate, spawn **three sub-agents in sequence**, each with a fresh context — a single implementer's context grows past what the later phases need, and the review and PR turns then pay for all of it:
 
-| Phase | Model | Does | Hands back |
+| Phase | Model | Brief file | Hands back |
 |---|---|---|---|
-| **Design** | strongest | Step 6 | Decisions committed to the report on the candidate branch, or the row `blocked` |
-| **Build** | mid-tier | Step 7.1–4 | Branch committed with checks green, or what failed |
-| **Ship** | mid-tier | Step 7.5–7 | PR number, base, row updated and pushed |
+| **Design** | strongest | [phases/design.md](phases/design.md) | Decisions committed to the report on the candidate branch, or the row `blocked` or `dropped` |
+| **Build** | mid-tier | [phases/build.md](phases/build.md) | Branch committed with checks green, or what failed |
+| **Ship** | mid-tier | [phases/ship.md](phases/ship.md) | PR number, base, row updated and pushed |
 
-Brief each with pointers, not copies: the report path, the candidate ID, the branch and its base, its steps of this skill, the [context rules](#context-rules), and the model rule for anything it spawns. Build and Ship work from the candidate's card and Decisions — they don't reopen the design; a Decision that proves wrong becomes a **Departure**.
+Each phase file is self-contained: its steps and the rules that phase needs. Brief each sub-agent with pointers, not copies: the path to its phase file (`<skill-dir>/phases/<phase>.md`), the report path, the candidate ID, the branch and its base, the [context rules](#context-rules), and the model rule for anything it spawns.
 
-Run candidates in sequence; each branch stacks on the previous one. A batch of smaller findings is one candidate without a Design phase; its Build sub-agent cuts the branch. When the harness has no sub-agents, do it inline and still finish one candidate completely before starting the next.
+Run candidates in sequence; each branch stacks on the previous one. A batch of smaller findings is one candidate without a Design phase; its Build sub-agent cuts the branch. When the harness has no sub-agents, read each phase file yourself and do it inline, still finishing one candidate completely before starting the next.
 
-Between phases, check the hand-back — Decisions in the report, checks green, PR open against the right base, row updated. A gap goes back to a fresh sub-agent of the same phase with the gap named; don't patch it from this session's context.
+Between phases, check the hand-back — Decisions in the report, checks green, PR open against the right base, row updated. A row Design handed back `blocked` or `dropped` gets no Build or Ship; go on to the next candidate. A gap goes back to a fresh sub-agent of the same phase with the gap named; don't patch it from this session's context.
 
 ### Context rules
 
@@ -97,33 +96,15 @@ Put these in every brief:
 
 ---
 
-## Step 6 — Decide the design (autonomous grilling)
+## Step 6 — Decide the design
 
-Branch `refactor/<candidate-slug>` (the planned name) off the base. Map the candidate as a decision tree: the shape of the deepened module, what sits behind the seam, the dependency category (codebase-design's DEEPENING), which tests survive, which callers change.
-
-- Work it in rounds. Each round, take every decision whose prerequisites are settled and **answer each one yourself with the recommended option**.
-- Ground every answer in a fact from this tree — a measurement, a grep count, a reproduced failure — not an assertion. Look facts up; never guess them.
-- When the interface shape is genuinely open, use codebase-design's design-it-twice pattern and take your own recommendation.
-- Record every decision in the **Decisions** block of the candidate's card: `Q<n> — question → answer, because <fact>`. Call the Skill tool with "conventional-commit" to commit the Decisions on the candidate branch.
-- **One-way doors stop the candidate, not the run:** the card's door says what to expect, but a design that turns out to need one counts too — data migrations, published wire or file formats, deletion of user data. Mark the row `blocked` with the question in Notes and move on to the next candidate.
-- A new domain term, or a sharpened one: call the Skill tool with "domain-modeling" and update the glossary inline. Dropping a candidate for a load-bearing reason: record it as an ADR the same way, so the next review doesn't re-suggest it.
+The Design phase, [phases/design.md](phases/design.md): every design question answered with the recommended option and a fact, recorded as Decisions on the card. A one-way door stops the candidate (row `blocked`, question in Notes), not the run.
 
 ---
 
 ## Step 7 — Build, check, ship
 
-**Build** (7.1–4):
-
-1. Work on the candidate branch from Step 6.
-2. **Live defect:** pin it with a failing test first, then move code.
-3. Implement the decisions. Replace, don't layer: write tests at the new interface, delete the tests and shallow modules it makes redundant, update docs and code maps that name moved files. Then call the Skill tool with "prune-tests", limited to the tests of the internals this candidate replaces, so none of them survives the move. It prunes every test in whatever path it's given, so never hand it a whole test file or folder the candidate only touched; any other test it would cut becomes a new `S` row, not part of this PR.
-4. Run what the repo runs — typecheck, lint, the full suite. Where the project has golden outputs, show they're byte-identical, or explain the intended difference. Call the Skill tool with "conventional-commit" to commit.
-
-**Ship** (7.5–7):
-
-5. Check the diff against the approval bar in [LENSES.md](LENSES.md). Then call the Skill tool with "review-prs" in local mode: fixed point = the base branch, spec = this candidate's card and its Decisions. It fixes what's real; rerun the checks.
-6. Update the candidate's status row (`pr-open`, PR number, Breaking) and write any **Departure** from the report, in the same branch.
-7. Call the Skill tool with "conventional-commit" to commit, push, then `gh pr create --base <base>`. Call the Skill tool with "pr-body" for the body, and link the candidate's card file from it. Never merge.
+The Build phase, [phases/build.md](phases/build.md), implements the Decisions and gets the checks green; the Ship phase, [phases/ship.md](phases/ship.md), holds the diff to the approval bar, runs the local review, updates the row, and opens the PR. Never merge.
 
 ---
 
@@ -149,7 +130,4 @@ Running low on budget? Stop at a candidate boundary, commit the table, and say e
 
 - Delete complexity; don't move it. A refactor that leaves the reader holding the same number of concepts isn't a candidate.
 - Look for the one fix behind several problems. A candidate that removes one special case is a smaller finding; one that removes five is the point.
-- File size says nothing about depth. A long deep module is a good module; a 300-line file of special cases isn't. But a file over the project's token budget gets a row whatever its depth, because its next commit is blocked: the row plans the split along the module's internal seams and leaves its interface where it is.
 - One candidate, one PR. A PR that needs "and also" in its title is two.
-- The report is a dated record: after the scan, only the status table, Decisions, and Departures change. Never rewrite a finding; a new scan is a new folder.
-- Decisions recorded with their facts are what make autonomy safe. A decision without a fact is a guess.

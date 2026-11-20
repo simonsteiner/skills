@@ -246,7 +246,7 @@
         {
           "name": "thermo-nuclear-code-quality-review",
           "path": "cursor-team-kit/skills/thermo-nuclear-code-quality-review",
-          "why": "Replaced by the owned arch-review skill (docs/adr/0004): its maintainability rubric and approval bar now live in arch-review's LENSES.md. Used once in months."
+          "why": "Replaced by the owned arch-review skill (docs/adr/0004): its maintainability rubric and approval bar now live in arch-review's LENSES.md and phases/ship.md. Used once in months."
         }
       ]
     },

@@ -5,7 +5,6 @@
 - [Lens 1 — Blind spots](#lens-1--blind-spots-produces-blind-spot-candidates)
 - [Lens 2 — Waste](#lens-2--waste-produces-waste-candidates)
 - [Lens 3 — Infrastructure](#lens-3--infrastructure-produces-infra-candidates)
-- [Approval bar](#approval-bar-per-pr-step-8)
 
 Three lenses, one vocabulary: codebase-design's module, interface, seam, adapter, depth, locality. A "unit" is a module, a "boundary" is a seam or a system boundary, a "public API" is an interface. Each lens returns findings with evidence — `path:line`, a count, a timing, a commit — never an impression.
 
@@ -48,15 +47,3 @@ How the tests run, and whether that supports the `tdd` loop: one test, red or gr
 - **Test data.** Fixtures checked in versus built by factories; huge fixtures; recorded responses that can't be re-recorded (any change to those is a one-way door); data shared and mutated between tests.
 - **Parallelism.** Does the suite run in parallel (pytest-xdist, jest workers, `go test -p`), and does it still pass when it does?
 - **Coverage as a gate.** A fixed percentage enforced in CI invites tests written to move the number. Note it; it's a candidate only when the scan finds such tests.
-
-## Approval bar (per PR, Step 8)
-
-The PR isn't done while any of these hold, unless the report's Departures explain why:
-
-- A new test that was never seen red: no mutation named, or it passes with the behaviour removed.
-- A new test that mocks a module the project owns, reads private state, or asserts a value recomputed the way the code computes it.
-- A new test at a seam the card didn't name, or at a lower level than the card said.
-- A deleted test whose behaviour something relies on and nothing else guards, or a deleted test the card didn't list.
-- Production code kept only for tests the PR deleted.
-- Waste or infra without before/after numbers, or numbers that got worse.
-- A skip, retry, or `.only` added, or a timeout raised to make a test pass.

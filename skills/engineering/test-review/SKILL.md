@@ -62,15 +62,15 @@ These numbers go in the report's **Vitals** and feed the infrastructure lens. Re
 
 ## Step 3 — Write the report
 
-The report is a folder, `docs/test-review/YYYY-MM-DD-<slug>/`, so no file in it outgrows what an agent reads whole. Copy [assets/report-template.md](assets/report-template.md) to its `README.md` and [assets/card-template.md](assets/card-template.md) to one `C<n>-<card-slug>.md` per candidate, and fill them in following [REPORT.md](REPORT.md). Keep every file under the project's token budget (its lefthook `file-tokens` job's `--max-tokens`, else 5,000 tokens; bytes / 4). Add the report to the top of `docs/test-review/README.md` (create the index if it's missing).
+The report is a folder, `docs/test-review/YYYY-MM-DD-<slug>/`, so no file in it outgrows what an agent reads whole. Copy [assets/report-template.md](assets/report-template.md) to its `README.md` and [assets/card-template.md](assets/card-template.md) to one `C<n>-<card-slug>.md` per candidate, and fill them in following [REPORT.md](REPORT.md). Keep every file under the project's token budget (REPORT.md, "Layout"). Add the report to the top of `docs/test-review/README.md` (create the index if it's missing).
 
-Every candidate (`C1…`) has a **kind**, and the kind decides how it's fixed:
+Every candidate (`C1…`) has a **kind**, and the kind decides how it's fixed; its card carries the fields REPORT.md lists under "Candidate card", with the block for its kind:
 
-| Kind | Fixed by | The card names |
-|---|---|---|
-| `blind spot` | the Skill tool with "tdd" | each seam to test at, with what it catches and misses; the behaviours to pin there, each with `path:line` and its evidence |
-| `waste` | the Skill tool with "prune-tests" | each test (`path:line`), its prune-tests category, what still guards its behaviour, and its cost (seconds, edits) |
-| `infra` | a direct change; hooks through the Skill tool with "setup-lefthook", workflows through the Skill tool with "secure-github-actions" | what runs now, the change, and the measurement it should move |
+| Kind | Fixed by |
+|---|---|
+| `blind spot` | the Skill tool with "tdd" |
+| `waste` | the Skill tool with "prune-tests" |
+| `infra` | a direct change; hooks through the Skill tool with "setup-lefthook", workflows through the Skill tool with "secure-github-actions" |
 
 Size each candidate for one PR: one seam's behaviours, one module's tests, one infrastructure change. Each gets strength (`Strong` / `Worth exploring` / `Speculative`), door (`one-way` when it deletes a recorded fixture or golden file that can't be regenerated, changes branch protection or required checks, or removes a test a contract or compliance doc names; else `two-way`), and `live defect` when the scan reproduced a bug. **Smaller findings** (`S1…`) are single-test or single-line fixes, two sentences each.
 
@@ -101,15 +101,17 @@ The user can accept, add or drop rows, reorder, or move a seam. Write the confir
 
 ## Step 6 — Implement the batch
 
-Per candidate, fresh sub-agents in sequence, each briefed with pointers, not copies: the report path, the candidate ID, the branch and its base, its steps below, the [context rules](#context-rules), and the model rule.
+Per candidate, fresh sub-agents in sequence, one per phase:
 
-| Phase | Model | When | Does | Hands back |
+| Phase | Model | When | Brief file | Hands back |
 |---|---|---|---|---|
-| **Design** | strongest | `infra` rows only | Decides the change from the card, `Q<n> — question → answer, because <fact>` in the card's Decisions; a one-way door marks the row `blocked` | Decisions committed on the branch |
-| **Build** | mid-tier | every row | Step 7 | Branch committed, checks green, or what failed |
-| **Ship** | mid-tier | every row | Step 8.1–3 | PR number, base, row updated and pushed |
+| **Design** | strongest | `infra` rows only | [phases/design.md](phases/design.md) | Decisions committed on the branch, or the row `blocked` |
+| **Build** | mid-tier | every row | [phases/build.md](phases/build.md) | Branch committed, checks green, or what failed |
+| **Ship** | mid-tier | every row | [phases/ship.md](phases/ship.md) | PR number, base, row updated and pushed |
 
-Blind spots and waste skip Design: the seams and the tests to prune were decided at scan time and confirmed in Step 5. A batch of smaller findings is one candidate without a Design phase, on `test/smaller-findings-<n>`; its Build sub-agent cuts the branch. A card that proves wrong in Build becomes a **Departure**, not a redesign. Between phases, check the hand-back; a gap goes back to a fresh sub-agent of the same phase with the gap named. Candidates run in sequence, each branch stacked on the previous one. Without sub-agents, do it inline, one candidate completely before the next.
+Each phase file is self-contained: its steps and the rules that phase needs. Brief each sub-agent with pointers, not copies: the path to its phase file (`<skill-dir>/phases/<phase>.md`), the report path, the candidate ID, the branch and its base, the [context rules](#context-rules), and the model rule for anything it spawns.
+
+Blind spots and waste skip Design: the seams and the tests to prune were decided at scan time and confirmed in Step 5. A batch of smaller findings is one candidate without a Design phase, on `test/smaller-findings-<n>`; its Build sub-agent cuts the branch. Between phases, check the hand-back; a gap goes back to a fresh sub-agent of the same phase with the gap named. Candidates run in sequence, each branch stacked on the previous one. Without sub-agents, read each phase file yourself and do it inline, one candidate completely before the next.
 
 ### Context rules
 
@@ -124,23 +126,13 @@ Put these in every brief:
 
 ## Step 7 — Build
 
-Branch the planned name off the base (or check out the Design phase's branch). A `one-way` row stops before the change that crosses the door: mark it `blocked` with the question in Notes and move on to the next candidate. Then by kind:
-
-- **Blind spot.** Call the Skill tool with "tdd". The seams are the card's, already confirmed in Step 5; don't ask again. Pin one behaviour per cycle, through the seam's public interface, mocking only at system boundaries. Existing code usually passes a new test at once, so **prove each test can fail**: make the smallest change to the code under test that breaks the behaviour, watch the test go red, revert, and name that mutation in the commit body. A test that's red against the unchanged code found a live defect: keep it, fix the code in this PR, mark the row 🔴, and call the Skill tool with "diagnosing-bugs" when the cause isn't plain from the failure.
-- **Waste.** Time the affected tests first. Call the Skill tool with "prune-tests", limited to the card's Prune rows: it prunes every test in whatever path it's given, and only those rows were confirmed in Step 5. A test it would also cut that the card doesn't list becomes a new `S` row, not part of this PR. Before each deletion, the card says what still guards the behaviour; a test that's the only guard of a behaviour something relies on is rewritten against that behaviour, not deleted. Time them again.
-- **Infra.** Implement the Decisions. Re-measure what the card said it should move (suite time, single-file time, reruns, an order-shuffled run passing).
-
-Then run what the repo runs — typecheck, lint, the full suite — and call the Skill tool with "conventional-commit" to commit.
+The Build phase, [phases/build.md](phases/build.md): by kind, `tdd` with every new test proven able to fail, `prune-tests` limited to the card's Prune rows, or the infra Decisions, re-measured. A `one-way` row stops before the change that crosses the door.
 
 ---
 
 ## Step 8 — Ship, audit, report
 
-**Ship** (8.1–3):
-
-1. Check the diff against the approval bar in [LENSES.md](LENSES.md). Then call the Skill tool with "review-prs" in local mode: fixed point = the base branch, spec = the candidate's card. Rerun the checks.
-2. Update the candidate's status row (`pr-open`, PR number) and its numbers (tests added or removed, seconds saved), and write any Departure, in the same branch.
-3. Call the Skill tool with "conventional-commit" to commit, push, `gh pr create --base <base>`, and call the Skill tool with "pr-body" for the body, linking the card and showing each mutation that turned a new test red, or the before/after timings. Never merge.
+**Ship.** The Ship phase, [phases/ship.md](phases/ship.md): the approval bar, the local review, the status row and the card's After, then the PR. Never merge.
 
 **Loose ends.** Don't report until this comes back empty, or every gap is fixed or a new row:
 
@@ -161,7 +153,4 @@ Running low on budget? Stop at a candidate boundary, commit the table, and say w
 
 - A test earns its place by failing on a regression, and only on one. Everything here serves that sentence.
 - Coverage locates; it never ranks. A covered line no assertion checks is still a blind spot, and 100% isn't a goal. Churn and fix history decide what's worth pinning.
-- Waste is measured in seconds and edits: CI minutes per week, and how many refactor commits had to change the test.
-- A test that needs internals mocked is telling you about the module, not the test: rewrite it at the seam when there is one, hand the module to `/arch-review` when there isn't (Step 2).
-- Pin behaviour at the cheapest level that catches its regression; a second level asserting the same thing is waste.
-- One candidate, one PR. The report is a dated record: after the scan only the status table, Decisions and Departures change.
+- One candidate, one PR.
