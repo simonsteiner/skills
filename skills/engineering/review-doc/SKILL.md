@@ -85,7 +85,7 @@ Keep a **settled list** across rounds: each finding dropped as ungrounded, disag
 A round is **clean** when every lens ran and none raised a verified Blocker or Major that isn't settled. Decide that from the round's findings, before applying its fixes.
 
 - **Converged:** two clean rounds in a row. One isn't enough, since the next fresh reader can find a different gap in the same text.
-- **Next round's lenses:** Paraphrase always, since any edit can break comprehension, plus each lens that raised an unsettled Blocker or Major last round.
+- **Next round's lenses:** after a round whose decisions changed the design (the scope, the approach, a section rewritten), every lens from Step 2, since a lens that came back clean read a different doc. After a round of ordinary fixes, Paraphrase always, since any edit can break comprehension, plus each lens that raised an unsettled Blocker or Major last round.
 - **Fresh reviewers every round.** Never send a message to a reviewer from an earlier round: it has read the old version.
 - **Stop and ask** after five rounds, or on **churn**: a new finding at the scope of the last round's edit, which undoing that edit would fix. List the open findings by severity, then ask once: accept and stop, run more rounds, or take the doc back to drafting.
 
