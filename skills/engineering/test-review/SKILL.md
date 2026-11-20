@@ -23,7 +23,7 @@ Call the Skill tool with "codebase-design" before anything else, and use its voc
 **Pick the entry from what was asked:**
 
 - `/test-review [direction]` — new review (Step 1) through the loose-ends audit (Step 8).
-- `/test-review next` — resume: Step 4's reconcile on the newest report with open rows, then Step 5.
+- `/test-review next` — resume: Step 4's reconcile on the newest report with open rows, then Step 5 — or straight to Step 6 when the status table already holds a confirmed batch (an `in-progress` row): the user confirmed it and its seams once, so don't ask again.
 - `/test-review report` — Steps 1–4 only.
 
 ---
@@ -36,14 +36,14 @@ These numbers go in the report's **Vitals** and feed the infrastructure lens. Re
 - **The suite, once, timed**, with per-test times sorted slowest first: `pytest --durations=25` prints them; elsewhere take them from the runner's JSON (`vitest --reporter=json`, `jest --json`, `go test -json`) and sort. Note the test count and the wall time. A suite that won't run locally (needs a service, a secret, a manual step) is the first infrastructure finding; record why and keep going on static evidence.
 - **One test file, timed** — the `tdd` loop runs this dozens of times per slice. Over ~5 seconds for a unit-level file is a finding.
 - **CI history** (GitHub): `gh run list --limit 200 --json workflowName,conclusion,attempt,startedAt,updatedAt` gives the test workflow's median duration, runs per week, and reruns (`attempt > 1`), each rerun a flakiness suspect.
-- **Coverage, only if the project already produces it** (a coverage config, `coverage.xml`, `lcov.info`, `coverage-final.json`, a JaCoCo report) or a SonarQube project is configured (`sonar-project.properties`, `.sonarlint/connectedMode.json`): then call the Skill tool with "sonar-coverage" (the SonarQube plugin's; `sonarqube:sonar-coverage` in Claude Code) for the uncovered lines in the hot files. Don't add coverage tooling for the review. Coverage locates; it never ranks (see Rules of thumb).
+- **Coverage, only if the project already produces it** (a coverage config, `coverage.xml`, `lcov.info`, `coverage-final.json`, a JaCoCo report) or a SonarQube project is configured (`sonar-project.properties`, `.sonarlint/connectedMode.json`). For the uncovered lines in the hot files: a sonar-coverage skill when one is available (the SonarQube plugin's, `sonarqube:sonar-coverage` in Claude Code; this repo doesn't ship it); else the SonarQube MCP tools when they're connected (file coverage details); else the project's own report. None of those readable → skip coverage and say so in Vitals. Don't add coverage tooling for the review. Coverage locates; it never ranks (see Rules of thumb).
 - **Disabled tests**: `git grep -nE` over the test paths only, for the stack's skip, focus and retry markers (`\.skip\(|\bxit\(|\.only\(|@pytest\.mark\.(skip|xfail|flaky)|@flaky|t\.Skip\(|@Disabled|@Ignore|retryTimes\(`), plus a `retries`/`retry:` setting in the runner's config. `git blame` dates each one.
 
 ---
 
 ## Step 2 — Scope, then scan
 
-- A direction from the user wins. Otherwise churn decides: `git log --since=6.months --name-only --format= | grep . | sort | uniq -c | sort -rn | head -40`. Tests pay off where change keeps landing; a cold module with no tests is not a blind spot worth a PR.
+- A direction from the user wins. Otherwise churn decides: scope to the top rows of the `drift` run below, which ranks the most-changed source files over six months. Tests pay off where change keeps landing; a cold module with no tests is not a blind spot worth a PR.
 - Read the glossary (`GLOSSARY.md`), the ADRs under `docs/adr/`, and earlier reports in `docs/test-review/`. Don't re-suggest what an ADR or a `dropped` row settled unless the evidence is new; then say which and why.
 - Gather the history evidence with [scripts/test-history.py](scripts/test-history.py) — run `--help` first; it explains every column and how it tells tests from source:
 
@@ -56,7 +56,7 @@ These numbers go in the report's **Vitals** and feed the infrastructure lens. Re
   A repo with its own test layout passes `--test-pattern <regex>`; check a few pairings before citing them.
 - Spawn three mid-tier sub-agents, one per lens in [LENSES.md](LENSES.md) — blind spots, waste, infrastructure — or one per lens per hot area in a large repo. Give each the scope, the vocabulary, its lens, the Step 1 numbers and the script output it needs, and the [context rules](#context-rules); ask for evidence behind every claim and a findings list under 800 words, not file contents.
 - **Verify every claim yourself** before it becomes a candidate. A blind spot: grep the tests for the interface's names and callers, so a test reaching the behaviour through another interface isn't missed. Waste: name the `prune-tests` category it falls in and the test that still guards the behaviour, or "nothing — it guards none".
-- **No seam to test at** (the only way in is mocking internals or reading private state) is an architecture problem, not a test one. It goes in the report's **Hand-offs**, for the user to run `/arch-review <direction>` on; this skill doesn't redesign modules.
+- **Tests that mock internals: the seam decides.** When the module has a seam the behaviour can be tested at, they're waste tied to the implementation: a `waste` candidate that rewrites them at that seam. When it has none (the only way in is mocking internals or reading private state), that's an architecture problem, not a test one: the module goes in the report's **Hand-offs**, for the user to run `/arch-review <direction>` on, and its tests stay, since they're the only guard until the seam exists. This skill doesn't redesign modules.
 
 ---
 
@@ -109,7 +109,7 @@ Per candidate, fresh sub-agents in sequence, each briefed with pointers, not cop
 | **Build** | mid-tier | every row | Step 7 | Branch committed, checks green, or what failed |
 | **Ship** | mid-tier | every row | Step 8.1–3 | PR number, base, row updated and pushed |
 
-Blind spots and waste skip Design: the seams and the tests to prune were decided at scan time and confirmed in Step 5. A card that proves wrong in Build becomes a **Departure**, not a redesign. Between phases, check the hand-back; a gap goes back to a fresh sub-agent of the same phase with the gap named. Candidates run in sequence, each branch stacked on the previous one. Without sub-agents, do it inline, one candidate completely before the next.
+Blind spots and waste skip Design: the seams and the tests to prune were decided at scan time and confirmed in Step 5. A batch of smaller findings is one candidate without a Design phase, on `test/smaller-findings-<n>`; its Build sub-agent cuts the branch. A card that proves wrong in Build becomes a **Departure**, not a redesign. Between phases, check the hand-back; a gap goes back to a fresh sub-agent of the same phase with the gap named. Candidates run in sequence, each branch stacked on the previous one. Without sub-agents, do it inline, one candidate completely before the next.
 
 ### Context rules
 
@@ -162,6 +162,6 @@ Running low on budget? Stop at a candidate boundary, commit the table, and say w
 - A test earns its place by failing on a regression, and only on one. Everything here serves that sentence.
 - Coverage locates; it never ranks. A covered line no assertion checks is still a blind spot, and 100% isn't a goal. Churn and fix history decide what's worth pinning.
 - Waste is measured in seconds and edits: CI minutes per week, and how many refactor commits had to change the test.
-- A test that needs internals mocked is telling you about the module, not the test. Hand it to `/arch-review`.
+- A test that needs internals mocked is telling you about the module, not the test: rewrite it at the seam when there is one, hand the module to `/arch-review` when there isn't (Step 2).
 - Pin behaviour at the cheapest level that catches its regression; a second level asserting the same thing is waste.
 - One candidate, one PR. The report is a dated record: after the scan only the status table, Decisions and Departures change.

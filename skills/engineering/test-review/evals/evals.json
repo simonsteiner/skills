@@ -18,9 +18,9 @@
     },
     {
       "query": "/test-review next",
-      "setup": "A TypeScript repo with vitest and no GitHub remote. Its newest report under docs/test-review/ is committed, with a status table whose batch the user already confirmed: C1 (blind spot at parsePrice(input), behaviours: rejects negative amounts, rounds to cents) and C2 (waste: three tests in src/__tests__/format.test.ts asserting a private helper). parsePrice currently accepts negative amounts.",
+      "setup": "A TypeScript repo with vitest and no GitHub remote. Its newest report under docs/test-review/ is committed, with a status table whose batch the user already confirmed (C1 is `in-progress`, C2 `todo`): C1 (blind spot at parsePrice(input), behaviours: rejects negative amounts, rounds to cents) and C2 (waste: three tests in src/__tests__/format.test.ts asserting a private helper). parsePrice currently accepts negative amounts.",
       "expected_behavior": [
-        "Calls the Skill tool with tdd for C1 and does not ask the user to confirm the seam again",
+        "Starts building C1 without asking the user to confirm the batch or the seam again, calling the Skill tool with tdd",
         "For the rounding behaviour, which already passes, breaks the code temporarily to see the new test fail, reverts, and names the mutation in the commit body",
         "Treats the negative-amount test failing against unchanged code as a live defect: keeps the test, fixes parsePrice in the same PR, and marks the row as a live defect",
         "Calls the Skill tool with prune-tests for C2 and times the affected tests before and after",
@@ -34,7 +34,7 @@
       "expected_behavior": [
         "Lists gateway.py under Hand-offs with a /arch-review src/payments line instead of filing a blind-spot candidate that mocks internals",
         "Files an infra candidate to move the 45-second suite from pre-commit to pre-push, routed through setup-lefthook",
-        "Marks the tests patching private functions as waste tied to the implementation, with a rewrite rather than delete action when they are the only guard of charging behaviour",
+        "Does not file the tests patching gateway._build_client and gateway._sign as waste: with no seam to rewrite them at, they stay until /arch-review adds one, and the hand-off says so",
         "Keeps the scan scoped to src/payments and says so in the report header"
       ]
     }
