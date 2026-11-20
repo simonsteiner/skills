@@ -192,16 +192,33 @@ def check_skill(s):
     return out
 
 
+METADATA_ENTRY = re.compile(r"\s+([^\s:#-][^:]*):\s+(\S.*)$")
+BLOCK_INDICATOR = re.compile(r"[|>][1-9+-]{0,2}")  # |, >-, |2, >+1, …
+
+
+def _uncommented(value):
+    """A plain value without its trailing ` # comment`."""
+    return re.sub(r"\s#.*", "", value).strip()
+
+
+def _metadata_entry(line):
+    """"block" for a `key:` opening a block scalar, "scalar" for `key: value`, None otherwise."""
+    entry = METADATA_ENTRY.match(line)
+    if not entry or entry.group(2)[0] in "[{&*":
+        return None
+    return "block" if BLOCK_INDICATOR.fullmatch(_uncommented(entry.group(2))) else "scalar"
+
+
 def metadata_is_strings(text):
     """Whether the frontmatter's `metadata:` block is a flat map of scalar values."""
     lines = re.match(r"---\n(.*?)\n---\n", text, re.DOTALL).group(1).split("\n")
     start = next(i for i, line in enumerate(lines) if line.startswith("metadata:"))
-    if re.sub(r"\s+#.*$", "", lines[start][len("metadata:"):]).strip():
+    if _uncommented(lines[start][len("metadata:"):]):
         return False  # an inline value: a string or a flow collection, not a block map
     indent, block = None, False
     for line in lines[start + 1:]:
-        if not line.strip():
-            continue
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue  # blank, or a comment line
         depth = len(line) - len(line.lstrip(" "))
         if depth == 0:
             break  # the next top-level key
@@ -210,10 +227,10 @@ def metadata_is_strings(text):
                 continue  # a block scalar's text
             return False
         indent = indent or depth
-        entry = re.match(r"\s+([^\s:#-][^:]*):\s+(\S.*)$", line)
-        if depth < indent or not entry or entry.group(2)[0] in "[{&*":
+        kind = _metadata_entry(line) if depth == indent else None
+        if kind is None:
             return False
-        block = entry.group(2).split(" #")[0].strip() in ("|", ">", "|-", ">-", "|+", ">+")
+        block = kind == "block"
     return True
 
 
