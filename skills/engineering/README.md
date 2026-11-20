@@ -6,7 +6,7 @@ Skills I use daily for code work.
 
 Reachable only when typed (`disable-model-invocation: true`).
 
-- **[arch-review](./arch-review/SKILL.md)** — Scan for deepening and maintainability candidates, save a ranked backlog to `docs/arch-review/`, then implement the batch you confirm as one stacked PR per candidate, with decisions recorded and loose ends audited.
+- **[arch-review](./arch-review/SKILL.md)** — Scan for deepening, coupling, and maintainability candidates, save a ranked backlog to `docs/arch-review/`, then implement the batch you confirm as one stacked PR per candidate, with decisions recorded and loose ends audited.
 - **[docs-refactor](./docs-refactor/SKILL.md)** — Give each kind of doc exactly one home, fix doc claims the code contradicts, build a glossary when there is none, and rewrite the agent instructions into a short `AGENTS.md`.
 - **[review-doc](./review-doc/SKILL.md)** — Review a design doc, plan or spec with fresh sub-agents that see only the doc and the code — a paraphrase test, a simplicity-and-reuse check, an implementation-readiness check — then settle the findings, edit the doc, and loop until two rounds come back clean.
 - **[test-review](./test-review/SKILL.md)** — Review a project's test setup for blind spots in changing code, tests that cost time without guarding behaviour, and how the tests run; save a ranked backlog to `docs/test-review/`, then fix the batch you confirm with `tdd` and `prune-tests`, one stacked PR per candidate.

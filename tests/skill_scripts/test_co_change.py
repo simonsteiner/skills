@@ -117,6 +117,35 @@ class CoChangeTest(unittest.TestCase):
             self.commit("a.py", "b.py", "c.py")
         self.assertEqual(len(self.rows("--top", "1")), 1)
 
+    def test_lockfiles_and_changelogs_are_excluded_by_default(self):
+        for _ in range(3):
+            self.commit("package.json", "package-lock.json", "CHANGELOG.md")
+        self.assertEqual(self.rows(), [])
+        self.assertEqual(len(self.rows("--no-default-excludes")), 3)
+
+    def test_linguist_generated_paths_are_excluded_by_default(self):
+        (self.repo / ".gitattributes").write_text("gen/** linguist-generated\n")
+        for _ in range(3):
+            self.commit("src/a.py", "src/b.py", "gen/api.py")
+        self.assertEqual(self.rows(), [["3", "100%", "src/a.py", "src/b.py"]])
+        self.assertIn(["3", "100%", "gen/api.py", "src/a.py"], self.rows("--no-default-excludes"))
+
+    def test_exclude_globs_match_the_path_or_the_file_name(self):
+        for _ in range(3):
+            self.commit("a.py", "b.py", "a.snap", "docs/x.md")
+        self.assertEqual(self.rows("--exclude", "*.snap", "--exclude", "docs/*"),
+                         [["3", "100%", "a.py", "b.py"]])
+
+    def test_excluded_files_still_count_toward_the_sweep_cap(self):
+        for _ in range(3):
+            self.commit("a.py", "b.py", "yarn.lock")
+        self.assertEqual(self.rows("--max-files", "2"), [])
+
+    def test_help_explains_the_output_columns(self):
+        result = self.run_script("--help")
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("<together>  <share>%", result.stdout)
+
     def test_outside_a_repo_exits_2(self):
         with tempfile.TemporaryDirectory() as tmp:
             result = self.run_script(cwd=tmp)

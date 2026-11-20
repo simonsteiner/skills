@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """List the pairs of files that keep changing in the same commit.
 
-    co-change.py [--since 6.months] [--top 30] [--min 3] [--max-files 30] [<path>...]
+    co-change.py [--since 6.months] [--top 30] [--min 3] [--max-files 30]
+                 [--exclude <glob>]... [--no-default-excludes] [<path>...]
     co-change.py --help
 
 Run inside a git repo. Walks the commits since --since (a date or a relative time
@@ -12,6 +13,13 @@ skipped, whatever the paths. With paths (relative to the current directory), onl
 files under them count. Files that no longer exist are dropped, so renamed-away paths
 don't crowd out live ones.
 
+Files that change with everything say nothing about design, so these never count:
+lockfiles (package-lock.json, yarn.lock, uv.lock, Cargo.lock, go.sum, ...), changelogs
+(CHANGELOG*), and paths .gitattributes marks `linguist-generated`. --no-default-excludes
+counts them again. Each --exclude <glob> drops more: it's matched with fnmatch against the
+repo-relative path and against the file name, so `*.snap` and `docs/*` both work. An
+excluded file still counts toward --max-files.
+
 Prints the --top pairs seen at least --min times, most frequent first, one per line:
 
     <together>  <share>%  <file a>  <file b>
@@ -21,10 +29,11 @@ where <share> is <together> over the commit count of the file that changed less,
 share are hidden links; a pair in one module is expected.
 
 Exits 0 (also when nothing qualifies, or the repo has no commits yet), 2 on bad usage,
-outside a git repo, or when git log fails. Stdlib only.
+outside a git repo, or when git fails. Stdlib only.
 """
 
 import argparse
+import fnmatch
 import itertools
 import os
 import re
@@ -35,6 +44,14 @@ from pathlib import Path
 
 SINCE = re.compile(r"[A-Za-z0-9][A-Za-z0-9 .:,_+-]*")
 
+# File names that change with every dependency bump or release, whatever the design.
+DEFAULT_EXCLUDES = (
+    "package-lock.json", "npm-shrinkwrap.json", "yarn.lock", "pnpm-lock.yaml", "bun.lock",
+    "bun.lockb", "deno.lock", "Cargo.lock", "go.sum", "uv.lock", "poetry.lock", "Pipfile.lock",
+    "pdm.lock", "composer.lock", "Gemfile.lock", "mix.lock", "pubspec.lock", "Podfile.lock",
+    "Package.resolved", "packages.lock.json", "gradle.lockfile", "flake.lock", "CHANGELOG*",
+)
+
 
 class GitError(Exception):
     pass
@@ -43,7 +60,7 @@ class GitError(Exception):
 def commits(since):
     """Each non-merge commit's changed files, repo-root relative, unquoted."""
     result = subprocess.run(
-        ["git", "-c", "core.quotePath=false", "log", "--no-merges", "--since", since,
+        ["git", "-c", "core.quotePath=false", "log", "--no-merges", f"--since={since}",
          "--name-only", "--format=%x00"],
         capture_output=True, text=True, check=False)
     if result.returncode:
@@ -58,12 +75,36 @@ def in_scope(path, scopes):
     return not scopes or any(s == "" or path == s or path.startswith(s + "/") for s in scopes)
 
 
+def matches(path, globs):
+    name = path.rsplit("/", 1)[-1]
+    return any(fnmatch.fnmatchcase(path, g) or fnmatch.fnmatchcase(name, g) for g in globs)
+
+
+def generated(paths, root):
+    """The paths whose linguist-generated attribute is set (from any .gitattributes)."""
+    if not paths:
+        return set()
+    result = subprocess.run(
+        ["git", "check-attr", "-z", "--stdin", "linguist-generated"], cwd=root,
+        input="\0".join(paths) + "\0", capture_output=True, text=True, check=False)
+    if result.returncode:
+        raise GitError(result.stderr.strip())
+    fields = result.stdout.split("\0")
+    return {path for path, _, value in zip(fields[0::3], fields[1::3], fields[2::3])
+            if value in ("set", "true")}
+
+
 def main(argv):
-    parser = argparse.ArgumentParser(prog="co-change.py", description="List file pairs that change together.")
+    parser = argparse.ArgumentParser(prog="co-change.py", description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--since", default="6.months", help="how far back to look (default 6.months)")
     parser.add_argument("--top", type=int, default=30, help="pairs to print (default 30)")
     parser.add_argument("--min", type=int, default=3, help="minimum commits together (default 3)")
     parser.add_argument("--max-files", type=int, default=30, help="skip commits touching more files (default 30)")
+    parser.add_argument("--exclude", action="append", default=[], metavar="GLOB",
+                        help="never count files matching GLOB (repeatable)")
+    parser.add_argument("--no-default-excludes", action="store_true",
+                        help="count lockfiles, changelogs and linguist-generated files too")
     parser.add_argument("paths", nargs="*", help="only count files under these paths")
     args = parser.parse_args(argv)
 
@@ -86,17 +127,20 @@ def main(argv):
         rel = scope.relative_to(root).as_posix()
         scopes.add("" if rel == "." else rel)
 
-    per_file, pairs = Counter(), Counter()
+    globs = list(args.exclude) if args.no_default_excludes else [*DEFAULT_EXCLUDES, *args.exclude]
     try:
-        for files in commits(args.since):
-            if len(files) > args.max_files:
-                continue
-            files = [f for f in files if in_scope(f, scopes)]
-            per_file.update(files)
-            pairs.update(itertools.combinations(files, 2))
+        kept = [[f for f in files if in_scope(f, scopes) and not matches(f, globs)]
+                for files in commits(args.since) if len(files) <= args.max_files]
+        dropped = set() if args.no_default_excludes else generated(sorted({f for fs in kept for f in fs}), root)
     except GitError as err:
-        print(f"co-change.py: git log failed: {err}", file=sys.stderr)
+        print(f"co-change.py: git failed: {err}", file=sys.stderr)
         return 2
+
+    per_file, pairs = Counter(), Counter()
+    for files in kept:
+        files = [f for f in files if f not in dropped]
+        per_file.update(files)
+        pairs.update(itertools.combinations(files, 2))
 
     rows = [(n, a, b) for (a, b), n in pairs.items()
             if n >= args.min and (root / a).exists() and (root / b).exists()]

@@ -94,7 +94,7 @@ Two skills on keeping a codebase easy for agents to change. Only one is curated;
 
 ### Model-invoked
 
-- **[prune-tests](https://github.com/caldoai/skills/blob/main/skills/prune-tests/SKILL.md)** — delete or rewrite tests that guard no behavior: ones asserting removed code, ones that can't fail, ones tied to the implementation, duplicates, and production code kept only for tests. `tdd` writes tests worth keeping; this removes the rest. `arch-review` calls it on the test files each candidate touches.
+- **[prune-tests](https://github.com/caldoai/skills/blob/main/skills/prune-tests/SKILL.md)** — delete or rewrite tests that guard no behavior: ones asserting removed code, ones that can't fail, ones tied to the implementation, duplicates, and production code kept only for tests. `tdd` writes tests worth keeping; this removes the rest. `arch-review` calls it on the tests of the internals each candidate replaces, and `test-review` on the tests each waste row lists.
 
 ## Archived
 

@@ -17,9 +17,9 @@ Each round costs one sub-agent per lens, and a doc with findings takes at least 
 ## Step 1 — Pin the doc
 
 - **Target.** A path the user gave → that file. None → the doc this thread just wrote or edited, if there's exactly one; otherwise ask for the path. A plan that exists only in chat is saved first, to the path the user names or else `.scratch/<slug>.md`, since a reviewer reads only files.
-- **Reading list.** Every relative link in the doc that resolves to an existing file inside the repo. Links that leave the repo, and URLs: list them and ask which to include. Save each included URL's page to `.scratch/` and list the saved file, so every reviewer can read it. Add any files the user names.
+- **Reading list.** Every relative link in the doc that resolves to an existing file inside the repo. Links that leave the repo, and URLs: list them and ask which to include. Save each included URL's page to `.scratch/` (Step 6 deletes it) and list the saved file, so every reviewer can read it. Add any files the user names.
 - **Never on the list:** a summary of the conversation, the brief the doc came from, or notes on what the author meant. That's the context the review exists to remove.
-- **Baseline.** Copy the doc to `.scratch/<slug>.orig.md` before the first round. The report's record is `git diff --no-index <orig> <doc>`, which works whether the doc is tracked, untracked or gitignored, and shows only this review's edits even when the doc already had uncommitted changes.
+- **Baseline.** Copy the doc to `.scratch/<slug>.orig.md` before the first round (Step 6 deletes it). The report's record is `git diff --no-index <orig> <doc>`, which works whether the doc is tracked, untracked or gitignored, and shows only this review's edits even when the doc already had uncommitted changes.
 
 ---
 
@@ -59,15 +59,15 @@ Use the session's model: a doc review is judgment, not lookup. A sub-agent that 
 | Verdict | When | What follows |
 |---------|------|--------------|
 | fix | the finding is right | edit the doc |
-| contest | the finding is wrong, and a line or file shows it | record the evidence; no edit |
+| disagree | the finding is wrong, and a line or file shows it | record the evidence; no edit |
 | needs a decision | the fix is a choice between designs or a scope call, or the evidence lives only in someone's head | ask the user |
 | decline | a Nit not worth the edit; never a comprehension finding | record why; no edit |
 
-**Contest only with evidence:**
+**Disagree only with evidence:**
 
 - Cite what the reviewer could have read: a line in the doc, a file and symbol in the repo. "This was intentional" isn't evidence; that's *needs a decision*.
-- Never contest a comprehension gap. If a fresh reader couldn't follow a section, the doc is missing something, even when the reader's conclusion was wrong.
-- Don't lower a severity on the way to a fix. Disagree with a Blocker by contesting it, out loud.
+- Never disagree with a comprehension gap. If a fresh reader couldn't follow a section, the doc is missing something, even when the reader's conclusion was wrong.
+- Don't lower a severity on the way to a fix. Disagree with a Blocker out loud, with the evidence.
 - This thread wrote or shaped the doc. Wanting the reviewer to be wrong is not evidence that they are.
 
 **Edit straight away** for each *fix* that doesn't change a decision: a missing definition, a fact taken from the code, a step spelled out, a wrong path. Fix the gap in the doc's own voice and structure; don't rewrite the section around it. A fix that changes a decision (a different design, a dropped feature, a new requirement) is *needs a decision*.
@@ -80,7 +80,7 @@ The doc is the only file this skill edits, apart from what it saves to `.scratch
 
 ## Step 5 — Loop until clean
 
-Keep a **settled list** across rounds: each finding dropped as ungrounded, contested, declined or decided against, with its scope and reason. A later round that raises a settled finding again (same scope, same issue) doesn't reopen it. A finding that comes back after a *fix* does: the fix didn't work.
+Keep a **settled list** across rounds: each finding dropped as ungrounded, disagreed with, declined or decided against, with its scope and reason. A later round that raises a settled finding again (same scope, same issue) doesn't reopen it. A finding that comes back after a *fix* does: the fix didn't work.
 
 A round is **clean** when every lens ran and none raised a verified Blocker or Major that isn't settled. Decide that from the round's findings, before applying its fixes.
 
@@ -95,10 +95,12 @@ A round is **clean** when every lens ran and none raised a verified Blocker or M
 
 - **Doc:** its path, the rounds run, and how it ended: converged, accepted at the cap or on churn, or stopped by the user.
 - **Lenses:** per round, which ran and which were not run.
-- **Changed:** one line per fixed finding; `git diff --no-index <orig> <doc>` (Step 1) is the full record.
-- **Dropped, contested and declined:** each with its evidence or reason, so the user can overrule it.
+- **Changed:** one line per fixed finding, then the output of `git diff --no-index <orig> <doc>` (Step 1) in a `diff` block. It's the full record, and the cleanup below deletes the baseline.
+- **Dropped, disagreed with and declined:** each with its evidence or reason, so the user can overrule it.
 - **Decided:** each question asked, and the answer.
 - **Still open:** findings left at the cap or on churn, by severity, and code the findings show is wrong.
 - **Paraphrase:** the last round's, so the user can hold it against their intent one more time.
+
+**Clean up** after the report: delete the baseline and every page saved from a URL, and `.scratch/` itself if this review created it and it's now empty. A plan saved there from chat (Step 1) is the doc: keep it, and say where it is.
 
 Don't commit. If the user asks for a commit, call the Skill tool with "conventional-commit".
