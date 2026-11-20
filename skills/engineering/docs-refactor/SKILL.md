@@ -31,7 +31,7 @@ For each, note who reads it (agent or human), what it repeats from another doc, 
 
 A file, function or field the doc names that doesn't exist is drift too. A major component that no doc mentions goes in the report as a gap; don't write a doc for it unasked. When finding the code a doc describes takes a search, add a link from the doc to the source, so the next check doesn't have to search again.
 
-A doc that disagrees with the code is a bug: fix the doc and record the claim, the evidence and the fix for the report. When the code looks wrong instead, don't change it; ask.
+An ADR records a decision as it was made, so it is never rewritten, not even to add a link: drift in an ADR goes in the report, with a proposed superseding ADR when the code shows the decision itself changed. Any other doc that disagrees with the code is a bug: fix the doc and record the claim, the evidence and the fix for the report. When the code looks wrong instead, don't change it; ask.
 
 Also record instructions that contradict each other across files: an agent given both picks one arbitrarily.
 
