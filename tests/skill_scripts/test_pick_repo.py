@@ -110,6 +110,8 @@ class PickRepoForPrsTest(unittest.TestCase):
         subprocess.run(["git", "config", "remote.origin.url", "git@github.com:me/web.git"], cwd=self.repo, env=ENV, check=True)
         subprocess.run(["git", "checkout", "-q", "-b", "feat/x"], cwd=self.repo, env=ENV, check=True)
 
+    MISSING = "GraphQL: Could not resolve to a PullRequest with the number of 0. (repository.pullRequest)\n"
+
     def pr(self, n, repo, head):
         self.gh.on("pr", "view", str(n), "--repo", repo, json={"url": f"https://github.com/{repo}/pull/{n}", "headRefName": head})
 
@@ -120,7 +122,7 @@ class PickRepoForPrsTest(unittest.TestCase):
 
     def test_a_number_on_one_repo_goes_there(self):
         self.pr(12, "me/web", "feat/x")
-        self.gh.on("pr", "view", "12", exit=1)
+        self.gh.on("pr", "view", "12", stderr=self.MISSING, exit=1)
         self.assertEqual(self.map(12)[0], "12\tme/web\n")
 
     def test_a_number_on_both_goes_to_the_checkouts_branch(self):
@@ -137,29 +139,44 @@ class PickRepoForPrsTest(unittest.TestCase):
         self.pr(12, "acme/web", "other")
         self.pr(12, "me/web", "other")
         self.pr(15, "acme/web", "feat/z")
-        self.gh.on("pr", "view", exit=1)
+        self.gh.on("pr", "view", stderr=self.MISSING, exit=1)
         out, err = self.map(12, 15, 16, code=3)
         self.assertEqual(out, "15\tacme/web\n")
         self.assertIn("https://github.com/acme/web/pull/12 https://github.com/me/web/pull/12", err)
         self.assertIn("PR #16 not found", err)
 
     def test_missing_alone_exits_4(self):
-        self.gh.on("pr", "view", exit=1)
+        self.gh.on("pr", "view", stderr=self.MISSING, exit=1)
         self.map(16, code=4)
 
     def test_head_finds_the_open_pr_on_either_repo(self):
         self.gh.on("pr", "list", "--head", "feat/x", "--state", "open", "--repo", "acme/web",
-                   json=[{"number": 21, "url": "https://github.com/acme/web/pull/21"}])
+                   json=[{"number": 21, "url": "https://github.com/acme/web/pull/21", "headRepositoryOwner": {"login": "me"}}])
         self.gh.on("pr", "list", "--head", "feat/x", "--state", "open", "--repo", "me/web", json=[])
         self.assertEqual(self.map("--head", "feat/x")[0], "21\tacme/web\n")
 
     def test_head_with_a_pr_on_each_repo_is_ambiguous(self):
         for repo, n in (("acme/web", 21), ("me/web", 3)):
             self.gh.on("pr", "list", "--head", "feat/x", "--state", "open", "--repo", repo,
-                       json=[{"number": n, "url": f"https://github.com/{repo}/pull/{n}"}])
+                       json=[{"number": n, "url": f"https://github.com/{repo}/pull/{n}", "headRepositoryOwner": {"login": "Me"}}])
         out, err = self.map("--head", "feat/x", code=3)
         self.assertEqual(out, "")
         self.assertIn("https://github.com/acme/web/pull/21 https://github.com/me/web/pull/3", err)
+
+    def test_head_skips_another_forks_branch_of_the_same_name(self):
+        self.gh.on("pr", "list", "--head", "feat/x", "--state", "open", "--repo", "acme/web",
+                   json=[{"number": 21, "url": "https://github.com/acme/web/pull/21", "headRepositoryOwner": {"login": "other"}}])
+        self.gh.on("pr", "list", "--head", "feat/x", "--state", "open", "--repo", "me/web", json=[])
+        out, err = self.map("--head", "feat/x", code=4)
+        self.assertEqual(out, "")
+        self.assertIn("no open PR for branch feat/x", err)
+
+    def test_a_failed_lookup_stops_instead_of_reading_as_missing(self):
+        self.pr(12, "me/web", "feat/x")
+        self.gh.on("pr", "view", "12", "--repo", "acme/web", stderr="HTTP 502: Bad Gateway\n", exit=1)
+        out, err = self.map(12, code=1)
+        self.assertEqual(out, "")
+        self.assertIn("could not look up PR #12 on acme/web: HTTP 502", err)
 
     def test_head_with_no_open_pr_exits_4(self):
         self.gh.on("pr", "list", json=[])

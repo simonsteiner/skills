@@ -11,7 +11,7 @@ set -euo pipefail
 # Given PRs, print the repo each one lives on instead, one "<n><TAB><repo>" line per PR:
 #
 #   pick-repo.sh 12 15              PRs by number
-#   pick-repo.sh --head feat/x      the open PR whose head is that branch
+#   pick-repo.sh --head feat/x      the open PR whose head is that branch, from origin's owner
 #   pick-repo.sh --head feat/x 12   a number on both repos goes to the one whose head is feat/x
 #
 # A number found on one repo goes there. Found on both, it goes to the one whose head
@@ -26,7 +26,10 @@ set -euo pipefail
 # resolved with `ssh -G`, GitHub's ssh.github.com maps to github.com, and a github.com
 # origin needs no gh call. Another host is asked through `gh repo view`, with
 # GH_ENTERPRISE_TOKEN kept only for GH_HOST, since gh sends that token to any host but
-# github.com. Exits 1 when neither repo can be read, 2 on bad usage.
+# github.com. --head counts only PRs whose head repo belongs to origin's owner, when
+# origin is known: another fork's PR from a same-named branch isn't this checkout's.
+# Exits 1 when neither repo can be read or a gh lookup fails for any reason but a missing
+# PR, 2 on bad usage.
 
 if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
   sed -n '/^# [A-Z]/,/^$/{/^$/q;s/^# \{0,1\}//p;}' "$0"  # the comment above
@@ -61,7 +64,7 @@ from_url() {
 # The repos a PR can live on: GH_REPO alone, else gh's default and origin's.
 read_repos() {
   if [[ -n "${GH_REPO:-}" ]]; then repos=("$GH_REPO"); return; fi
-  local default origin url host path scheme real probe
+  local default url host path scheme real probe
   default="$(gh repo view --json url --jq .url 2>/dev/null)" && default="$(from_url "$default")" || default=""
 
   origin=""
@@ -96,7 +99,7 @@ read_repos() {
   [[ -z "$origin" || "$(lower "$origin")" == "$(lower "$default")" ]] || repos+=("$origin")
 }
 
-repos=()
+repos=() origin=""
 read_repos
 $lookup || { printf '%s\n' "${repos[@]}"; exit 0; }
 
@@ -105,11 +108,15 @@ status=0
 miss() { echo "$2" >&2; [[ $status -eq 3 ]] || status="$1"; }
 
 if [[ ${#prs[@]} -eq 0 ]]; then
-  found=()
+  found=() owner=""
+  [[ -z "$origin" ]] || owner="$(lower "$(awk -F/ '{ print $(NF-1) }' <<<"$origin")")"
   for r in "${repos[@]}"; do
-    out="$(gh pr list --head "$head" --state open --repo "$r" --json number,url --jq '.[] | [.number, .url] | @tsv')"
-    while IFS=$'\t' read -r n url; do
-      [[ -n "$n" ]] && found+=("$n"$'\t'"$r"$'\t'"$url")
+    out="$(gh pr list --head "$head" --state open --repo "$r" --json number,url,headRepositoryOwner \
+      --jq '.[] | [.number, .url, (.headRepositoryOwner.login // "")] | @tsv')"
+    while IFS=$'\t' read -r n url o; do
+      [[ -n "$n" ]] || continue
+      [[ -z "$owner" || "$(lower "$o")" == "$owner" ]] || continue  # another fork's branch of that name
+      found+=("$n"$'\t'"$r"$'\t'"$url")
     done <<<"$out"
   done
   case ${#found[@]} in
@@ -126,10 +133,18 @@ if [[ ${#repos[@]} -eq 1 ]]; then
 fi
 
 [[ -n "$head" ]] || head="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+errors="$(mktemp)"
+trap 'rm -f "$errors"' EXIT
 for n in "${prs[@]}"; do
   hits=() matches=()
   for r in "${repos[@]}"; do
-    info="$(gh pr view "$n" --repo "$r" --json url,headRefName --jq '[.url, .headRefName] | @tsv' 2>/dev/null)" || continue
+    if ! info="$(gh pr view "$n" --repo "$r" --json url,headRefName --jq '[.url, .headRefName] | @tsv' 2>"$errors")"; then
+      # Only a missing PR means "not on this repo"; a network, auth or rate-limit failure
+      # would otherwise send the PR to the other repo, or report it as not found.
+      grep -q "Could not resolve to a PullRequest" "$errors" && continue
+      echo "error: could not look up PR #$n on $r: $(cat "$errors")" >&2
+      exit 1
+    fi
     [[ -n "$info" ]] || continue
     hits+=("$r"$'\t'"$info")
     [[ -n "$head" && "${info#*$'\t'}" == "$head" ]] && matches+=("$r")
