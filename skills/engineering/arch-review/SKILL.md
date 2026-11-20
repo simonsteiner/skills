@@ -66,7 +66,7 @@ Propose the batch and **wait for the user's answer** — this is the run's one c
 - Name what's left out (`Worth exploring`, `Speculative`) so the user can pull a row in.
 - Say where the smaller findings go: with the candidate PR that touches the same module, or in final PRs of at most five `S` rows each, grouped by module.
 
-The user can accept as is, add or drop rows, or reorder. Write the confirmed batch into the report's status table (`in-progress` for the first row), then go.
+The user can accept as is, add or drop rows, or reorder. Write the confirmed batch into the report's status table, every confirmed row `in-progress`, so a `next` after a stop at a candidate boundary still sees the batch as confirmed. Then go.
 
 ---
 
