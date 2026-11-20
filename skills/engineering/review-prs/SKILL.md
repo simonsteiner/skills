@@ -18,7 +18,7 @@ Review what nobody has looked at, leave the findings where the author will see t
 
 The workflow below is the same on every forge; the commands differ. Run [scripts/forge.sh](scripts/forge.sh) from the repo under review. It reads `origin` only — never `GH_REPO` or an `upstream` remote — and prints one tab-separated line whose first word picks the forge guide:
 
-- `github <owner>/<repo>` → read [forges/github.md](forges/github.md): `gh`, with the bundled [scripts/post-review.sh](scripts/post-review.sh), [scripts/outside-findings.sh](scripts/outside-findings.sh) and [scripts/note-fixes.sh](scripts/note-fixes.sh).
+- `github <owner>/<repo>` → read [forges/github.md](forges/github.md): `gh`, with the bundled [scripts/post-review.sh](scripts/post-review.sh), [scripts/outside-findings.sh](scripts/outside-findings.sh), [scripts/review-threads.sh](scripts/review-threads.sh) and [scripts/note-fixes.sh](scripts/note-fixes.sh).
 - `azure-devops <org> <project> <repo>` → read [forges/azure-devops.md](forges/azure-devops.md): `az repos` and `az devops invoke`; no bundled scripts, and not yet run against a real organization.
 - `unsupported <host>` (GitLab, Bitbucket, Gitea), or an error for a missing `origin` → PR mode isn't supported: say so, offer Local mode against the PR's target branch, and stop.
 

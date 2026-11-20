@@ -15,7 +15,7 @@ The commands review-prs runs when `forge.sh` prints `github <owner>/<repo>`: `or
 
 ## Setup
 
-`gh` must be authenticated (`gh auth status`). The bundled scripts are [scripts/post-review.sh](../scripts/post-review.sh), [scripts/outside-findings.sh](../scripts/outside-findings.sh) and [scripts/note-fixes.sh](../scripts/note-fixes.sh).
+`gh` must be authenticated (`gh auth status`). The bundled scripts are [scripts/post-review.sh](../scripts/post-review.sh), [scripts/outside-findings.sh](../scripts/outside-findings.sh), [scripts/review-threads.sh](../scripts/review-threads.sh) and [scripts/note-fixes.sh](../scripts/note-fixes.sh).
 
 In a fork checkout with an `upstream` remote, bare `gh pr …` and `repos/{owner}/{repo}` resolve to the upstream repo, so `gh pr view <n>` fails or reads someone else's PR. If `gh repo view --json nameWithOwner` isn't the repo the PRs live on, prefix every `gh` command and script call with `GH_REPO=<owner>/<repo>`, or `GH_REPO=<host>/<owner>/<repo>` when `origin` isn't on `github.com` — `forge.sh` prints no host, and without one `gh` targets `github.com` (shell variables don't survive between tool calls).
 
@@ -59,17 +59,16 @@ The spec is the body and `closingIssuesReferences` (`gh issue view <m>`). Screen
 ## Outside findings
 
 - **Check-run annotations** — `<skill-dir>/scripts/outside-findings.sh <n>` prints one JSON object per annotation on the PR's head (linters, type checkers, CodeQL, any CI step with a problem matcher).
-- **Bot review threads** — inline comments and review bodies from bots:
+- **Bot review threads** — inline threads and review bodies from bots:
 
   ```bash
-  gh api repos/{owner}/{repo}/pulls/<n>/comments --paginate \
-    --jq '.[] | select(.user.type == "Bot" and .in_reply_to_id == null) | {id, user: .user.login, path, line, side, body}'
+  <skill-dir>/scripts/review-threads.sh <n>   # every inline thread: its first comment, resolved, bot
   gh api repos/{owner}/{repo}/pulls/<n>/reviews --paginate \
     --jq '.[] | select(.user.type == "Bot") | {user: .user.login, commit_id, body}'
   gh pr view <n> --comments   # CodeRabbit's walkthrough and summary
   ```
 
-  The REST list includes resolved threads and doesn't mark them. Tell them apart with address-review-findings' `scripts/unresolved-threads.sh <n>`: a confirmed finding in a resolved thread is posted as your own comment, since the fix step reads only unresolved threads.
+  The bot threads are those with `"bot": true`. A confirmed finding in one with `"resolved": true` is posted as your own comment, since the fix step reads only unresolved threads.
 - **Sonar** — the PR's key for `pullRequest` is its number.
 
 ## Post the review
