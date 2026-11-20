@@ -102,5 +102,6 @@ def sync(manifest, home):
     print(f"Synced. Verify with: {sys.argv[0]} --check")
     return 0
 
+
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
