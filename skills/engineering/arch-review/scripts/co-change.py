@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""List the pairs of files that keep changing in the same commit.
+"""List the pairs of files that keep changing in the same commit, or the files that change most.
 
-    co-change.py [--since 6.months] [--top 30] [--min 3] [--max-files 30]
+    co-change.py [--churn] [--since 6.months] [--top 30] [--min 3] [--max-files 30]
                  [--exclude <glob>]... [--no-default-excludes] [<path>...]
     co-change.py --help
 
@@ -27,6 +27,14 @@ Prints the --top pairs seen at least --min times, most frequent first, one per l
 where <share> is <together> over the commit count of the file that changed less, so
 100% means it never changed without the other. Pairs in different modules at a high
 share are hidden links; a pair in one module is expected.
+
+--churn prints the hot spots instead: the --top files changed in at least --min of
+those commits, most first, one per line:
+
+    <commits>  <file>
+
+It counts the same commits and files as the pairs, so the excludes, paths and
+--max-files apply to it too.
 
 Exits 0 (also when nothing qualifies, or the repo has no commits yet), 2 on bad usage,
 outside a git repo, or when git fails. Stdlib only.
@@ -97,9 +105,12 @@ def generated(paths, root):
 def main(argv):
     parser = argparse.ArgumentParser(prog="co-change.py", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--churn", action="store_true",
+                        help="print the most-changed files instead of the pairs")
     parser.add_argument("--since", default="6.months", help="how far back to look (default 6.months)")
-    parser.add_argument("--top", type=int, default=30, help="pairs to print (default 30)")
-    parser.add_argument("--min", type=int, default=3, help="minimum commits together (default 3)")
+    parser.add_argument("--top", type=int, default=30, help="rows to print (default 30)")
+    parser.add_argument("--min", type=int, default=3,
+                        help="minimum commits together, or per file with --churn (default 3)")
     parser.add_argument("--max-files", type=int, default=30, help="skip commits touching more files (default 30)")
     parser.add_argument("--exclude", action="append", default=[], metavar="GLOB",
                         help="never count files matching GLOB (repeatable)")
@@ -142,13 +153,29 @@ def main(argv):
         per_file.update(files)
         pairs.update(itertools.combinations(files, 2))
 
+    if args.churn:
+        print_churn(per_file, root, args.min, args.top)
+    else:
+        print_pairs(per_file, pairs, root, args.min, args.top)
+    return 0
+
+
+def print_churn(per_file, root, least, top):
+    """The --top live files changed in at least `least` commits, most first."""
+    hot = [(n, f) for f, n in per_file.items() if n >= least and (root / f).exists()]
+    hot.sort(key=lambda r: (-r[0], r[1]))
+    for n, f in hot[:top]:
+        print(f"{n}\t{f}")
+
+
+def print_pairs(per_file, pairs, root, least, top):
+    """The --top live pairs changed together at least `least` times, with the share of the rarer file."""
     rows = [(n, a, b) for (a, b), n in pairs.items()
-            if n >= args.min and (root / a).exists() and (root / b).exists()]
+            if n >= least and (root / a).exists() and (root / b).exists()]
     rows.sort(key=lambda r: (-r[0], r[1], r[2]))
-    for n, a, b in rows[:args.top]:
+    for n, a, b in rows[:top]:
         share = round(100 * n / min(per_file[a], per_file[b]))
         print(f"{n}\t{share}%\t{a}\t{b}")
-    return 0
 
 
 if __name__ == "__main__":

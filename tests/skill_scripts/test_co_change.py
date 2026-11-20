@@ -141,10 +141,37 @@ class CoChangeTest(unittest.TestCase):
             self.commit("a.py", "b.py", "yarn.lock")
         self.assertEqual(self.rows("--max-files", "2"), [])
 
+    def test_churn_ranks_live_files_by_commits(self):
+        for _ in range(4):
+            self.commit("a.py", "b.py")
+        for _ in range(3):
+            self.commit("c.py")
+        self.commit("b.py")
+        self.assertEqual(self.rows("--churn"), [["5", "b.py"], ["4", "a.py"], ["3", "c.py"]])
+
+    def test_churn_applies_the_default_excludes_and_exclude_globs(self):
+        (self.repo / ".gitattributes").write_text("gen/** linguist-generated\n")
+        for _ in range(3):
+            self.commit("src/a.py", "package-lock.json", "CHANGELOG.md", "gen/api.py", "a.snap")
+        self.assertEqual(self.rows("--churn", "--exclude", "*.snap"), [["3", "src/a.py"]])
+        self.assertEqual(len(self.rows("--churn", "--no-default-excludes")), 5)
+
+    def test_churn_drops_deleted_files_and_honours_paths_min_top_and_the_sweep_cap(self):
+        for _ in range(3):
+            self.commit("src/a.py", "src/b.py", "docs/x.md", "old.py")
+        self.git("rm", "-q", "old.py")
+        self.git("commit", "-q", "-m", "drop")
+        self.commit("src/a.py")
+        self.assertEqual(self.rows("--churn", "src"), [["4", "src/a.py"], ["3", "src/b.py"]])
+        self.assertEqual(self.rows("--churn", "--min", "4"), [["4", "src/a.py"]])
+        self.assertEqual(self.rows("--churn", "--top", "1"), [["4", "src/a.py"]])
+        self.assertEqual(self.rows("--churn", "--max-files", "3"), [])
+
     def test_help_explains_the_output_columns(self):
         result = self.run_script("--help")
         self.assertEqual(result.returncode, 0)
         self.assertIn("<together>  <share>%", result.stdout)
+        self.assertIn("<commits>  <file>", result.stdout)
 
     def test_outside_a_repo_exits_2(self):
         with tempfile.TemporaryDirectory() as tmp:
