@@ -7,6 +7,7 @@ https://agentskills.io/skill-creation/using-scripts):
 - name: 1-64 lowercase letters, digits, hyphens; no leading, trailing or doubled
   hyphen; matches its folder
 - description: non-empty, at most 1024 chars; compatibility, when present, 1-500 chars
+- metadata, when present, maps string keys to string values: no nested maps or lists
 - SKILL.md body under 500 lines and about 5,000 tokens
 - bundled files sit at most one level below the skill folder (scripts/, references/, …),
   and output templates (`*template*` files outside scripts/ and evals/) sit in assets/
@@ -131,6 +132,8 @@ def check_skill(s):
         problem(skill_md, "model-invoked description never says when to use it")
     if "compatibility" in fields and not 1 <= len(fields["compatibility"]) <= 500:
         problem(skill_md, "compatibility must be 1-500 chars")
+    if "metadata" in fields and not metadata_is_strings(skill_md.read_text()):
+        problem(skill_md, "metadata must map string keys to string values, with no nested maps or lists")
 
     lines = body.count("\n")
     if lines >= MAX_BODY_LINES:
@@ -187,6 +190,31 @@ def check_skill(s):
             if not re.search(r"@\d|==\d", pkg):
                 problem(md, f"unpinned one-off command for {pkg!r}; pin a version (pkg@1.2.3)")
     return out
+
+
+def metadata_is_strings(text):
+    """Whether the frontmatter's `metadata:` block is a flat map of scalar values."""
+    lines = re.match(r"---\n(.*?)\n---\n", text, re.DOTALL).group(1).split("\n")
+    start = next(i for i, line in enumerate(lines) if line.startswith("metadata:"))
+    if re.sub(r"\s+#.*$", "", lines[start][len("metadata:"):]).strip():
+        return False  # an inline value: a string or a flow collection, not a block map
+    indent, block = None, False
+    for line in lines[start + 1:]:
+        if not line.strip():
+            continue
+        depth = len(line) - len(line.lstrip(" "))
+        if depth == 0:
+            break  # the next top-level key
+        if indent is not None and depth > indent:
+            if block:
+                continue  # a block scalar's text
+            return False
+        indent = indent or depth
+        entry = re.match(r"\s+([^\s:#-][^:]*):\s+(\S.*)$", line)
+        if depth < indent or not entry or entry.group(2)[0] in "[{&*":
+            return False
+        block = entry.group(2).split(" #")[0].strip() in ("|", ">", "|-", ">-", "|+", ">+")
+    return True
 
 
 def check_script(f):

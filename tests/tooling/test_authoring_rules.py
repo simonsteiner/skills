@@ -143,6 +143,23 @@ class AuthoringRulesTest(unittest.TestCase):
         (folder / "scripts/render-template.sh").chmod(0o755)
         self.assertEqual(self.problems(), [])
 
+    def test_metadata_values_are_strings(self):
+        flat = GOOD + '\nmetadata:\n  author: example-org\n  version: "1.0"  # quoted\n  notes: |\n    two\n    lines\nlicense: MIT'
+        bad = {
+            "list of maps": GOOD + "\nmetadata:\n  credits:\n    - skill: x\n      author: y",
+            "nested map": GOOD + "\nmetadata:\n  credits:\n    author: y",
+            "list": GOOD + "\nmetadata:\n  - a",
+            "flow list": GOOD + "\nmetadata:\n  tags: [a, b]",
+            "inline value": GOOD + "\nmetadata: x",
+        }
+        self.skill("a", flat)
+        self.assertEqual(self.problems(), [])
+        for case, frontmatter in bad.items():
+            with self.subTest(case):
+                self.setUp()
+                self.skill("a", frontmatter)
+                self.assertProblem("metadata must map string keys to string values")
+
     def test_frontmatter_rules(self):
         cases = {
             "no YAML frontmatter": None,
