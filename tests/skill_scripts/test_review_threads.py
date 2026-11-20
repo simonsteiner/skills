@@ -79,11 +79,6 @@ class ReviewThreadsTest(unittest.TestCase):
         self.assertIn("repo=web", graphql["args"])
         self.assertEqual(graphql["env"]["GH_HOST"], "ghe.example.com")
 
-    def test_gh_host_wins_over_the_checkout(self):
-        self.threads(page([]), env={"GH_HOST": "ghe.example.com"})
-        [graphql] = [c for c in self.gh.calls if c["args"][:2] == ["api", "graphql"]]
-        self.assertEqual(graphql["env"]["GH_HOST"], "ghe.example.com")
-
     def test_an_unqualified_gh_repo_skips_the_checkout(self):
         self.threads(page([]), env={"GH_REPO": "me/web"})
         [call] = self.gh.calls

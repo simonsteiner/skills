@@ -37,7 +37,7 @@ else
   url="$(gh repo view --json url --jq .url)"  # https://HOST/OWNER/REPO
   url="${url#*://}"
   owner_repo="${url#*/}"
-  export GH_HOST="${GH_HOST:-${url%%/*}}"
+  export GH_HOST="${url%%/*}"
 fi
 
 repo="${owner_repo##*/}"
