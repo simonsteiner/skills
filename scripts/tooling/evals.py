@@ -32,6 +32,8 @@ import subprocess
 import tarfile
 
 WORKSPACE = ".eval-workspace"
+TASK_FILE = "task.md"
+GRADING_FILE = "grading.json"
 
 
 def problems(skill):
@@ -79,6 +81,8 @@ def slug(text, words=5):
 def snapshot(repo, skill, ref, dest):
     """Extract the skill's folder as it was at git `ref` into `dest`."""
     rel = skill.folder.relative_to(repo).as_posix()
+    if ref.startswith("-"):  # git would read it as an option (`--output=<file>` writes a file)
+        raise ValueError(f"can't read {rel} at {ref!r}: not a git ref")
     archive = subprocess.run(["git", "-C", str(repo), "archive", "--format=tar", ref, rel],
                              capture_output=True, check=False)
     if archive.returncode != 0:
@@ -143,13 +147,13 @@ def prepare(repo, skill, baseline=None, root=None):
             run = eval_dir / config
             (run / "outputs").mkdir(parents=True)
             files = ", ".join(str(skill.folder / f) for f in e.get("files", [])) or "none"
-            (run / "task.md").write_text(TASK.format(
+            (run / TASK_FILE).write_text(TASK.format(
                 skill=skill_path, query=e["query"], setup=e.get("setup", "none"), files=files,
                 outputs=run / "outputs", timing=run / "timing.json"))
             (run / "grade.md").write_text(GRADE.format(
-                outputs=run / "outputs", grading=run / "grading.json",
+                outputs=run / "outputs", grading=run / GRADING_FILE,
                 assertions="\n".join(f"- {b}" for b in e["expected_behavior"])))
-            runs.append((eval_dir.name, config, run / "task.md"))
+            runs.append((eval_dir.name, config, run / TASK_FILE))
     return iteration, runs
 
 
@@ -187,14 +191,14 @@ def benchmark(iteration):
 
     Returns the benchmark, or raises ValueError naming every run that isn't graded yet.
     """
-    runs = sorted(p for p in iteration.glob("eval-*/*") if (p / "task.md").exists())
-    missing = [str(r.relative_to(iteration)) for r in runs if not (r / "grading.json").exists()]
+    runs = sorted(p for p in iteration.glob("eval-*/*") if (p / TASK_FILE).exists())
+    missing = [str(r.relative_to(iteration)) for r in runs if not (r / GRADING_FILE).exists()]
     if not runs or missing:
         raise ValueError("not graded yet: " + (", ".join(missing) or "no runs in " + str(iteration)))
 
     by_config = {}
     for run in runs:
-        grading = _read_json(run / "grading.json", iteration, ["summary.pass_rate"])
+        grading = _read_json(run / GRADING_FILE, iteration, ["summary.pass_rate"])
         results = grading.get("assertion_results") or []
         if not isinstance(results, list) or not all(isinstance(r, dict) for r in results):
             raise ValueError(f"{(run / 'grading.json').relative_to(iteration)}: assertion_results must be a list of objects")
