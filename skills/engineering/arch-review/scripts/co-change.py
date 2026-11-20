@@ -68,7 +68,7 @@ class GitError(Exception):
 def commits(since):
     """Each non-merge commit's changed files, repo-root relative, unquoted."""
     result = subprocess.run(
-        ["git", "-c", "core.quotePath=false", "log", "--no-merges", f"--since={since}",
+        ["git", "-c", "core.quotePath=false", "log", "--no-merges", "--no-show-signature", f"--since={since}",
          "--name-only", "--format=%x00"],
         capture_output=True, text=True, check=False)
     if result.returncode:

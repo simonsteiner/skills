@@ -7,6 +7,7 @@ import os
 import subprocess
 import tempfile
 import unittest
+from datetime import datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -16,6 +17,10 @@ SCRIPT = ROOT / "skills/engineering/arch-review/scripts/co-change.py"
 ENV = {**{k: v for k, v in os.environ.items() if not k.startswith("GIT_")},
        "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.com",
        "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@example.com"}
+
+# inside the default --since window, so only an honoured --since drops it
+def days_ago(n):
+    return (datetime.now() - timedelta(days=n)).strftime("%Y-%m-%dT12:00:00")
 
 
 class CoChangeTest(unittest.TestCase):
@@ -29,14 +34,16 @@ class CoChangeTest(unittest.TestCase):
     def git(self, *args):
         subprocess.run(["git", *args], cwd=self.repo, env=ENV, capture_output=True, check=True)
 
-    def commit(self, *paths):
+    def commit(self, *paths, date=None):
         self.n += 1
         for path in paths:
             f = self.repo / path
             f.parent.mkdir(parents=True, exist_ok=True)
             f.write_text(f"{self.n}\n")
         self.git("add", "-A")
-        self.git("commit", "-q", "-m", f"c{self.n}")
+        dates = {} if date is None else {"GIT_AUTHOR_DATE": date, "GIT_COMMITTER_DATE": date}
+        subprocess.run(["git", "commit", "-q", "-m", f"c{self.n}"], cwd=self.repo, env={**ENV, **dates},
+                       capture_output=True, check=True)
 
     def run_script(self, *args, cwd=None):
         return subprocess.run([str(SCRIPT), *args], cwd=cwd or self.repo, env=ENV,
@@ -55,6 +62,13 @@ class CoChangeTest(unittest.TestCase):
             self.commit("a.py", "b.py")
         self.assertEqual(self.rows(), [["4", "100%", "a.py", "b.py"],
                                        ["3", "100%", "keys/keymap.ts", "ui/menu.ts"]])
+
+    def test_since_bounds_the_history(self):
+        for _ in range(3):
+            self.commit("a.py", "b.py", date=days_ago(30))
+        for _ in range(3):
+            self.commit("c.py", "d.py")
+        self.assertEqual([r[-2:] for r in self.rows("--since", days_ago(10)[:10])], [["c.py", "d.py"]])
 
     def test_pairs_below_min_are_dropped(self):
         self.commit("a.py", "b.py")
