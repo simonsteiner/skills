@@ -117,6 +117,18 @@ class CoChangeTest(unittest.TestCase):
             self.commit("ä.py", "my file.py")
         self.assertEqual(self.rows(), [["3", "100%", "my file.py", "ä.py"]])
 
+    def test_names_git_quotes_are_kept(self):
+        # a tab or newline in a name splits its row, so look for each row in the raw output
+        names = ['say "hi".py', "back\\slash.py", "tab\tname.py", "new\nline.py"]
+        for _ in range(3):
+            self.commit(*names)
+        churn = self.run_script("--churn").stdout
+        pairs = self.run_script().stdout
+        for name in names:
+            with self.subTest(name=name):
+                self.assertIn(f"3\t{name}\n", churn)
+                self.assertIn(f"\t{name}", pairs)
+
     def test_a_repo_without_commits_prints_nothing(self):
         self.assertEqual(self.rows(), [])
 
@@ -125,6 +137,14 @@ class CoChangeTest(unittest.TestCase):
         result = self.run_script("--since", "--output=/tmp/x")
         self.assertEqual(result.returncode, 2)
         self.assertIn("--since", result.stderr)
+
+    def test_negative_counts_exit_2(self):
+        self.commit("a.py")
+        for flag in ("--top", "--min", "--max-files"):
+            with self.subTest(flag=flag):
+                result = self.run_script(flag, "-1")
+                self.assertEqual(result.returncode, 2)
+                self.assertIn(flag, result.stderr)
 
     def test_top_limits_the_output(self):
         for _ in range(3):

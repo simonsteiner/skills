@@ -66,15 +66,18 @@ class GitError(Exception):
 
 
 def commits(since):
-    """Each non-merge commit's changed files, repo-root relative, unquoted."""
+    """Each non-merge commit's changed files, repo-root relative, as git stores them."""
+    # -z keeps every path verbatim: without it git C-quotes a name holding a ", \\, tab or newline.
     result = subprocess.run(
-        ["git", "-c", "core.quotePath=false", "log", "--no-merges", "--no-show-signature", f"--since={since}",
-         "--name-only", "--format=%x00"],
+        ["git", "log", "-z", "--no-merges", "--no-show-signature", f"--since={since}",
+         "--name-only", "--format=%x1e"],
         capture_output=True, text=True, check=False)
     if result.returncode:
         raise GitError(result.stderr.strip())
-    for block in result.stdout.split("\0"):
-        files = sorted({line for line in block.splitlines() if line})
+    # Each commit is its %x1e header, then "\0\n" and its paths, each ended by "\0". A path that
+    # starts with \x1e would read as a header.
+    for record in ("\0" + result.stdout).split("\0\x1e")[1:]:
+        files = sorted({f for f in record.removeprefix("\0\n").split("\0") if f})
         if files:
             yield files
 
@@ -102,16 +105,23 @@ def generated(paths, root):
             if value in ("set", "true")}
 
 
+def count(value):
+    """An argparse type: a whole number, zero or more."""
+    if not (value.isascii() and value.isdigit()):
+        raise argparse.ArgumentTypeError(f"not a whole number, zero or more: {value!r}")
+    return int(value)
+
+
 def main(argv):
     parser = argparse.ArgumentParser(prog="co-change.py", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--churn", action="store_true",
                         help="print the most-changed files instead of the pairs")
     parser.add_argument("--since", default="6.months", help="how far back to look (default 6.months)")
-    parser.add_argument("--top", type=int, default=30, help="rows to print (default 30)")
-    parser.add_argument("--min", type=int, default=3,
+    parser.add_argument("--top", type=count, default=30, help="rows to print (default 30)")
+    parser.add_argument("--min", type=count, default=3,
                         help="minimum commits together, or per file with --churn (default 3)")
-    parser.add_argument("--max-files", type=int, default=30, help="skip commits touching more files (default 30)")
+    parser.add_argument("--max-files", type=count, default=30, help="skip commits touching more files (default 30)")
     parser.add_argument("--exclude", action="append", default=[], metavar="GLOB",
                         help="never count files matching GLOB (repeatable)")
     parser.add_argument("--no-default-excludes", action="store_true",
