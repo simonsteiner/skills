@@ -41,7 +41,7 @@ Call the Skill tool with "codebase-design" before anything else. Use its vocabul
 
 The report is a folder, `docs/arch-review/YYYY-MM-DD-<slug>/`, so no file in it outgrows the token budget an agent can read whole. Copy [assets/report-template.md](assets/report-template.md) to its `README.md` (status table, friction map, smaller findings, recommendation) and [assets/card-template.md](assets/card-template.md) to one `C<n>-<card-slug>.md` per candidate, with its before/after diagram; fill them in following [REPORT.md](REPORT.md). Check every file against the budget (`wc -c`, bytes / 4) before committing. Add the report to the top of `docs/arch-review/README.md` (create the index if it's missing).
 
-- **Candidates** (`C1…`) are structural fixes from the deepening or coupling lens, one card each, with the fields REPORT.md lists under "Candidate card".
+- **Candidates** (`C1…`) are structural fixes from any lens (a maintainability issue only when it spans modules), one card each, with the fields REPORT.md lists under "Candidate card".
 - **Smaller findings** (`S1…`) are local maintainability fixes from the second lens — two sentences each.
 
 Rank: strength, then live defect, then churn, then dependency order (a candidate another one builds on goes first). Plan the branch name for every row now — the status table carries it, so a later session can find the work.
