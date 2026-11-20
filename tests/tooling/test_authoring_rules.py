@@ -75,10 +75,10 @@ class AuthoringRulesTest(unittest.TestCase):
 
     def test_one_off_commands_pin_a_version(self):
         self.skill(body="Run `npx eslint --fix .`, `uvx ruff@0.8.0 check`, `npx --yes rumdl@0.2 check`, "
-                        "`pipx run 'black==24.10.0'`, `npx @scope/tool@1.2`, `npx prettier@latest .`.\n\n"
+                        "`pipx run 'black==24.10.0'`, `npx @scope/tool@1.2`, `npx prettier@latest .`, `npx -- jest`.\n\n"
                         "In prose uvx is handy.\n\n```bash\nbunx tsc --noEmit\n```\n")
         self.assertEqual([p.split("command for ")[1].split(";")[0] for p in self.problems() if "unpinned" in p],
-                         ["'eslint'", "'prettier@latest'", "'tsc'"])
+                         ["'eslint'", "'prettier@latest'", "'jest'", "'tsc'"])
 
     def test_unpinned_pattern_stays_linear_on_a_long_run_of_flags(self):
         # each `--x` used to split two ways (`-` + `-x` or `--` + `x`): 2^n tries on a miss
@@ -152,6 +152,7 @@ class AuthoringRulesTest(unittest.TestCase):
 
     def test_metadata_values_are_strings(self):
         flat = (GOOD + '\nmetadata:  # free-form\n  # who maintains it\n  author: example-org\n  version: "1.0"  # quoted\n'
+                "  release: '2026-11-20'\n  semver: 1.0.0\n  answer: nope\n"
                 '  notes: |\n    two\n    lines\n  indented: |2\n      kept indent\nlicense: MIT')
         bad = {
             "list of maps": GOOD + "\nmetadata:\n  credits:\n    - skill: x\n      author: y",
@@ -159,6 +160,15 @@ class AuthoringRulesTest(unittest.TestCase):
             "list": GOOD + "\nmetadata:\n  - a",
             "flow list": GOOD + "\nmetadata:\n  tags: [a, b]",
             "inline value": GOOD + "\nmetadata: x",
+            "empty block": GOOD + "\nmetadata:\nlicense: MIT",
+            "float": GOOD + "\nmetadata:\n  version: 1.0",
+            "int": GOOD + "\nmetadata:\n  build: 3",
+            "bool": GOOD + "\nmetadata:\n  enabled: true",
+            "null": GOOD + "\nmetadata:\n  owner: null",
+            "comment only": GOOD + "\nmetadata:\n  owner: # nobody yet",
+            "tagged": GOOD + "\nmetadata:\n  build: !!int 3",
+            "date": GOOD + "\nmetadata:\n  released: 2026-11-20",
+            "int key": GOOD + "\nmetadata:\n  1: x",
         }
         self.skill("a", flat)
         self.assertEqual(self.problems(), [])

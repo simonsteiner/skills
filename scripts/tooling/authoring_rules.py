@@ -53,6 +53,7 @@ import re
 from pathlib import Path
 
 from . import evals
+from .skill_inventory import uncommented
 
 MAX_BODY_LINES = 500
 MAX_BODY_TOKENS = 5000
@@ -66,7 +67,7 @@ VAGUE = (
     "as appropriate",
 )
 MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
-UNPINNED = re.compile(r"\b(?:npx|bunx|uvx|pipx run)\s+(?:--?\w[\w-]*(?:=\S+)?\s+)*(@?[a-z][\w./-]*(?:[@=]=?\S+)?)")
+UNPINNED = re.compile(r"\b(?:npx|bunx|uvx|pipx run)\s+(?:--?(?:\w[\w-]*(?:=\S+)?)?\s+)*(@?[a-z][\w./-]*(?:[@=]=?\S+)?)")
 # a fenced block: ``` or ~~~, three or more, indented or not (list items), closed by a line of
 # nothing but at least the same run; a fence line with an info string inside is content (CommonMark)
 FENCED = re.compile(r"^[ \t]*(`{3,}|~{3,})[^\n]*\n(.*?)^[ \t]*\1(?:(?<=`)`*|(?<=~)~*)[ \t]*$", re.DOTALL | re.MULTILINE)
@@ -229,19 +230,29 @@ def _command_problems(folder, text):
 
 METADATA_ENTRY = re.compile(r"\s+([^\s:#-][^:]*):\s+(\S.*)$")
 BLOCK_INDICATOR = re.compile(r"[|>][1-9+-]{0,2}")  # |, >-, |2, >+1, …
+# plain scalars YAML 1.1 or 1.2 loads as null, a bool, a number or a date rather than a string
+NOT_STRING_WORDS = {"~", "null", "true", "false", "yes", "no", "on", "off", ".inf", "-.inf", "+.inf", ".nan"}
+NUMBER = re.compile(r"[-+]?(?:\d[\d_]*\.?\d*|\.\d+)(?:[eE][-+]?\d+)?|0[xo][\da-fA-F_]+")
+DATE = re.compile(r"\d{4}-\d\d?-\d\d?(?:[Tt ].*)?")
 
 
-def _uncommented(value):
-    """A plain value without its trailing ` # comment`."""
-    return re.sub(r"\s#.*", "", value).strip()
+def _is_string(value):
+    """Whether a plain or quoted scalar loads as a string."""
+    value = uncommented(value)
+    if value[:1] in "'\"":
+        return True
+    return bool(value) and value[0] not in "#!" and value.lower() not in NOT_STRING_WORDS \
+        and not NUMBER.fullmatch(value) and not DATE.fullmatch(value)
 
 
 def _metadata_entry(line):
-    """"block" for a `key:` opening a block scalar, "scalar" for `key: value`, None otherwise."""
+    """"block" for a `key:` opening a block scalar, "scalar" for a string `key: value`, None otherwise."""
     entry = METADATA_ENTRY.match(line)
-    if not entry or entry.group(2)[0] in "[{&*":
+    if not entry or entry.group(2)[0] in "[{&*" or not _is_string(entry.group(1)):
         return None
-    return "block" if BLOCK_INDICATOR.fullmatch(_uncommented(entry.group(2))) else "scalar"
+    if BLOCK_INDICATOR.fullmatch(uncommented(entry.group(2))):
+        return "block"
+    return "scalar" if _is_string(entry.group(2)) else None
 
 
 def _metadata_lines(lines):
@@ -256,10 +267,14 @@ def _metadata_lines(lines):
 
 
 def metadata_is_strings(text):
-    """Whether the frontmatter's `metadata:` block is a flat map of scalar values."""
+    """Whether the frontmatter's `metadata:` block is a flat map of string keys to string values.
+
+    Entries are one-line `key: value` pairs or block scalars (`|`, `>`); a folded plain scalar,
+    a multi-line quoted one or a flow map reads as not strings.
+    """
     lines = re.match(r"---\n(.*?)\n---\n", text, re.DOTALL).group(1).split("\n")
     start = next(i for i, line in enumerate(lines) if line.startswith("metadata:"))
-    if _uncommented(lines[start][len("metadata:"):]):
+    if uncommented(lines[start][len("metadata:"):]):
         return False  # an inline value: a string or a flow collection, not a block map
     indent, block = None, False
     for depth, line in _metadata_lines(lines[start + 1:]):
@@ -272,7 +287,7 @@ def metadata_is_strings(text):
         if kind is None:
             return False
         block = kind == "block"
-    return True
+    return indent is not None  # an empty block is null, not a map
 
 
 def check_script(f):
