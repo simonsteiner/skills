@@ -96,99 +96,134 @@ def check(repo, skills):
 
 def check_skill(s):
     """(path, problem) pairs for one skill."""
-    skill_md, folder, fields, body = s.skill_md, s.folder, s.fields, s.body
-    if fields is None:
-        return [(skill_md, "no YAML frontmatter")]
-    out = []
+    if s.fields is None:
+        return [(s.skill_md, "no YAML frontmatter")]
+    out = [(s.folder / "evals/evals.json", msg) for msg in evals.problems(s)]
+    out += [(s.skill_md, msg) for msg in _name_problems(s) + _description_problems(s) + _size_problems(s.body)]
+    files = sorted(f for f in s.folder.rglob("*") if f.is_file())
+    for f in files:
+        out += _bundled_file_problems(s, f)
+    out += [(s.skill_md, f"link to {target!r} doesn't resolve") for target in _broken_links(s.folder, s.body)]
+    markdown = [f for f in files if f.suffix == ".md"]
+    out += _reference_problems(s.skill_md, markdown)
+    for md in markdown:
+        if md.name != "CREDITS.md":
+            text = md.read_text()
+            out += [(md, msg) for msg in _prose_problems(text) + _command_problems(s.folder, text)]
+    return out
 
-    def problem(path, msg):
-        out.append((path, msg))
 
-    for msg in evals.problems(s):
-        problem(folder / "evals/evals.json", msg)
-
+def _name_problems(s):
+    """disable-model-invocation and name, against the spec and the skill's folder."""
+    fields, out = s.fields, []
     invocation = fields.get("disable-model-invocation")
     if invocation not in (None, "true", "false"):
-        problem(skill_md, f"disable-model-invocation is {invocation!r}, not true or false")
-
+        out.append(f"disable-model-invocation is {invocation!r}, not true or false")
     name = fields.get("name", "")
     if not re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", name) or len(name) > 64:
-        problem(skill_md, f"name {name!r} must be 1-64 lowercase letters, digits, or single inner hyphens")
+        out.append(f"name {name!r} must be 1-64 lowercase letters, digits, or single inner hyphens")
     if re.search(r"anthropic|claude", name):
-        problem(skill_md, f"name {name!r} contains a reserved word")
+        out.append(f"name {name!r} contains a reserved word")
     if name != s.name:
-        problem(skill_md, f"name {name!r} doesn't match its folder {s.name!r}")
+        out.append(f"name {name!r} doesn't match its folder {s.name!r}")
+    return out
 
+
+def _description_problems(s):
+    """description, compatibility and metadata."""
+    fields, out = s.fields, []
     desc = fields.get("description", "")
     if not desc:
-        problem(skill_md, "description is empty")
+        out.append("description is empty")
     if len(desc) > 1024:
-        problem(skill_md, f"description is {len(desc)} chars, over 1024")
+        out.append(f"description is {len(desc)} chars, over 1024")
     if re.search(r"<[A-Za-z/][^>]*>", desc):
-        problem(skill_md, "description contains an XML tag")
+        out.append("description contains an XML tag")
     if re.match(r"(I|You|We)\b", desc) or re.search(r"\b(I can|you can use|I will|I'll)\b", desc, re.IGNORECASE):
-        problem(skill_md, "description isn't third person")
+        out.append("description isn't third person")
     if s.model_invoked and not re.search(r"\bwhen\b", desc, re.IGNORECASE):
-        problem(skill_md, "model-invoked description never says when to use it")
+        out.append("model-invoked description never says when to use it")
     if "compatibility" in fields and not 1 <= len(fields["compatibility"]) <= 500:
-        problem(skill_md, "compatibility must be 1-500 chars")
-    if "metadata" in fields and not metadata_is_strings(skill_md.read_text()):
-        problem(skill_md, "metadata must map string keys to string values, with no nested maps or lists")
+        out.append("compatibility must be 1-500 chars")
+    if "metadata" in fields and not metadata_is_strings(s.skill_md.read_text()):
+        out.append("metadata must map string keys to string values, with no nested maps or lists")
+    return out
 
+
+def _size_problems(body):
+    """The SKILL.md body against the line and token limits."""
+    out = []
     lines = body.count("\n")
     if lines >= MAX_BODY_LINES:
-        problem(skill_md, f"body is {lines} lines, {MAX_BODY_LINES} or more")
+        out.append(f"body is {lines} lines, {MAX_BODY_LINES} or more")
     tokens = len(body) // CHARS_PER_TOKEN
     if tokens > MAX_BODY_TOKENS:
-        problem(skill_md, f"body is about {tokens} tokens, over {MAX_BODY_TOKENS}; move reference material out")
+        out.append(f"body is about {tokens} tokens, over {MAX_BODY_TOKENS}; move reference material out")
+    return out
 
-    files = sorted(f for f in folder.rglob("*") if f.is_file())
-    for f in files:
-        rel = f.relative_to(folder)
-        if re.fullmatch(r"(README|CHANGELOG|INSTALL\w*)(\.\w+)?", f.name, re.IGNORECASE):
-            problem(f, "documentation file inside a skill folder")
-        if len(rel.parts) > 2:
-            problem(f, "bundled file is more than one level below the skill folder")
-        if "template" in f.name and rel.parts[0] not in ("assets", "scripts", "evals"):
-            problem(f, "output template outside assets/")
-        if rel.parts[0] == "scripts":
-            out.extend(check_script(f))
-        if rel.parts[0] == "evals":
-            continue  # test cases for the author, never read by the agent
-        if f != skill_md and f.name != "CREDITS.md" and f.name not in body and rel.as_posix() not in body:
-            problem(f, "bundled file is never mentioned in SKILL.md")
 
-    for target in re.findall(r"\]\((?!https?:|#|mailto:)([^)#\s]+\.(?:md|sh|py|json|ya?ml))", body):
-        if not (folder / target).exists():
-            problem(skill_md, f"link to {target!r} doesn't resolve")
+def _bundled_file_problems(s, f):
+    """(path, problem) pairs for one file in the skill folder, its scripts/ checks included."""
+    out = []
+    rel = f.relative_to(s.folder)
+    if re.fullmatch(r"(README|CHANGELOG|INSTALL\w*)(\.\w+)?", f.name, re.IGNORECASE):
+        out.append((f, "documentation file inside a skill folder"))
+    if len(rel.parts) > 2:
+        out.append((f, "bundled file is more than one level below the skill folder"))
+    if "template" in f.name and rel.parts[0] not in ("assets", "scripts", "evals"):
+        out.append((f, "output template outside assets/"))
+    if rel.parts[0] == "scripts":
+        out.extend(check_script(f))
+    if rel.parts[0] == "evals":
+        return out  # test cases for the author, never read by the agent
+    if f != s.skill_md and f.name != "CREDITS.md" and f.name not in s.body and rel.as_posix() not in s.body:
+        out.append((f, "bundled file is never mentioned in SKILL.md"))
+    return out
 
-    markdown = [f for f in files if f.suffix == ".md"]
+
+def _broken_links(folder, body):
+    """The relative links in SKILL.md to a bundled file that doesn't exist."""
+    links = re.findall(r"\]\((?!https?:|#|mailto:)([^)#\s]+\.(?:md|sh|py|json|ya?ml))", body)
+    return [target for target in links if not (folder / target).exists()]
+
+
+def _reference_problems(skill_md, markdown):
+    """(path, problem) pairs for the reference files: one level deep, and a contents list when long."""
+    out = []
     names = {f.name for f in markdown if f != skill_md}
     for md in markdown:
         text = md.read_text()
         if md != skill_md:
             for target in re.findall(r"\]\((?!https?:|#)([^)#\s]+\.md)", text):
                 if Path(target).name in names:
-                    problem(md, f"links to bundled {target!r}; references should be one level deep from SKILL.md")
+                    out.append((md, f"links to bundled {target!r}; references should be one level deep from SKILL.md"))
         if md != skill_md and "template" not in md.name and text.count("\n") > 100 and "\n## Contents\n" not in text:
-            problem(md, "over 100 lines without a '## Contents' list")
+            out.append((md, "over 100 lines without a '## Contents' list"))
+    return out
 
-    instructions = [(f, f.read_text()) for f in markdown if f.name != "CREDITS.md"]
-    for md, text in instructions:
-        if re.search(r"\b(scripts|references|assets)\\\w", text):
-            problem(md, "Windows-style path (use forward slashes)")
-        if re.search(rf"\b(before|after|until|as of)\s+({MONTHS})\s+20\d\d", text, re.IGNORECASE):
-            problem(md, "time-sensitive instruction; move it to an 'old patterns' section")
-        for phrase in VAGUE:
-            if phrase in text.lower():
-                problem(md, f'vague instruction "{phrase}"; say what the agent would get wrong instead')
-        for block in FENCED.finditer(text):
-            for path in sorted(set(BARE_SCRIPT.findall(block[2]))):
-                if (folder / path).is_file():
-                    problem(md, f"code block runs {path!r}; write <skill-dir>/{path}, agents run it from the user's repo")
-        for pkg in UNPINNED.findall("\n".join(CODE.findall(text))):
-            if not re.search(r"@\d|==\d", pkg):
-                problem(md, f"unpinned one-off command for {pkg!r}; pin a version (pkg@1.2.3)")
+
+def _prose_problems(text):
+    """Windows paths, time-sensitive and vague instructions in one Markdown file."""
+    out = []
+    if re.search(r"\b(scripts|references|assets)\\\w", text):
+        out.append("Windows-style path (use forward slashes)")
+    if re.search(rf"\b(before|after|until|as of)\s+({MONTHS})\s+20\d\d", text, re.IGNORECASE):
+        out.append("time-sensitive instruction; move it to an 'old patterns' section")
+    out += [f'vague instruction "{phrase}"; say what the agent would get wrong instead'
+            for phrase in VAGUE if phrase in text.lower()]
+    return out
+
+
+def _command_problems(folder, text):
+    """Commands in one Markdown file: bundled scripts run by a bare path, unpinned one-off packages."""
+    out = []
+    for block in FENCED.finditer(text):
+        for path in sorted(set(BARE_SCRIPT.findall(block[2]))):
+            if (folder / path).is_file():
+                out.append(f"code block runs {path!r}; write <skill-dir>/{path}, agents run it from the user's repo")
+    for pkg in UNPINNED.findall("\n".join(CODE.findall(text))):
+        if not re.search(r"@\d|==\d", pkg):
+            out.append(f"unpinned one-off command for {pkg!r}; pin a version (pkg@1.2.3)")
     return out
 
 
