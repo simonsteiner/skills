@@ -15,7 +15,7 @@ The commands review-prs runs when `forge.sh` prints `github <owner>/<repo>`: `or
 
 ## Setup
 
-`gh` must be authenticated (`gh auth status`). The bundled scripts are [scripts/post-review.sh](../scripts/post-review.sh), [scripts/outside-findings.sh](../scripts/outside-findings.sh) and [scripts/note-fixes.sh](../scripts/note-fixes.sh).
+`gh` must be authenticated (`gh auth status`). The bundled scripts are [scripts/post-review.sh](../scripts/post-review.sh), [scripts/outside-findings.sh](../scripts/outside-findings.sh), [scripts/review-threads.sh](../scripts/review-threads.sh) and [scripts/note-fixes.sh](../scripts/note-fixes.sh).
 
 In a fork checkout with an `upstream` remote, bare `gh pr …` and `repos/{owner}/{repo}` resolve to the upstream repo, so `gh pr view <n>` fails or reads someone else's PR. If `gh repo view --json nameWithOwner` isn't the repo the PRs live on, prefix every `gh` command and script call with `GH_REPO=<owner>/<repo>`, or `GH_REPO=<host>/<owner>/<repo>` when `origin` isn't on `github.com` — `forge.sh` prints no host, and without one `gh` targets `github.com` (shell variables don't survive between tool calls).
 
@@ -59,17 +59,16 @@ The spec is the body and `closingIssuesReferences` (`gh issue view <m>`). Screen
 ## Outside findings
 
 - **Check-run annotations** — `<skill-dir>/scripts/outside-findings.sh <n>` prints one JSON object per annotation on the PR's head (linters, type checkers, CodeQL, any CI step with a problem matcher).
-- **Bot review threads** — inline comments and review bodies from bots:
+- **Bot review threads** — inline threads and review bodies from bots:
 
   ```bash
-  gh api repos/{owner}/{repo}/pulls/<n>/comments --paginate \
-    --jq '.[] | select(.user.type == "Bot" and .in_reply_to_id == null) | {id, user: .user.login, path, line, side, body}'
+  <skill-dir>/scripts/review-threads.sh <n>   # every inline thread: its first comment, resolved, bot
   gh api repos/{owner}/{repo}/pulls/<n>/reviews --paginate \
     --jq '.[] | select(.user.type == "Bot") | {user: .user.login, commit_id, body}'
   gh pr view <n> --comments   # CodeRabbit's walkthrough and summary
   ```
 
-  The REST list includes resolved threads and doesn't mark them. Tell them apart with address-review-findings' `scripts/unresolved-threads.sh <n>`: a confirmed finding in a resolved thread is posted as your own comment, since the fix step reads only unresolved threads.
+  The bot threads are those with `"bot": true`. A confirmed finding in one with `"resolved": true` is posted as your own comment, since the fix step reads only unresolved threads.
 - **Sonar** — the PR's key for `pullRequest` is its number.
 
 ## Post the review
@@ -103,7 +102,7 @@ It adds the fix commits to a `Fixed:` line after the summary's `Range:` line, me
 
 Once the review is posted, remove its worktree (`git worktree remove --force <path> && rmdir <its parent>`): address-review-findings makes its own.
 
-Call the Skill tool with "address-review-findings" once, naming every PR that got comments or has bot threads you confirmed, deferred or disputed, so each PR gets one push, and a stack layer gets its carried-up fixes and its own fixes in that same push. Each push starts another bot review. It reads the unresolved threads — yours and the bots' — fixes, replies to a disputed one and leaves it open, commits, pushes, replies with the commit, resolves, and carries fixes up a stack. When *Setup* needed a `GH_REPO` prefix, pass it in the call's arguments (`GH_REPO=<owner>/<repo>`, then the PRs): the prefix ends with the command it was on, and without it the skill reads the upstream repo's PRs. Afterwards record the fix commits in your summary (*Record fixes*). A fix that changed what the PR describes → the "pr-body" skill for the body, `gh pr edit <n> --title` for the title.
+Call the Skill tool with "address-review-findings" once, naming every PR that got comments or has bot threads you confirmed, deferred or disagree with, so each PR gets one push, and a stack layer gets its carried-up fixes and its own fixes in that same push. Each push starts another bot review. It reads the unresolved threads — yours and the bots' — fixes, replies to one you disagree with and leaves it open, commits, pushes, replies with the commit, resolves, and carries fixes up a stack. When *Setup* needed a `GH_REPO` prefix, pass it in the call's arguments (`GH_REPO=<owner>/<repo>`, then the PRs): the prefix ends with the command it was on, and without it the skill reads the upstream repo's PRs. Afterwards record the fix commits in your summary (*Record fixes*). A fix that changed what the PR describes → the "pr-body" skill for the body, `gh pr edit <n> --title` for the title.
 
 ## Ready to merge
 

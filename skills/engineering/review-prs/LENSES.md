@@ -9,6 +9,7 @@ Read in Step 2. Each lens lists only what the model would otherwise miss.
 - Standards
 - Smell baseline
 - Spec
+- Weigh and disagree
 
 ## Correctness
 
@@ -40,6 +41,20 @@ Duplicated Code reaches past the diff. When the diff adds a helper, utility, hoo
 
 ## Spec
 
-**Paraphrase first.** Write two or three sentences on what the diff does, from the code alone — before reading the spec source if you haven't yet, and without leaning on it if you have. Then hold the whole spec source against it — the PR body and its linked issues (Local mode: the commit messages and any spec file found): behaviour the spec source claims and the diff doesn't show, or behaviour the diff has that nothing in the spec source accounts for, is a **Spec** finding — quote the spec line, or the hunk it leaves out. A one-line body like "Fixes #12" leaves the issue to account for the behaviour; that isn't a finding per hunk. A paraphrase you can't write is a finding too: the change doesn't hang together, or it hides behind its description.
+**Paraphrase first.** Write two or three sentences on what the diff does, from the code alone — before reading the spec source if you haven't yet, and without leaning on it if you have. A paraphrase you can't write is a finding too: the change doesn't hang together, or it hides behind its description.
 
-Then compare the diff to what was asked, quoting the spec line for each finding: (a) requirements missing or partial, (b) behaviour nobody asked for (scope creep), (c) requirements that look implemented but are wrong. Report as **Spec**. A change can pass Standards and fail Spec, or the reverse; keep the axes distinct in the summary instead of netting them out.
+Then hold the whole spec source against the paraphrase — the PR body and its linked issues (Local mode: the commit messages and any spec file found) — and report as **Spec**, quoting the spec line or the hunk it leaves out: (a) requirements the spec source claims that the diff misses or shows only in part, (b) behaviour the diff has that nothing in the spec source accounts for (scope creep), (c) requirements that look implemented but are wrong. A one-line body like "Fixes #12" leaves the issue to account for the behaviour; that isn't a finding per hunk. A change can pass Standards and fail Spec, or the reverse; keep the axes distinct in the summary instead of netting them out.
+
+## Weigh and disagree
+
+For whoever posts and fixes (Steps 2 and 4), not for a review sub-agent: it returns every finding it can ground, unweighed.
+
+**Weigh a grounded finding.** A real trigger doesn't mean this PR must handle it: bots review every push, so fixing everything never converges, each round landing on the last fix. Weigh three things together, with no threshold on any one:
+
+- **Reach** — does a real user, in a setup the code claims to support (its docs, compatibility line, spec), get into the triggering state? That someone could construct it isn't enough.
+- **Consequence** — a silent wrong result, lost data or a leaked credential matters even when rare; a loud failure that says what to do is acceptable in a rare setup.
+- **Fix** — does it close a defect, or make the code handle a case it never claimed to handle (another host form, input shape or mode)? The second is a feature, outside the PR's scope.
+
+All three say fix → post it to fix. A rare setup with a loud failure, or a fix that's a feature → defer it. A severe consequence on a narrow reach → post it and say it's the user's call. On lines the last fix round wrote: a defect in that fix gets fixed; a request to extend it is usually deferred.
+
+**Disagree with evidence.** Rejecting a finding — your own on re-reading, or a bot's — cites something a reader can open: a file and symbol, a test, a spec line, a recorded decision. "This was intentional" isn't evidence; a reason that lives only in someone's head is a question for the user, not a disagree. Wanting the finding to be wrong isn't evidence either: you posted it and now judge it.
