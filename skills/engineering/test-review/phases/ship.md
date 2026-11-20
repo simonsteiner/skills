@@ -5,8 +5,8 @@ You check, review, and open the PR for one built candidate. Your brief gives the
 Work from the card; don't reopen it. A card that proved wrong is a **Departure**: where the PR deliberately differs from the report, and why.
 
 1. Check the diff (`git diff --stat <base>...`, then the hunks you need) against the approval bar below. Then call the Skill tool with "review-prs" in local mode: fixed point = the base branch, spec = the candidate's card. Rerun the checks.
-2. Update the candidate's status row (`pr-open`, PR number) and the card's **After** (tests added or removed, mutations that turned new tests red, seconds saved, the Measure's new value), and write any Departure into the overview's **Departures**, including those the Build commits describe, in the same branch. Change nothing else in the report: it's a dated record.
-3. Call the Skill tool with "conventional-commit" to commit, push, `gh pr create --base <base>`, and call the Skill tool with "pr-body" for the body, linking the card and showing each mutation that turned a new test red, or the before/after timings. **Never merge.**
+2. Fill in the card's **After** (tests added or removed, mutations that turned new tests red, seconds saved, the Measure's new value), and write any Departure into the overview's **Departures**, including those the Build commits describe, in the same branch. Call the Skill tool with "conventional-commit" to commit, push, `gh pr create --base <base>`, and call the Skill tool with "pr-body" for the body, linking the card and showing each mutation that turned a new test red, or the before/after timings. **Never merge.**
+3. Now that the PR exists, update the candidate's status row (`pr-open`, PR number), commit, and push. Change nothing else in the report: it's a dated record.
 
 ## Approval bar
 

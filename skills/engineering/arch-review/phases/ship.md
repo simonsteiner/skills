@@ -5,8 +5,8 @@ You check, review, and open the PR for one built candidate. Your brief gives the
 Work from the candidate's card and its Decisions; don't reopen the design. A Decision that proved wrong is a **Departure**: where the PR deliberately differs from the report, and why.
 
 1. Check the diff (`git diff --stat <base>...`, then the hunks you need) against the approval bar below. Then call the Skill tool with "review-prs" in local mode: fixed point = the base branch, spec = this candidate's card and its Decisions. It fixes what's real; rerun the checks.
-2. Update the candidate's status row (`pr-open`, PR number, Breaking) and write any Departure into the overview's **Departures**, including those the Build commits describe, in the same branch. Change nothing else in the report: it's a dated record.
-3. Call the Skill tool with "conventional-commit" to commit, push, then `gh pr create --base <base>`. Call the Skill tool with "pr-body" for the body, and link the candidate's card file from it. Use codebase-design's terms (module, interface, seam, depth, locality) in both. **Never merge.**
+2. Write any Departure into the overview's **Departures**, including those the Build commits describe, in the same branch. Call the Skill tool with "conventional-commit" to commit, push, then `gh pr create --base <base>`. Call the Skill tool with "pr-body" for the body, and link the candidate's card file from it. Use codebase-design's terms (module, interface, seam, depth, locality) in both. **Never merge.**
+3. Now that the PR exists, update the candidate's status row (`pr-open`, PR number, Breaking), commit, and push. Change nothing else in the report: it's a dated record.
 
 ## Approval bar
 
