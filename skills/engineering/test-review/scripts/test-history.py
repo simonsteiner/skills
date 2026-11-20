@@ -16,7 +16,7 @@ A path is a test when a folder in it is named test, tests, __tests__, spec, spec
 e2e, or its name looks like one (test_x.py, x_test.go, x.test.ts, x.spec.js, XTest.java,
 XTests.cs, x_spec.rb, conftest.py), or it matches a --test-pattern regex. A source file
 is any other file with a code extension. A source file's own tests are the tests at HEAD
-whose name, minus the test affixes, equals its name (for index, __init__, mod, main and
+with a code extension (not fixtures or snapshots) whose name, minus the test affixes, equals its name (for index, __init__, mod, main and
 lib: its name or its folder's name). The pairing is a heuristic, by name across the whole
 repo: check it before you cite it.
 
@@ -29,8 +29,9 @@ has none), <any> the share that changed any test. A hot file with no own test, o
 <own>, is behaviour that changes while nothing checks it.
 
 A subject with a Conventional Commits type is classified by its type alone: fix, bugfix
-and hotfix are fixes, refactor is a refactor, anything else (feat, chore, docs, …) is
-neither. A subject without a type falls back to its words. Reverts are neither.
+and hotfix are fixes, refactor is a refactor, any other type (feat, chore, docs, …) is
+neither. A subject without one, including a component prefix such as `parser: fix crash`,
+falls back to its words. Reverts are neither.
 
 fixes — fix commits (typed, or untyped containing fix, fixes, fixed, bug, bugfix or
 hotfix) that changed a source file and no test, newest first:
@@ -67,10 +68,13 @@ CODE = {".py", ".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts", ".v
 TEST_DIRS = {"test", "tests", "__tests__", "spec", "specs", "e2e"}
 TEST_NAME = re.compile(r"^test_.+\.py$|^conftest\.py$|_test\.\w+$|_spec\.rb$|\.(test|spec)\.\w+$"
                        r"|(Test|Tests|Spec|IT)\.(java|kt|scala|groovy|cs|fs|swift)$")
-AFFIXES = re.compile(r"(?:^test_)|(?:(?:_test|_spec|\.test|\.spec|Tests?|Spec|IT)$)")
+AFFIXES = re.compile(r"^test_|(?:_test|_spec|\.test|\.spec|Tests?|Spec|IT)$")
 FOLDER_STEMS = {"index", "__init__", "mod", "main", "lib"}
 TYPED = re.compile(r"^(?P<type>[A-Za-z]+)(?:\([^)]*\))?!?:")
 FIX_TYPES = {"fix", "bugfix", "hotfix"}
+# a prefix outside this set (`parser: fix crash`) names a component, not a type
+TYPES = FIX_TYPES | {"feat", "feature", "refactor", "docs", "doc", "chore", "style", "perf", "test", "tests",
+                     "build", "ci", "revert"}
 FIX_WORDS = re.compile(r"\b(?:fix|fixes|fixed|bug|bugfix|hotfix)\b", re.IGNORECASE)
 REFACTOR_WORDS = re.compile(r"\b(?:refactor\w*|renam\w*|restructur\w*|extract\w*)\b", re.IGNORECASE)
 
@@ -116,9 +120,11 @@ def subject_kind(subject):
     if subject.startswith("Revert"):
         return None
     typed = TYPED.match(subject)
-    if typed:
-        kind = typed["type"].lower()
-        return "fix" if kind in FIX_TYPES else "refactor" if kind == "refactor" else None
+    kind = typed["type"].lower() if typed else None
+    if kind in FIX_TYPES:
+        return "fix"
+    if kind in TYPES:
+        return "refactor" if kind == "refactor" else None
     if FIX_WORDS.search(subject):
         return "fix"
     return "refactor" if REFACTOR_WORDS.search(subject) else None
@@ -131,7 +137,7 @@ def pct(part, whole):
 def commits(since):
     """(sha, date, subject, files) for each non-merge commit, files repo-root relative."""
     result = subprocess.run(
-        ["git", "-c", "core.quotePath=false", "log", "--no-merges", "--since", since,
+        ["git", "-c", "core.quotePath=false", "log", "--no-merges", "--no-show-signature", "--since", since,
          "--date=short", "--name-only", "--format=%x00%h%x09%ad%x09%s"],
         capture_output=True, text=True, check=False)
     if result.returncode:
@@ -150,7 +156,7 @@ def drift(history, kinds, scopes, root, args):
     tracked = subprocess.run(["git", "-c", "core.quotePath=false", "ls-files"], capture_output=True,
                              text=True, check=False, cwd=root).stdout.splitlines()
     by_stem = defaultdict(set)
-    for t in (f for f in tracked if kinds.is_test(f)):
+    for t in (f for f in tracked if kinds.is_test(f) and PurePosixPath(f).suffix.lower() in CODE):
         by_stem[test_stem(t)].add(t)
 
     def own(source):

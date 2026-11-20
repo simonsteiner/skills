@@ -7,6 +7,7 @@ import os
 import subprocess
 import tempfile
 import unittest
+from datetime import datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -16,6 +17,10 @@ SCRIPT = ROOT / "skills/engineering/test-review/scripts/test-history.py"
 ENV = {**{k: v for k, v in os.environ.items() if not k.startswith("GIT_")},
        "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.com",
        "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@example.com"}
+
+# inside the default --since window, so only an honoured --since drops it
+def days_ago(n):
+    return (datetime.now() - timedelta(days=n)).strftime("%Y-%m-%dT12:00:00")
 
 
 class TestHistoryTest(unittest.TestCase):
@@ -29,14 +34,16 @@ class TestHistoryTest(unittest.TestCase):
     def git(self, *args):
         return subprocess.run(["git", *args], cwd=self.repo, env=ENV, capture_output=True, text=True, check=True)
 
-    def commit(self, subject, *paths):
+    def commit(self, subject, *paths, date=None):
         self.n += 1
         for path in paths:
             f = self.repo / path
             f.parent.mkdir(parents=True, exist_ok=True)
             f.write_text(f"{self.n}\n")
         self.git("add", "-A")
-        self.git("commit", "-q", "-m", subject)
+        dates = {} if date is None else {"GIT_AUTHOR_DATE": date, "GIT_COMMITTER_DATE": date}
+        subprocess.run(["git", "commit", "-q", "-m", subject], cwd=self.repo, env={**ENV, **dates},
+                       capture_output=True, check=True)
         return self.git("rev-parse", "--short", "HEAD").stdout.strip()
 
     def run_script(self, *args, cwd=None):
@@ -118,6 +125,12 @@ class TestHistoryTest(unittest.TestCase):
         self.assertEqual([r[3] for r in self.rows("drift")], ["checks/core_check.py", "src/core.py"])
         self.assertEqual(self.rows("drift", "--test-pattern", r"^checks/"), [["3", "-", "100%", "src/core.py", "-"]])
 
+    def test_drift_pairs_only_test_code_not_fixtures(self):
+        self.commit("feat: a", "src/cart.py", "tests/test_cart.py")
+        for i in range(3):
+            self.commit(f"feat: {i}", "src/cart.py", "tests/fixtures/cart.json")
+        self.assertEqual(self.rows("drift"), [["4", "25%", "100%", "src/cart.py", "tests/test_cart.py"]])
+
     def test_drift_scopes_sources_to_paths_but_counts_tests_anywhere(self):
         for _ in range(3):
             self.commit("feat: x", "api/route.py", "web/page.py", "tests/test_route.py")
@@ -151,6 +164,13 @@ class TestHistoryTest(unittest.TestCase):
         self.assertEqual([r[0] for r in self.rows("fixes")], [typed, bugfix])
         self.assertEqual(self.lines("refactors"), ["# 0 of 0 refactor commits changed a test"])
 
+    def test_a_component_prefix_is_not_a_type(self):
+        crash = self.commit("parser: fix crash on empty input", "src/parser.py")
+        self.commit("README: fix typo", "README.md")
+        extract = self.commit("api: extract client", "src/api.py", "tests/test_api.py")
+        self.assertEqual([r[0] for r in self.rows("fixes")], [crash])
+        self.assertEqual(self.rows("refactors", "--min", "1"), [["1", "tests/test_api.py", extract]])
+
     # refactors
 
     def test_refactors_counts_test_files_changed_by_refactor_commits(self):
@@ -170,6 +190,11 @@ class TestHistoryTest(unittest.TestCase):
         self.assertEqual(self.lines("refactors", "src")[-1], "# 1 of 1 refactor commits changed a test")
 
     # shared
+
+    def test_since_bounds_the_history(self):
+        self.commit("fix: old", "src/old.py", date=days_ago(30))
+        new = self.commit("fix: new", "src/new.py")
+        self.assertEqual([r[0] for r in self.rows("fixes", "--since", days_ago(10)[:10])], [new])
 
     def test_sweeping_commits_are_skipped(self):
         for _ in range(3):
