@@ -111,11 +111,11 @@ az devops invoke <thread-route> threadId=<summary-thread-id> commentId=1 --resou
 
 ## Fix and resolve
 
-address-review-findings works only on GitHub, so do its loop here yourself, reading that skill for its rules (verdicts, commits, push safety, carrying fixes up a stack) but not its scripts. Per PR, stacks bottom-up:
+address-review-findings works only on GitHub, so do its loop here yourself, with the steps below. Per PR, stacks bottom-up:
 
-1. Keep the review worktree from *Read a PR* after posting, and fix in it. Each posted finding and each bot thread you confirmed gets a fix, after the weighing in address-review-findings' Step 2; run the repo's checks again.
+1. Keep the review worktree from *Read a PR* after posting, and fix in it. Each posted finding and each bot thread you confirmed gets a fix, after the weighing in LENSES.md (*Weigh and disagree*); run the repo's checks again.
 2. Call the Skill tool with "conventional-commit" to commit. Then push once with `git push origin HEAD:<source branch>`, after the PR's last commit: each push starts another bot review. A PR from a fork (`forkSource` set) pushes to `forkSource.repository.remoteUrl` instead; when that isn't writable, say so, leave its threads open, and stop fixing that PR.
-3. Per thread — yours and the bots' you confirmed, deferred or disputed — reply, and resolve only when a fix landed or for a bot's deferred thread, with the reason in the reply:
+3. Per thread — yours and the bots' you confirmed, deferred or disagree with — reply, and resolve only when a fix landed or for a bot's deferred thread, with the reason in the reply:
 
    ```bash
    # reply: {"parentCommentId": 1, "commentType": 1, "content": "Fixed in abc1234: …"}
