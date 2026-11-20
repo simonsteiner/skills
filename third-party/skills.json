@@ -311,7 +311,7 @@
         {
           "name": "prune-tests",
           "path": "skills/prune-tests",
-          "why": "Deletes or rewrites tests that guard no behavior: ones asserting removed code, ones that can't fail (testing the browser, the mock, the type system), and ones tied to the implementation; plus duplicates and production code that exists only for tests. Complements tdd, which writes tests at the interface but never prunes. arch-review's Build step calls it on the test files a candidate touched. Model-invoked and destructive, with a one-line description, so it may fire rarely or on a loose 'clean up the tests'; untested for triggering."
+          "why": "Deletes or rewrites tests that guard no behavior: ones asserting removed code, ones that can't fail (testing the browser, the mock, the type system), and ones tied to the implementation; plus duplicates and production code that exists only for tests. Complements tdd, which writes tests at the interface but never prunes. arch-review's Build step calls it on the tests of the internals a candidate replaces, and test-review's waste rows on the tests each row lists. Model-invoked and destructive, with a one-line description, so it may fire rarely or on a loose 'clean up the tests'; untested for triggering."
         }
       ],
       "archived": [
