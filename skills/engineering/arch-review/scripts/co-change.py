@@ -51,6 +51,8 @@ from collections import Counter
 from pathlib import Path
 
 SINCE = re.compile(r"[A-Za-z0-9][A-Za-z0-9 .:,_+-]*")
+# The %x1e that starts each commit's header in the log; a path starting with it would read as a header.
+RECORD = "\x1e"
 
 # File names that change with every dependency bump or release, whatever the design.
 DEFAULT_EXCLUDES = (
@@ -66,17 +68,32 @@ class GitError(Exception):
 
 
 def commits(since):
-    """Each non-merge commit's changed files, repo-root relative, unquoted."""
+    """Each non-merge commit's changed files, repo-root relative, as git stores them."""
+    # -z keeps every path verbatim: without it git C-quotes a name holding a ", \\, tab or newline.
     result = subprocess.run(
-        ["git", "-c", "core.quotePath=false", "log", "--no-merges", "--no-show-signature", f"--since={since}",
-         "--name-only", "--format=%x00"],
+        ["git", "log", "-z", "--no-merges", "--no-show-signature", f"--since={since}",
+         "--name-only", "--format=%x1e"],
         capture_output=True, text=True, check=False)
     if result.returncode:
         raise GitError(result.stderr.strip())
-    for block in result.stdout.split("\0"):
-        files = sorted({line for line in block.splitlines() if line})
+    for _, files in records(result.stdout):
         if files:
-            yield files
+            yield sorted(files)
+
+
+def records(log):
+    """(header, set of paths) per commit in `git log -z --name-only` output whose format starts with RECORD."""
+    header, files, first = None, set(), False
+    for field in log.split("\0"):
+        if field.startswith(RECORD):
+            if header is not None:
+                yield header, files
+            header, files, first = field[len(RECORD):], set(), True
+        elif field:
+            files.add(field[1:] if first else field)  # the first path follows the header's newline
+            first = False
+    if header is not None:
+        yield header, files
 
 
 def in_scope(path, scopes):
@@ -102,16 +119,27 @@ def generated(paths, root):
             if value in ("set", "true")}
 
 
+def count(value):
+    """An argparse type: a whole number, zero or more."""
+    try:
+        n = int(value)
+    except ValueError:
+        n = -1
+    if n < 0:
+        raise argparse.ArgumentTypeError(f"not a whole number, zero or more: {value!r}")
+    return n
+
+
 def main(argv):
     parser = argparse.ArgumentParser(prog="co-change.py", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--churn", action="store_true",
                         help="print the most-changed files instead of the pairs")
     parser.add_argument("--since", default="6.months", help="how far back to look (default 6.months)")
-    parser.add_argument("--top", type=int, default=30, help="rows to print (default 30)")
-    parser.add_argument("--min", type=int, default=3,
+    parser.add_argument("--top", type=count, default=30, help="rows to print (default 30)")
+    parser.add_argument("--min", type=count, default=3,
                         help="minimum commits together, or per file with --churn (default 3)")
-    parser.add_argument("--max-files", type=int, default=30, help="skip commits touching more files (default 30)")
+    parser.add_argument("--max-files", type=count, default=30, help="skip commits touching more files (default 30)")
     parser.add_argument("--exclude", action="append", default=[], metavar="GLOB",
                         help="never count files matching GLOB (repeatable)")
     parser.add_argument("--no-default-excludes", action="store_true",

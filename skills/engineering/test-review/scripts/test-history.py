@@ -77,6 +77,8 @@ FIX_TYPES = {"fix", "bugfix", "hotfix"}
 TYPES = FIX_TYPES | {"feat", "feature", "refactor", "docs", "doc", "chore", "style", "perf", "test", "tests",
                      "build", "ci", "revert"}
 FIX_WORDS = re.compile(r"\b(?:fix|fixes|fixed|bug|bugfix|hotfix)\b", re.IGNORECASE)
+# The %x1e that starts each commit's header in the log; a path starting with it would read as a header.
+RECORD = "\x1e"
 REFACTOR_WORDS = re.compile(r"\b(?:refactor\w*|renam\w*|restructur\w*|extract\w*)\b", re.IGNORECASE)
 
 
@@ -138,16 +140,31 @@ def pct(part, whole):
 
 def commits(since):
     """(sha, date, subject, files) for each non-merge commit, files repo-root relative."""
+    # -z keeps every path verbatim: without it git C-quotes a name holding a ", \\, tab or newline.
     result = subprocess.run(
-        ["git", "-c", "core.quotePath=false", "log", "--no-merges", "--no-show-signature", "--since", since,
-         "--date=short", "--name-only", "--format=%x00%h%x09%ad%x09%s"],
+        ["git", "log", "-z", "--no-merges", "--no-show-signature", "--since", since,
+         "--date=short", "--name-only", "--format=%x1e%h%x09%ad%x09%s"],
         capture_output=True, text=True, check=False)
     if result.returncode:
         raise GitError(result.stderr.strip())
-    for block in result.stdout.split("\0")[1:]:
-        head, _, rest = block.partition("\n")
+    for head, files in records(result.stdout):
         sha, date, subject = (head.split("\t", 2) + ["", ""])[:3]
-        yield sha, date, subject, sorted({line for line in rest.splitlines() if line})
+        yield sha, date, subject, sorted(files)
+
+
+def records(log):
+    """(header, set of paths) per commit in `git log -z --name-only` output whose format starts with RECORD."""
+    header, files, first = None, set(), False
+    for field in log.split("\0"):
+        if field.startswith(RECORD):
+            if header is not None:
+                yield header, files
+            header, files, first = field[len(RECORD):], set(), True
+        elif field:
+            files.add(field[1:] if first else field)  # the first path follows the header's newline
+            first = False
+    if header is not None:
+        yield header, files
 
 
 def in_scope(path, scopes):
@@ -155,8 +172,8 @@ def in_scope(path, scopes):
 
 
 def drift(history, kinds, scopes, root, args):
-    tracked = subprocess.run(["git", "-c", "core.quotePath=false", "ls-files"], capture_output=True,
-                             text=True, check=False, cwd=root).stdout.splitlines()
+    tracked = subprocess.run(["git", "ls-files", "-z"], capture_output=True,
+                             text=True, check=False, cwd=root).stdout.split("\0")
     by_stem = defaultdict(set)
     for t in (f for f in tracked if kinds.is_test(f) and PurePosixPath(f).suffix.lower() in CODE):
         by_stem[test_stem(t)].add(t)
@@ -210,14 +227,25 @@ def refactors(history, kinds, scopes, root, args):
     print(f"# {touched} of {seen} refactor commits changed a test")
 
 
+def count(value):
+    """An argparse type: a whole number, zero or more."""
+    try:
+        n = int(value)
+    except ValueError:
+        n = -1
+    if n < 0:
+        raise argparse.ArgumentTypeError(f"not a whole number, zero or more: {value!r}")
+    return n
+
+
 def parse_args(argv):
     parser = argparse.ArgumentParser(prog="test-history.py", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("mode", choices=["drift", "fixes", "refactors"])
     parser.add_argument("--since", default="6.months", help="how far back to look (default 6.months)")
-    parser.add_argument("--top", type=int, default=30, help="rows to print (default 30)")
-    parser.add_argument("--min", type=int, help="drift: minimum commits (default 3); refactors: minimum (default 2)")
-    parser.add_argument("--max-files", type=int, default=30, help="skip commits touching more files (default 30)")
+    parser.add_argument("--top", type=count, default=30, help="rows to print (default 30)")
+    parser.add_argument("--min", type=count, help="drift: minimum commits (default 3); refactors: minimum (default 2)")
+    parser.add_argument("--max-files", type=count, default=30, help="skip commits touching more files (default 30)")
     parser.add_argument("--test-pattern", action="append", default=[], metavar="REGEX",
                         help="also count paths matching REGEX as tests (repeatable)")
     parser.add_argument("paths", nargs="*", help="only count source files under these paths")
@@ -254,11 +282,9 @@ def main(argv):
     root = Path(top.stdout.strip()).resolve()
     scopes = resolve_scopes(parser, args.paths, root)
     head = subprocess.run(["git", "rev-parse", "--verify", "--quiet", "HEAD"], capture_output=True, check=False)
-    if head.returncode:
-        return 0
-
     try:
-        history = [c for c in commits(args.since) if len(c[3]) <= args.max_files]
+        # no commits yet: an empty history, so fixes and refactors still print their `# 0 of 0` line
+        history = [c for c in commits(args.since) if len(c[3]) <= args.max_files] if not head.returncode else []
     except GitError as err:
         print(f"test-history.py: git log failed: {err}", file=sys.stderr)
         return 2
