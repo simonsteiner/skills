@@ -227,8 +227,14 @@ def check(manifest, home, owned):
     Raises FileNotFoundError when nothing has been installed yet (no lock file).
     """
     lock = json.loads(home.lock.read_text())["skills"]
-    found = []
+    return (_install_findings(manifest, lock) + _lock_findings(manifest, lock)
+            + _unmanaged_findings(manifest, home, lock, owned) + _copy_findings(manifest, home)
+            + _link_findings(manifest, home))
 
+
+def _install_findings(manifest, lock):
+    """Each curated skill: ok, missing from the lock file, or installed from another source."""
+    found = []
     for k in manifest.curated:
         installed = lock.get(k.name, {}).get("source")
         if not installed:
@@ -237,9 +243,13 @@ def check(manifest, home, owned):
             found.append(Finding("conflict", k.name, f"installed from {installed}, manifest says {k.repo}"))
         else:
             found.append(Finding("ok", k.name))
+    return found
 
-    # Installed from a remote source but absent from the manifest: curate it deliberately
-    # or remove it. Archived ones get their own line, since the manifest says they go.
+
+def _lock_findings(manifest, lock):
+    """Installed from a remote source but absent from the manifest: curate it deliberately
+    or remove it. Archived ones get their own line, since the manifest says they go."""
+    found = []
     curated = {k.name for k in manifest.curated}
     archived = {k.name for k in manifest.archived}
     for name, entry in lock.items():
@@ -247,13 +257,16 @@ def check(manifest, home, owned):
             found.append(Finding("archived", name, f"is still installed — remove it with: npx skills remove -g {name}"))
         elif entry.get("source") and entry.get("sourceType") == "github" and name not in curated:
             found.append(Finding("uncurated", name, f"(installed from {entry['source']})"))
+    return found
 
-    # Sitting in the store or an agent's directory with nothing managing it: absent from
-    # the lock file, uncurated, and not owned here. That's how another channel's install
-    # shows up — a plugin marketplace, or a hand copy — as a frozen snapshot with no
-    # upgrade path (docs/adr/0003). The store is scanned too: a store entry whose lock
-    # record is gone is unmanaged in exactly the sense that matters.
-    known = set(lock) | curated | set(owned)
+
+def _unmanaged_findings(manifest, home, lock, owned):
+    """Sitting in the store or an agent's directory with nothing managing it: absent from
+    the lock file, uncurated, and not owned here. That's how another channel's install
+    shows up — a plugin marketplace, or a hand copy — as a frozen snapshot with no
+    upgrade path (docs/adr/0003). The store is scanned too: a store entry whose lock
+    record is gone is unmanaged in exactly the sense that matters."""
+    known = set(lock) | {k.name for k in manifest.curated} | set(owned)
     dirs = [home.store] + [home.agent_dir(a) for a in AGENT_DIRS]
     unmanaged = {}
     for d in dirs:
@@ -262,14 +275,16 @@ def check(manifest, home, owned):
         for name in sorted(os.listdir(d)):
             if name not in known and (d / name / SKILL_FILE).exists():
                 unmanaged.setdefault(name, []).append(str(d))
-    for name, where in unmanaged.items():
-        found.append(Finding("unmanaged", name, f"(in {len(where)}: {', '.join(where)})"))
+    return [Finding("unmanaged", name, f"(in {len(where)}: {', '.join(where)})") for name, where in unmanaged.items()]
 
-    # A curated skill can hold different content in the store and in an agent directory.
-    # Only an agent copy older than the store is actionable — an agent that missed an
-    # update. The reverse is a vestigial store entry: the CLI installs new skills straight
-    # into the agent directory and never refreshes an old store copy, so those get one
-    # summary line. Universal agents' directories are checked link by link below.
+
+def _copy_findings(manifest, home):
+    """A curated skill can hold different content in the store and in an agent directory.
+    Only an agent copy older than the store is actionable — an agent that missed an
+    update. The reverse is a vestigial store entry: the CLI installs new skills straight
+    into the agent directory and never refreshes an old store copy, so those get one
+    summary line. Universal agents' directories are checked link by link instead."""
+    found = []
     vestigial = 0
     for agent in AGENT_DIRS:
         if agent in UNIVERSAL:
@@ -285,8 +300,12 @@ def check(manifest, home, owned):
                 vestigial += 1
     if vestigial:
         found.append(Finding("note", str(vestigial), f"store copies under {home.store} are older than what the agents load, and unused"))
+    return found
 
-    # Every universal agent's directory must hold a link into the store, not a copy.
+
+def _link_findings(manifest, home):
+    """Every universal agent's directory must hold a link into the store, not a copy."""
+    found = []
     for want in wanted_links(manifest, home):
         destination = want.dir / want.name
         if os.path.realpath(destination) == os.path.realpath(home.store / want.name):
@@ -297,7 +316,6 @@ def check(manifest, home, owned):
             detail = f"({destination} is a stale copy, not a link into the store — move it aside, then run the sync)"
         found.append(Finding("drift", want.name, detail))
     return found
-
 
 def listing(manifest):
     """The curated list with the reason for each skill, as lines."""
