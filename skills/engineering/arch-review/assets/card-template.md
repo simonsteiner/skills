@@ -45,6 +45,11 @@ flowchart LR
 > [!CAUTION]
 > **Live defect:** <input> → <wrong output>, no error. <!-- only for a live defect; otherwise one plain line with the count that shows the friction -->
 
+**Removes:**
+
+- `<path/a.py:90>` — <one special case or link the fix makes unnecessary>
+- `<path/b.py:117>` — <…>
+
 | Problem | Solution | Wins |
 |---|---|---|
 | <one sentence: what hurts> | <one sentence: what changes; no interface design> | locality: <…><br>leverage: <…> |

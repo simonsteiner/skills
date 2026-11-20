@@ -48,9 +48,10 @@ def entries(text):
     """
     found, group = [], None
     for n, line in prose(text):
-        heading = re.match(r"#+\s+(.*?)\s*$", line)
+        heading = re.match(r"#+\s+(.*)", line)
         if heading:
-            group = heading.group(1) if heading.group(1) in GROUPS else None
+            title = heading.group(1).strip()
+            group = title if title in GROUPS else None
             continue
         item = re.match(r"[-*]\s+\*\*\[([^\]]+)\]\(([^)\s]+)\)\*\*", line)
         if item:
@@ -120,6 +121,12 @@ def check(repo, skills):
     problems += [f".claude-plugin/plugin.json doesn't list {f}" for f in sorted(folders - plugin)]
     problems += [f".claude-plugin/plugin.json lists {f}, which is no published skill" for f in sorted(plugin - folders)]
 
+    return problems + check_manifest(repo)
+
+
+def check_manifest(repo):
+    """Every source and curated skill in third-party/skills.json says why it's there."""
+    problems = []
     manifest = third_party.load(repo)
     for source in manifest.sources if manifest else []:
         if not source.why.strip():

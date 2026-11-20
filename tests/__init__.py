@@ -1,4 +1,4 @@
-"""The test suite: tests/tooling/ and tests/skill_scripts/.
+"""The test suite: tests/tooling/, tests/skill_scripts/ and tests/skills/.
 
 A git hook that runs the suite (lefthook's pre-commit) exports GIT_DIR, GIT_INDEX_FILE
 and friends. Every git call a test or the code under test makes would inherit them and

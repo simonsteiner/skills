@@ -81,6 +81,10 @@ class InventoryTest(RepoFixture):
         self.skill("engineering", "a", 'name: a\ndescription: x\ndisable-model-invocation: "true" # "x"')
         self.assertFalse(inventory(self.repo).skills[0].model_invoked)
 
+    def test_a_quoted_value_keeps_the_other_quote(self):
+        self.skill("engineering", "a", """name: a\ndescription: 'says "hi"'  # x""")
+        self.assertEqual(inventory(self.repo).skills[0].fields["description"], 'says "hi"')
+
 
 if __name__ == "__main__":
     unittest.main()

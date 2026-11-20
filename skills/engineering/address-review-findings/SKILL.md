@@ -1,6 +1,6 @@
 ---
 name: address-review-findings
-compatibility: Requires git and an authenticated gh CLI.
+compatibility: Requires git, jq and an authenticated gh CLI.
 description: >
   Works through the review feedback on GitHub pull requests — one PR, several, or a stack — pulling the unresolved threads, fixing what's real, then replying and resolving. Use when the user wants to address review comments or PR feedback, respond to a reviewer, resolve review threads or conversations, asks what's left on the PR(s), or says the review came back.
 ---
@@ -17,7 +17,7 @@ The feedback lives on GitHub, so `gh` must be authenticated (`gh auth status`). 
 
 ## Step 0 — Which PRs
 
-**Pick the repo first.** In a fork checkout with an `upstream` remote, bare `gh` resolves to the upstream repo, and a fork's PRs can live there (sent from the fork, the usual contribution flow) or on the fork itself. Run `<skill-dir>/scripts/pick-repo.sh`: it prints the caller's `GH_REPO` when one was passed, else gh's default repo and, when it differs, origin's — read without handing the raw origin URL to gh. One line → every PR lives there. Two lines → look each PR up on both: `gh pr view <n> --repo <line> --json url,headRefName`, taking the repo that has it; when both have that number, the one whose `headRefName` is the checkout's branch, and when that doesn't single one out (neither or both match), don't pick: leave that PR out and name both URLs in the report, asking which one was meant; with no PR named, `gh pr list --head <branch> --repo <line> --json number,url`; for several or "the open PRs", run the mapping below once per line with `--repo <line>` and merge the results, each PR keeping the repo it came from. Then put `GH_REPO=<that line>` in front of every `gh` command and script call for that PR, since shell variables don't survive between tool calls, and before fixing it check that `gh pr view <n> --json url` names that repo.
+**Pick the repo first.** In a fork checkout, bare `gh` resolves to the upstream repo, and a PR can live there or on the fork. Run `<skill-dir>/scripts/pick-repo.sh` with the PR numbers named, or `--head <the checkout's branch>` when none is: it prints `<n><TAB><repo>` per PR. Exit 3 (ambiguous, with the candidate URLs) or 4 (not found) names each PR it couldn't place: leave it out and ask in the report which was meant. Exit 1 is a failed `gh` call (a login, the network): fix what it prints and rerun, rather than asking which PR was meant. For "the open PRs" or "the stack", run it bare, which prints the repos, and run the mapping below once per repo with `--repo <repo>`. Then put `GH_REPO=<repo>` in front of every `gh` command and script call for that PR (shell variables don't survive between tool calls), and before fixing it check that `gh pr view <n> --json url` names that repo.
 
 No PR named → the one for the current branch. "The open PRs", a list of numbers, or "the stack" → several. Map them first:
 
@@ -97,6 +97,12 @@ A thread that points at a screenshot or recording (`github.com/user-attachments/
 | disagree | the suggestion is wrong or would break something | reply with the reasoning, leave the thread open |
 
 Never convert "disagree" into a silent resolve. An unconvinced reviewer with a closed thread is worse than an open one.
+
+**Disagree with evidence.** A *disagree* cites something the reviewer can open: a file and symbol, a test, a spec line, a recorded decision. "This was intentional" isn't evidence; when the reason lives only in someone's head (a team convention, a call made in a meeting), the verdict is *needs a decision*, not *disagree*. Three more rules:
+
+- **A misreading is a finding.** When the reviewer misread what the code does, their bug claim can be wrong while the code is still unclear: the next reader will misread it the same way. Disagree with the claim, and fix the clarity — a name, a comment, a smaller function — in the same reply.
+- **Don't re-grade quietly.** Fix a finding as raised or disagree with it out loud. A fix that only covers a smaller version of the finding, without saying so, is a silent downgrade.
+- **The author's wish isn't evidence.** You (or the thread you're in) wrote the code under review. Wanting the reviewer to be wrong doesn't make them wrong; re-read the code as if someone else wrote it.
 
 **Weigh a correct finding before fixing it.** "The reviewer is right" means the trigger is real, not that this PR must handle it. Bots, CodeRabbit above all, review every push, and each fix adds lines for the next round to pick at. Fixing everything therefore never converges: each round's findings get more hypothetical and land more on the last fix. Weigh three things together, with no threshold on any one of them:
 

@@ -32,6 +32,8 @@ import subprocess
 import tarfile
 
 WORKSPACE = ".eval-workspace"
+TASK_FILE = "task.md"
+GRADING_FILE = "grading.json"
 
 
 def problems(skill):
@@ -52,24 +54,30 @@ def problems(skill):
     if not isinstance(evals, list) or not evals:
         return out + ['"evals" must be a non-empty list']
     for i, e in enumerate(evals, 1):
-        if not isinstance(e, dict):
-            out.append(f"eval {i} isn't an object")
-            continue
-        if not isinstance(e.get("query"), str) or not e["query"].strip():
-            out.append(f'eval {i} has no "query"')
-        behaviour = e.get("expected_behavior")
-        if not isinstance(behaviour, list) or not behaviour or not all(isinstance(b, str) and b for b in behaviour):
-            out.append(f'eval {i} needs "expected_behavior" as a non-empty list of strings')
-        if "setup" in e and not isinstance(e["setup"], str):
-            out.append(f'eval {i}: "setup" must be a string')
-        files = e.get("files", [])
-        if not isinstance(files, list) or not all(isinstance(f, str) and f for f in files):
-            out.append(f'eval {i}: "files" must be a list of paths')
-            continue
-        for f in files:
-            if not (skill.folder / f).is_file():
-                out.append(f"eval {i}: file {f!r} doesn't exist")
+        out += _eval_problems(skill, i, e)
     return out
+
+
+def _eval_problems(skill, i, e):
+    """What's wrong with eval number `i` of evals.json."""
+    if not isinstance(e, dict):
+        return [f"eval {i} isn't an object"]
+    out = []
+    if not isinstance(e.get("query"), str) or not e["query"].strip():
+        out.append(f'eval {i} has no "query"')
+    behaviour = e.get("expected_behavior")
+    if not isinstance(behaviour, list) or not behaviour or not all(isinstance(b, str) and b for b in behaviour):
+        out.append(f'eval {i} needs "expected_behavior" as a non-empty list of strings')
+    if "setup" in e and not isinstance(e["setup"], str):
+        out.append(f'eval {i}: "setup" must be a string')
+    return out + _file_problems(skill, i, e.get("files", []))
+
+
+def _file_problems(skill, i, files):
+    """What's wrong with eval number `i`'s "files": not a list of paths, or paths missing from the skill."""
+    if not isinstance(files, list) or not all(isinstance(f, str) and f for f in files):
+        return [f'eval {i}: "files" must be a list of paths']
+    return [f"eval {i}: file {f!r} doesn't exist" for f in files if not (skill.folder / f).is_file()]
 
 
 def slug(text, words=5):
@@ -79,6 +87,8 @@ def slug(text, words=5):
 def snapshot(repo, skill, ref, dest):
     """Extract the skill's folder as it was at git `ref` into `dest`."""
     rel = skill.folder.relative_to(repo).as_posix()
+    if ref.startswith("-"):  # git would read it as an option (`--output=<file>` writes a file)
+        raise ValueError(f"can't read {rel} at {ref!r}: not a git ref")
     archive = subprocess.run(["git", "-C", str(repo), "archive", "--format=tar", ref, rel],
                              capture_output=True, check=False)
     if archive.returncode != 0:
@@ -143,13 +153,13 @@ def prepare(repo, skill, baseline=None, root=None):
             run = eval_dir / config
             (run / "outputs").mkdir(parents=True)
             files = ", ".join(str(skill.folder / f) for f in e.get("files", [])) or "none"
-            (run / "task.md").write_text(TASK.format(
+            (run / TASK_FILE).write_text(TASK.format(
                 skill=skill_path, query=e["query"], setup=e.get("setup", "none"), files=files,
                 outputs=run / "outputs", timing=run / "timing.json"))
             (run / "grade.md").write_text(GRADE.format(
-                outputs=run / "outputs", grading=run / "grading.json",
+                outputs=run / "outputs", grading=run / GRADING_FILE,
                 assertions="\n".join(f"- {b}" for b in e["expected_behavior"])))
-            runs.append((eval_dir.name, config, run / "task.md"))
+            runs.append((eval_dir.name, config, run / TASK_FILE))
     return iteration, runs
 
 
@@ -182,25 +192,31 @@ def _read_json(path, iteration, fields):
     return data
 
 
+def _pass_rate(run, iteration):
+    """A graded run's pass rate: its summary's, else the share of assertion_results that passed."""
+    grading = _read_json(run / GRADING_FILE, iteration, ["summary.pass_rate"])
+    results = grading.get("assertion_results") or []
+    if not isinstance(results, list) or not all(isinstance(r, dict) for r in results):
+        raise ValueError(f"{(run / GRADING_FILE).relative_to(iteration)}: assertion_results must be a list of objects")
+    rate = (grading.get("summary") or {}).get("pass_rate")
+    if rate is None:
+        rate = sum(r.get("passed") is True for r in results) / len(results) if results else 0.0
+    return rate
+
+
 def benchmark(iteration):
     """Aggregate every run's grading.json and timing.json into benchmark.json.
 
     Returns the benchmark, or raises ValueError naming every run that isn't graded yet.
     """
-    runs = sorted(p for p in iteration.glob("eval-*/*") if (p / "task.md").exists())
-    missing = [str(r.relative_to(iteration)) for r in runs if not (r / "grading.json").exists()]
+    runs = sorted(p for p in iteration.glob("eval-*/*") if (p / TASK_FILE).exists())
+    missing = [str(r.relative_to(iteration)) for r in runs if not (r / GRADING_FILE).exists()]
     if not runs or missing:
         raise ValueError("not graded yet: " + (", ".join(missing) or "no runs in " + str(iteration)))
 
     by_config = {}
     for run in runs:
-        grading = _read_json(run / "grading.json", iteration, ["summary.pass_rate"])
-        results = grading.get("assertion_results") or []
-        if not isinstance(results, list) or not all(isinstance(r, dict) for r in results):
-            raise ValueError(f"{(run / 'grading.json').relative_to(iteration)}: assertion_results must be a list of objects")
-        rate = (grading.get("summary") or {}).get("pass_rate")
-        if rate is None:
-            rate = sum(r.get("passed") is True for r in results) / len(results) if results else 0.0
+        rate = _pass_rate(run, iteration)
         timing_path = run / "timing.json"
         timing = _read_json(timing_path, iteration, ["duration_ms", "total_tokens"]) if timing_path.exists() else {}
         row = by_config.setdefault(run.name, {"pass_rate": [], "time_seconds": [], "tokens": []})

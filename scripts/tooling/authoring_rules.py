@@ -7,6 +7,7 @@ https://agentskills.io/skill-creation/using-scripts):
 - name: 1-64 lowercase letters, digits, hyphens; no leading, trailing or doubled
   hyphen; matches its folder
 - description: non-empty, at most 1024 chars; compatibility, when present, 1-500 chars
+- metadata, when present, maps string keys to string values: no nested maps or lists
 - SKILL.md body under 500 lines and about 5,000 tokens
 - bundled files sit at most one level below the skill folder (scripts/, references/, …),
   and output templates (`*template*` files outside scripts/ and evals/) sit in assets/
@@ -52,6 +53,7 @@ import re
 from pathlib import Path
 
 from . import evals
+from .skill_inventory import uncommented
 
 MAX_BODY_LINES = 500
 MAX_BODY_TOKENS = 5000
@@ -65,7 +67,7 @@ VAGUE = (
     "as appropriate",
 )
 MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
-UNPINNED = re.compile(r"\b(?:npx|bunx|uvx|pipx run)\s+(?:-{1,2}[\w-]+(?:=\S+)?\s+)*(@?[a-z][\w./-]*(?:[@=]=?\S+)?)")
+UNPINNED = re.compile(r"\b(?:npx|bunx|uvx|pipx run)\s+(?:-\S*\s+)*(@?[a-z][\w./-]*(?:[@=]=?\S+)?)")
 # a fenced block: ``` or ~~~, three or more, indented or not (list items), closed by a line of
 # nothing but at least the same run; a fence line with an info string inside is content (CommonMark)
 FENCED = re.compile(r"^[ \t]*(`{3,}|~{3,})[^\n]*\n(.*?)^[ \t]*\1(?:(?<=`)`*|(?<=~)~*)[ \t]*$", re.DOTALL | re.MULTILINE)
@@ -95,98 +97,210 @@ def check(repo, skills):
 
 def check_skill(s):
     """(path, problem) pairs for one skill."""
-    skill_md, folder, fields, body = s.skill_md, s.folder, s.fields, s.body
-    if fields is None:
-        return [(skill_md, "no YAML frontmatter")]
-    out = []
+    if s.fields is None:
+        return [(s.skill_md, "no YAML frontmatter")]
+    out = [(s.folder / "evals/evals.json", msg) for msg in evals.problems(s)]
+    out += [(s.skill_md, msg) for msg in _name_problems(s) + _description_problems(s) + _size_problems(s.body)]
+    files = sorted(f for f in s.folder.rglob("*") if f.is_file())
+    for f in files:
+        out += _bundled_file_problems(s, f)
+    out += [(s.skill_md, f"link to {target!r} doesn't resolve") for target in _broken_links(s.folder, s.body)]
+    markdown = [f for f in files if f.suffix == ".md"]
+    out += _reference_problems(s.skill_md, markdown)
+    for md in markdown:
+        if md.name != "CREDITS.md":
+            text = md.read_text()
+            out += [(md, msg) for msg in _prose_problems(text) + _command_problems(s.folder, text)]
+    return out
 
-    def problem(path, msg):
-        out.append((path, msg))
 
-    for msg in evals.problems(s):
-        problem(folder / "evals/evals.json", msg)
-
+def _name_problems(s):
+    """disable-model-invocation and name, against the spec and the skill's folder."""
+    fields, out = s.fields, []
     invocation = fields.get("disable-model-invocation")
     if invocation not in (None, "true", "false"):
-        problem(skill_md, f"disable-model-invocation is {invocation!r}, not true or false")
-
+        out.append(f"disable-model-invocation is {invocation!r}, not true or false")
     name = fields.get("name", "")
     if not re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", name) or len(name) > 64:
-        problem(skill_md, f"name {name!r} must be 1-64 lowercase letters, digits, or single inner hyphens")
+        out.append(f"name {name!r} must be 1-64 lowercase letters, digits, or single inner hyphens")
     if re.search(r"anthropic|claude", name):
-        problem(skill_md, f"name {name!r} contains a reserved word")
+        out.append(f"name {name!r} contains a reserved word")
     if name != s.name:
-        problem(skill_md, f"name {name!r} doesn't match its folder {s.name!r}")
+        out.append(f"name {name!r} doesn't match its folder {s.name!r}")
+    return out
 
+
+def _description_problems(s):
+    """description, compatibility and metadata."""
+    fields, out = s.fields, []
     desc = fields.get("description", "")
     if not desc:
-        problem(skill_md, "description is empty")
+        out.append("description is empty")
     if len(desc) > 1024:
-        problem(skill_md, f"description is {len(desc)} chars, over 1024")
+        out.append(f"description is {len(desc)} chars, over 1024")
     if re.search(r"<[A-Za-z/][^>]*>", desc):
-        problem(skill_md, "description contains an XML tag")
+        out.append("description contains an XML tag")
     if re.match(r"(I|You|We)\b", desc) or re.search(r"\b(I can|you can use|I will|I'll)\b", desc, re.IGNORECASE):
-        problem(skill_md, "description isn't third person")
+        out.append("description isn't third person")
     if s.model_invoked and not re.search(r"\bwhen\b", desc, re.IGNORECASE):
-        problem(skill_md, "model-invoked description never says when to use it")
+        out.append("model-invoked description never says when to use it")
     if "compatibility" in fields and not 1 <= len(fields["compatibility"]) <= 500:
-        problem(skill_md, "compatibility must be 1-500 chars")
+        out.append("compatibility must be 1-500 chars")
+    if "metadata" in fields and not metadata_is_strings(s.skill_md.read_text()):
+        out.append("metadata must map string keys to string values, with no nested maps or lists")
+    return out
 
+
+def _size_problems(body):
+    """The SKILL.md body against the line and token limits."""
+    out = []
     lines = body.count("\n")
     if lines >= MAX_BODY_LINES:
-        problem(skill_md, f"body is {lines} lines, {MAX_BODY_LINES} or more")
+        out.append(f"body is {lines} lines, {MAX_BODY_LINES} or more")
     tokens = len(body) // CHARS_PER_TOKEN
     if tokens > MAX_BODY_TOKENS:
-        problem(skill_md, f"body is about {tokens} tokens, over {MAX_BODY_TOKENS}; move reference material out")
+        out.append(f"body is about {tokens} tokens, over {MAX_BODY_TOKENS}; move reference material out")
+    return out
 
-    files = sorted(f for f in folder.rglob("*") if f.is_file())
-    for f in files:
-        rel = f.relative_to(folder)
-        if re.fullmatch(r"(README|CHANGELOG|INSTALL\w*)(\.\w+)?", f.name, re.IGNORECASE):
-            problem(f, "documentation file inside a skill folder")
-        if len(rel.parts) > 2:
-            problem(f, "bundled file is more than one level below the skill folder")
-        if "template" in f.name and rel.parts[0] not in ("assets", "scripts", "evals"):
-            problem(f, "output template outside assets/")
-        if rel.parts[0] == "scripts":
-            out.extend(check_script(f))
-        if rel.parts[0] == "evals":
-            continue  # test cases for the author, never read by the agent
-        if f != skill_md and f.name != "CREDITS.md" and f.name not in body and rel.as_posix() not in body:
-            problem(f, "bundled file is never mentioned in SKILL.md")
 
-    for target in re.findall(r"\]\((?!https?:|#|mailto:)([^)#\s]+\.(?:md|sh|py|json|ya?ml))", body):
-        if not (folder / target).exists():
-            problem(skill_md, f"link to {target!r} doesn't resolve")
+def _bundled_file_problems(s, f):
+    """(path, problem) pairs for one file in the skill folder, its scripts/ checks included."""
+    out = []
+    rel = f.relative_to(s.folder)
+    if re.fullmatch(r"(README|CHANGELOG|INSTALL\w*)(\.\w+)?", f.name, re.IGNORECASE):
+        out.append((f, "documentation file inside a skill folder"))
+    if len(rel.parts) > 2:
+        out.append((f, "bundled file is more than one level below the skill folder"))
+    if "template" in f.name and rel.parts[0] not in ("assets", "scripts", "evals"):
+        out.append((f, "output template outside assets/"))
+    if rel.parts[0] == "scripts":
+        out.extend(check_script(f))
+    if rel.parts[0] == "evals":
+        return out  # test cases for the author, never read by the agent
+    if f != s.skill_md and f.name != "CREDITS.md" and f.name not in s.body and rel.as_posix() not in s.body:
+        out.append((f, "bundled file is never mentioned in SKILL.md"))
+    return out
 
-    markdown = [f for f in files if f.suffix == ".md"]
+
+def _broken_links(folder, body):
+    """The relative links in SKILL.md to a bundled file that doesn't exist."""
+    links = re.findall(r"\]\((?!https?:|#|mailto:)([^)#\s]+\.(?:md|sh|py|json|ya?ml))", body)
+    return [target for target in links if not (folder / target).exists()]
+
+
+def _reference_problems(skill_md, markdown):
+    """(path, problem) pairs for the reference files: one level deep, and a contents list when long."""
+    out = []
     names = {f.name for f in markdown if f != skill_md}
     for md in markdown:
         text = md.read_text()
         if md != skill_md:
             for target in re.findall(r"\]\((?!https?:|#)([^)#\s]+\.md)", text):
                 if Path(target).name in names:
-                    problem(md, f"links to bundled {target!r}; references should be one level deep from SKILL.md")
+                    out.append((md, f"links to bundled {target!r}; references should be one level deep from SKILL.md"))
         if md != skill_md and "template" not in md.name and text.count("\n") > 100 and "\n## Contents\n" not in text:
-            problem(md, "over 100 lines without a '## Contents' list")
-
-    instructions = [(f, f.read_text()) for f in markdown if f.name != "CREDITS.md"]
-    for md, text in instructions:
-        if re.search(r"\b(scripts|references|assets)\\\w", text):
-            problem(md, "Windows-style path (use forward slashes)")
-        if re.search(rf"\b(before|after|until|as of)\s+({MONTHS})\s+20\d\d", text, re.IGNORECASE):
-            problem(md, "time-sensitive instruction; move it to an 'old patterns' section")
-        for phrase in VAGUE:
-            if phrase in text.lower():
-                problem(md, f'vague instruction "{phrase}"; say what the agent would get wrong instead')
-        for block in FENCED.finditer(text):
-            for path in sorted(set(BARE_SCRIPT.findall(block[2]))):
-                if (folder / path).is_file():
-                    problem(md, f"code block runs {path!r}; write <skill-dir>/{path}, agents run it from the user's repo")
-        for pkg in UNPINNED.findall("\n".join(CODE.findall(text))):
-            if not re.search(r"@\d|==\d", pkg):
-                problem(md, f"unpinned one-off command for {pkg!r}; pin a version (pkg@1.2.3)")
+            out.append((md, "over 100 lines without a '## Contents' list"))
     return out
+
+
+def _prose_problems(text):
+    """Windows paths, time-sensitive and vague instructions in one Markdown file."""
+    out = []
+    if re.search(r"\b(scripts|references|assets)\\\w", text):
+        out.append("Windows-style path (use forward slashes)")
+    if re.search(rf"\b(before|after|until|as of)\s+({MONTHS})\s+20\d\d", text, re.IGNORECASE):
+        out.append("time-sensitive instruction; move it to an 'old patterns' section")
+    out += [f'vague instruction "{phrase}"; say what the agent would get wrong instead'
+            for phrase in VAGUE if phrase in text.lower()]
+    return out
+
+
+def _command_problems(folder, text):
+    """Commands in one Markdown file: bundled scripts run by a bare path, unpinned one-off packages."""
+    out = []
+    for block in FENCED.finditer(text):
+        for path in sorted(set(BARE_SCRIPT.findall(block[2]))):
+            if (folder / path).is_file():
+                out.append(f"code block runs {path!r}; write <skill-dir>/{path}, agents run it from the user's repo")
+    for pkg in UNPINNED.findall("\n".join(CODE.findall(text))):
+        if not re.search(r"@\d|==\d", pkg):
+            out.append(f"unpinned one-off command for {pkg!r}; pin a version (pkg@1.2.3)")
+    return out
+
+
+METADATA_ENTRY = re.compile(r"\s+([^\s:#-][^:]*):\s+(\S.*)$")
+BLOCK_INDICATOR = re.compile(r"[|>][1-9+-]{0,2}")  # |, >-, |2, >+1, …
+# plain scalars YAML 1.1 or 1.2 loads as null, a bool, a number or a date rather than a string
+NOT_STRING_WORDS = {"~", "null", "true", "false", "yes", "no", "on", "off", ".inf", "-.inf", "+.inf", ".nan"}
+DATE = re.compile(r"\d{4}-\d\d?-\d\d?(?:[Tt ].*)?")
+
+
+def _is_number(value):
+    """Whether a plain scalar reads as an int or a float: 3, -1.5, 1e3, 1_000, .5, 0x1F, 0o17."""
+    digits = value.replace("_", "")
+    if not digits.lstrip("+-")[:1] or digits.lstrip("+-")[0] not in "0123456789.":
+        return False  # float() would also take inf, nan and infinity, which YAML reads as strings
+    for parse in (float, lambda v: int(v, 0)):
+        try:
+            parse(digits)
+            return True
+        except ValueError:
+            pass
+    return False
+
+
+def _is_string(value):
+    """Whether a plain or quoted scalar loads as a string."""
+    value = uncommented(value)
+    if value[:1] in "'\"":
+        return True
+    return bool(value) and value[0] not in "#!" and value.lower() not in NOT_STRING_WORDS \
+        and not _is_number(value) and not DATE.fullmatch(value)
+
+
+def _metadata_entry(line):
+    """"block" for a `key:` opening a block scalar, "scalar" for a string `key: value`, None otherwise."""
+    entry = METADATA_ENTRY.match(line)
+    if not entry or entry.group(2)[0] in "[{&*" or not _is_string(entry.group(1)):
+        return None
+    if BLOCK_INDICATOR.fullmatch(uncommented(entry.group(2))):
+        return "block"
+    return "scalar" if _is_string(entry.group(2)) else None
+
+
+def _metadata_lines(lines):
+    """(depth, line) for each line of the block, up to the next top-level key; blank and comment lines skipped."""
+    for line in lines:
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        depth = len(line) - len(line.lstrip(" "))
+        if depth == 0:
+            return
+        yield depth, line
+
+
+def metadata_is_strings(text):
+    """Whether the frontmatter's `metadata:` block is a flat map of string keys to string values.
+
+    Entries are one-line `key: value` pairs or block scalars (`|`, `>`); a folded plain scalar,
+    a multi-line quoted one or a flow map reads as not strings.
+    """
+    lines = re.match(r"---\n(.*?)\n---\n", text, re.DOTALL).group(1).split("\n")
+    start = next(i for i, line in enumerate(lines) if line.startswith("metadata:"))
+    if uncommented(lines[start][len("metadata:"):]):
+        return False  # an inline value: a string or a flow collection, not a block map
+    indent, block = None, False
+    for depth, line in _metadata_lines(lines[start + 1:]):
+        if indent is not None and depth > indent:
+            if block:
+                continue  # a block scalar's text
+            return False
+        indent = indent or depth
+        kind = _metadata_entry(line) if depth == indent else None
+        if kind is None:
+            return False
+        block = kind == "block"
+    return indent is not None  # an empty block is null, not a map
 
 
 def check_script(f):

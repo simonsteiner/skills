@@ -1,0 +1,38 @@
+{
+  "skills": ["conventional-commit"],
+  "evals": [
+    {
+      "query": "do all one by one, commit in logical chunks",
+      "setup": "Node repo on branch fix/report-dates, whose log uses scoped Conventional Commits (`fix(reports): …`, `docs: …`). Nothing staged. Unstaged: src/reports/date.js fixes an off-by-one day when converting to UTC, test/date.test.js gains a test for it, and README.md fixes a typo in the install command. Untracked: test/fixtures/utc-midnight.json (used by the new test) and dist/bundle.js (build output that .gitignore misses).",
+      "expected_behavior": [
+        "Makes at least two commits: the date fix with its test and fixture in one, the README typo in another",
+        "Includes test/fixtures/utc-midnight.json in the fix commit, and leaves dist/bundle.js uncommitted and says so",
+        "Types the fix commit `fix` with the `reports` scope the log already uses, and the README commit `docs`",
+        "Writes every header at 72 characters or fewer, imperative, lowercase first letter, no trailing period",
+        "Writes no body line that is hard-wrapped mid-sentence",
+        "Shows the verify step's output in the reply (the new `git log` headers and `git status --short` with dist/bundle.js still untracked) and doesn't push"
+      ]
+    },
+    {
+      "query": "yes commit",
+      "setup": "TypeScript library repo on main. Staged: src/auth.ts changes the exported `login(user, password)` to `login({ user, password, clientId })` and updates its callers in src/. Unstaged: a half-finished edit to src/ui/banner.ts unrelated to auth. Earlier in the thread the user agreed the auth change is ready.",
+      "expected_behavior": [
+        "Commits only the staged auth change, and leaves src/ui/banner.ts unstaged and says so",
+        "Marks the commit as breaking with `!` before the colon, a `BREAKING CHANGE:` footer, or both",
+        "Gives a migration path for callers of `login` in the breaking-change text",
+        "Shows the committed message in the reply (`git log -1 --format=%B`) with its body paragraphs and `BREAKING CHANGE:` footer intact, as one message rather than pieces from several `-m` flags",
+        "Doesn't push"
+      ]
+    },
+    {
+      "query": "add a short \"WSL crashes when C: is full\" section to `docs/setup/wsl.md` commit directly to main",
+      "setup": "Docs-heavy repo on main with a clean tree. docs/setup/wsl.md exists with sections for installing WSL and mounting drives. The log uses `docs(setup): …` for changes under docs/setup/.",
+      "expected_behavior": [
+        "Adds the section to docs/setup/wsl.md and commits it on main without creating a branch",
+        "Writes a `docs` header, scoped `setup` to match the log, that states the change rather than the file name",
+        "Writes no body line that is hard-wrapped mid-sentence",
+        "Doesn't push, since only a commit was asked for"
+      ]
+    }
+  ]
+}

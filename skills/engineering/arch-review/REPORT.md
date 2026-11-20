@@ -6,9 +6,13 @@ The look is borrowed from upstream's HTML report: diagrams carry the weight, pro
 
 ## Token budget
 
-Every file in the report stays under the project's token budget: what its `file-tokens` job enforces (5,000 tokens unless the job passes `--max-tokens`), or 5,000 tokens when it has none. Bytes / 4 is the measure, so 20 KB at the default. A card that runs over has too many files or too long a diagram: trim the diagram to the modules that carry the point. An overview that runs over moves **Smaller findings** to `smaller-findings.md` beside it, and points the jump link and the Status rows' `S` links there (`smaller-findings.md#s1--title`).
+The project's token budget is what its `file-tokens` job enforces: a pre-commit job in its lefthook config that blocks any staged file over it. `lefthook dump` shows the merged config (remotes and `lefthook-local.yml` included); the budget is the `--max-tokens <N>` in the job's `args:` (5,000 when absent). A project not yet migrated keeps a copy of the script instead (`git ls-files '*check-file-tokens.py'`) with its job's limit. Neither → 5,000 tokens. Bytes / 4 is the measure, so 20 KB at the default.
 
-Reports written before this layout are single files. They're dated records: leave them as they are, and mark any over the budget `linguist-generated` in `.gitattributes` so the check skips them, rather than splitting them.
+**Files over it in the scope** (Step 1): run the job through lefthook, so it uses the project's pinned script and budget — `lefthook run pre-commit --job file-tokens --file <path> [--file …]`, or `--all-files` for the whole repo, invoked the way the project installs lefthook (`uv run lefthook`, `npm exec -- lefthook`, `lefthook`). With only the copied script: `git ls-files -z <scope> | xargs -0 python3 <path> --max-tokens <N>`. Every file it lists fails the next commit that touches it, so each one gets a row (LENSES.md, "Size as a pointer").
+
+**The report's own files** stay under it. A card that runs over has too many files or too long a diagram: trim the diagram to the modules that carry the point. An overview that runs over moves **Smaller findings** to `smaller-findings.md` beside it, and points the jump link and the Status rows' `S` links there (`smaller-findings.md#s1--title`).
+
+Reports written before this layout are single files. They're dated records: leave them as they are, never convert or split them, and mark any over the budget `<path> linguist-generated` in `.gitattributes` in the first commit that touches it, or the check blocks that commit.
 
 ## What changes after the scan
 
@@ -28,11 +32,12 @@ Only three parts: the **Status** table and **Departures** in the overview, and e
 
 One file per candidate, `C<n>-<card-slug>.md` beside the overview — the centrepiece of the report. If a diagram needs a paragraph to be understood, redraw the diagram.
 
-- **Heading** — `# C1 · <title>`, a short title naming the deepening ("Collapse the order intake pipeline"), with a `[← Report](README.md)` back link under it.
+- **Heading** — `# C1 · <title>`, a short title naming the fix ("Collapse the order intake pipeline", "Move checkout into one module"), with a `[← Report](README.md)` back link under it.
 - **Badge line** — strength (🟢 Strong · 🟡 Worth exploring · ⚪ Speculative), 🔴 live defect when a bug was reproduced, the dependency category in code font (`in-process`, `local-substitutable`, `ports & adapters`, `mock`), the door (↔ `two-way` · 🚪 `one-way`: hard to reverse once merged — a data migration, a published wire or file format, deleted user data), and what it builds on.
 - **Files** — code-font paths with line ranges, on one line.
 - **Before / After** — one Mermaid flowchart with two subgraphs side by side (`flowchart LR`, each subgraph `direction TB`, `before ~~~ after` to keep them apart). It's the only way GitHub puts two diagrams next to each other.
 - **Evidence** — a `[!CAUTION]` callout with the reproduced failure for a live defect; otherwise one plain line with the count that shows the friction.
+- **Removes** — the symptoms this one fix makes unnecessary, one bullet each with `path:line`: the special cases, hidden links, and needless links the scan found. Step 8 checks each one is gone.
 - **Problem / Solution / Wins** — a one-row table: one sentence, one sentence, ≤ 6-word wins separated by `<br>`. No interface design here; that's Step 6.
 - **ADR** — a `[!NOTE]` callout, only when an ADR bears on it.
 - **Decisions** — a collapsed `<details>`, empty until the candidate is implemented.

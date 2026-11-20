@@ -13,14 +13,15 @@ Since gh 2.99, `gh pr create|edit|comment` and `gh issue create|edit|comment` ta
 
 Take only local paths the user gave or that this session produced (a screenshot just taken, a recording just rendered). A URL is already hosted: use it as is. No file, no upload — don't guess a path.
 
-Accepted: png, jpg, jpeg, gif, webp, svg, mov, mp4, webm. Anything else (pdf, zip, logs) is refused; say so and offer to put a log's relevant lines in a fenced block instead. GitHub caps images at 10 MB and videos at 10 MB (100 MB on paid plans); downscale or trim a bigger capture first. Don't attach a capture that shows secrets, tokens, or personal data — crop or redact it: the upload can't be deleted, and it's public once a public body references it.
+Accepted: png, jpg, jpeg, gif, webp, svg, mov, mp4, webm. Anything else (pdf, zip, logs) is refused; say so and offer to put a log's relevant lines in a fenced block instead. GitHub caps images at 10 MB and videos at 10 MB on free plans, 100 MB on paid ones; downscale or trim a bigger capture first. Don't attach a capture that shows secrets, tokens, or personal data — crop or redact it: the upload can't be deleted, and it's public once a public body references it.
 
 ## 2. Write the body with local references
 
 Reference each file by its local path where it explains something, and pass every file to `--attach`. gh uploads them, rewrites each `./path` to the uploaded URL, and appends any file the body doesn't reference.
 
 ```bash
-cat > /tmp/shots/body.md <<'EOF'   # beside the captures, so ./before.png resolves
+shots="$(mktemp -d)" && cp before.png after.png flow.mp4 "$shots/"   # the body goes beside the captures, so ./before.png resolves
+cat > "$shots/body.md" <<'EOF'
 | Before | After |
 |---|---|
 | ![Settings page, text clipped](./before.png) | ![Settings page, text fits](./after.png) |
@@ -29,9 +30,12 @@ Walkthrough:
 
 ![](./flow.mp4)
 EOF
-gh pr edit 12 --body-file /tmp/shots/body.md \
-  --attach /tmp/shots/before.png --attach /tmp/shots/after.png --attach /tmp/shots/flow.mp4
+gh pr edit 12 --body-file "$shots/body.md" \
+  --attach "$shots/before.png" --attach "$shots/after.png" --attach "$shots/flow.mp4" \
+  && rm -r "$shots"
 ```
+
+- **One command:** run the block in one call. `$shots` doesn't survive into the next tool call, and an empty one writes the body to `/body.md`; split it up only with the path `mktemp -d` printed written in literally.
 
 - **Paths** in a `--body-file` resolve from that file's folder, so either write the body next to the captures or reference them by absolute path. With `--body`, they resolve from the working directory.
 - **Alt text:** write what the image shows, not the file name. For an appended file give it after `#`: `--attach './login.png#The login error state'`.
@@ -54,7 +58,7 @@ When this is a step in writing a PR body, hand the body back to that step with t
 <skill-dir>/scripts/upload.sh [--repo OWNER/REPO] <file>...
 ```
 
-It checks every file before uploading any, then prints one Markdown line per file in argument order: `![name](url)` for an image, a bare URL for a video. Swap in real alt text before placing the line. A 404 means no write access to that repo. On a failure, the lines already printed are good uploads: rerun with only the failed file.
+It checks every file before uploading any, then prints one Markdown line per file in argument order: `![name](url)` for an image, a bare URL for a video. Swap in real alt text before placing the line. It refuses an image over 10 MB and a video over 100 MB; it can't see the plan, so on a free plan a video over 10 MB passes its check and GitHub rejects the upload. A 404 means no write access to that repo. On a failure, the lines already printed are good uploads: rerun with only the failed file.
 
 ## 4. Check it rendered
 

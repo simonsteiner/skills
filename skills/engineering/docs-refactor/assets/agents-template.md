@@ -1,7 +1,7 @@
 # <Project name>
 
 <What the project is, in one sentence.> <The major pieces.> <How they talk to each other.>
-Domain terms are in `GLOSSARY.md`; decisions and their trade-offs are in `docs/adr/`.
+Domain terms are in `GLOSSARY.md`; decisions and their trade-offs are in `docs/adr/`. <Drop the `docs/adr/` clause when the repo has no ADRs.>
 
 ## Commands
 

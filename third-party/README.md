@@ -88,6 +88,14 @@ Vercel's official collection — a different repo from `vercel-labs/skills`, the
 
 - **[writing-guidelines](https://github.com/vercel-labs/agent-skills/blob/main/skills/writing-guidelines/SKILL.md)** — review docs and prose against Vercel's writing handbook: voice, tone, structure. Each run fetches the handbook's latest rules, so they change with upstream, not with a sync.
 
+## caldoai/skills
+
+Two skills on keeping a codebase easy for agents to change. Only one is curated; the other's lens lives in the owned [`arch-review`](../skills/engineering/arch-review/SKILL.md). The repo was a day old when curated, so read its diff before syncing.
+
+### Model-invoked
+
+- **[prune-tests](https://github.com/caldoai/skills/blob/main/skills/prune-tests/SKILL.md)** — delete or rewrite tests that guard no behavior: ones asserting removed code, ones that can't fail, ones tied to the implementation, duplicates, and production code kept only for tests. `tdd` writes tests worth keeping; this removes the rest. `arch-review` calls it on the tests of the internals each candidate replaces, and `test-review` on the tests each waste row lists.
+
 ## Archived
 
 Curated once and then retired, or considered and declined in favour of an owned skill. Each stays in `skills.json` under its source's `archived` list with the reason, so the decision isn't re-litigated; the sync no longer installs it, and `--check` reports an `archived` line while a copy is still installed (`npx skills remove -g <name>` clears it).
@@ -96,6 +104,8 @@ Curated once and then retired, or considered and declined in favour of an owned 
 - **[thermo-nuclear-code-quality-review](https://github.com/cursor/plugins/blob/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review/SKILL.md)** (cursor/plugins) — both replaced by the owned [`arch-review`](../skills/engineering/arch-review/SKILL.md), which combines the first's deepening scan with the second's maintainability rubric and adds the save-and-implement loop neither had. See [ADR 0004](../docs/adr/0004-own-arch-review-instead-of-curating-two-review-skills.md).
 
 - **[code-review](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md)** (mattpocock/skills) — replaced by the owned [`review-prs`](../skills/engineering/review-prs/SKILL.md), which keeps its Standards and Spec axes and smell baseline, reviews a local fixed point in its local mode, and adds the GitHub loop. See [ADR 0005](../docs/adr/0005-own-review-prs-instead-of-curating-code-review.md).
+
+- **[untangle-codebase](https://github.com/caldoai/skills/blob/main/skills/untangle-codebase/SKILL.md)** (caldoai/skills) — never curated: its one-pass refactor of the whole codebase competes with `arch-review`'s backlog of stacked PRs. Its coupling lens (hidden links, needless links, surplus), special cases as evidence of a missing design, and git co-change were adapted into [`arch-review`](../skills/engineering/arch-review/SKILL.md) instead.
 
 - **[frontend-design](https://github.com/anthropics/skills/blob/main/skills/frontend-design/SKILL.md)** (anthropics/skills) — and
 - **[impeccable](https://github.com/pbakaus/impeccable)** (pbakaus/impeccable) — never curated; both adapted into the owned [`frontend-craft`](../skills/engineering/frontend-craft/SKILL.md), which keeps the first's process and voice and the second's modes, quality floor, and review rubrics, without impeccable's engine, hooks, or project files. See [ADR 0007](../docs/adr/0007-own-frontend-craft-instead-of-curating-two-design-skills.md).

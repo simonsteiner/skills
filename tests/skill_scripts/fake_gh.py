@@ -6,7 +6,7 @@ proves what a script did *not* send. Each logged call keeps the GH_* and GITHUB_
 variables it ran with, so a test can check which tokens a script let through.
 
 A rule: {"args": [...prefix of argv...], "stdout": "text" | "json": <value> | "pages":
-[<value>, ...], "exit": 0, "once": false}. "pages" stands for a `--paginate` response,
+[<value>, ...], "stderr": "text", "exit": 0, "once": false}. "pages" stands for a `--paginate` response,
 one JSON value per page. With "json" or "pages" and a `--jq` in argv, the filter runs
 through the real jq on each page (strings raw, everything else compact JSON, as gh
 prints them), with the caller's environment, so `env.X` filters work as they do under gh.
@@ -74,6 +74,7 @@ def main(argv):
                 out = "".join(subprocess.run(["jq", "-r", "-c", jq], input=json.dumps(page), capture_output=True,
                                              text=True, check=True).stdout for page in pages)
         sys.stdout.write(out)
+        sys.stderr.write(rule.get("stderr", ""))
         return rule.get("exit", 0)
     sys.stderr.write(f"fake gh: no rule for {argv}\n")
     return 99
