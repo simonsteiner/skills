@@ -79,6 +79,7 @@ def _file_problems(skill, i, files):
         return [f'eval {i}: "files" must be a list of paths']
     return [f"eval {i}: file {f!r} doesn't exist" for f in files if not (skill.folder / f).is_file()]
 
+
 def slug(text, words=5):
     return "-".join(re.findall(r"[a-z0-9]+", text.lower())[:words]) or "eval"
 
