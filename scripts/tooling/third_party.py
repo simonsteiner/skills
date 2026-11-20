@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
+SKILL_FILE = "SKILL.md"
 
 
 def _stdout(msg):
@@ -189,7 +190,7 @@ def link(manifest, home, log=_stdout, err=_stderr):
     for want in wanted_links(manifest, home):
         source = home.store / want.name
         destination = want.dir / want.name
-        if not (source / "SKILL.md").is_file():
+        if not (source / SKILL_FILE).is_file():
             err(f"error: cannot link '{want.name}' into {want.agent}; no installed skill at {source}.")
             failed.append(f"link {want.name} into {want.agent}")
             continue
@@ -259,7 +260,7 @@ def check(manifest, home, owned):
         if not d.is_dir():
             continue
         for name in sorted(os.listdir(d)):
-            if name not in known and (d / name / "SKILL.md").exists():
+            if name not in known and (d / name / SKILL_FILE).exists():
                 unmanaged.setdefault(name, []).append(str(d))
     for name, where in unmanaged.items():
         found.append(Finding("unmanaged", name, f"(in {len(where)}: {', '.join(where)})"))
@@ -275,7 +276,7 @@ def check(manifest, home, owned):
             continue
         d = home.agent_dir(agent)
         for k in manifest.curated:
-            there, here = d / k.name / "SKILL.md", home.store / k.name / "SKILL.md"
+            there, here = d / k.name / SKILL_FILE, home.store / k.name / SKILL_FILE
             if not there.exists() or not here.exists() or there.read_bytes() == here.read_bytes():
                 continue
             if there.stat().st_mtime < here.stat().st_mtime:
