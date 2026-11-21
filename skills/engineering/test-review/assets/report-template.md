@@ -16,7 +16,7 @@
 
 ## Status
 
-The backlog, in rank order. After the scan only this table, the cards' **Decisions** and **After**, and **Departures** change.
+The backlog, in rank order. After the scan only this table (including `S` rows Build adds, with their Smaller findings entries), any **Seams** moved at the checkpoint, the cards' **Decisions** and **After**, and **Departures** change.
 
 | ID | Candidate | Kind | Strength | Door | Fix | Status | Branch | PR | Notes |
 |---|---|---|---|---|---|---|---|---|---|
