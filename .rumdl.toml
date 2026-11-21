@@ -8,6 +8,7 @@ disable = ["MD013", "MD076"]
 exclude = [
     # Installed packages, not hand-written.
     "node_modules/**",
+    ".venv/**",
     # Written by changesets from .changeset/*.md, not by hand.
     "CHANGELOG.md",
 ]
