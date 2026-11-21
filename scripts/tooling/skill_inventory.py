@@ -23,13 +23,13 @@ UNPUBLISHED = ("personal", "in-progress", "deprecated")
 FRONTMATTER = re.compile(r"\A---[ \t]*\r?\n(?:(.*?)\r?\n)?---[ \t]*(?:\r?\n|\Z)", re.DOTALL)
 
 
-def _load_yaml(raw):
+def _load_yaml(raw, line_offset=0):
     """Parse YAML 1.2 frontmatter safely, rejecting duplicate keys."""
     try:
         from ruamel.yaml import YAML, YAMLError
     except ModuleNotFoundError as err:
         raise RuntimeError(
-            "ruamel.yaml is required to parse SKILL.md frontmatter; run via `uv run --no-build`"
+            "ruamel.yaml is required to parse SKILL.md frontmatter; run via `uv run --locked --no-build`"
         ) from err
     yaml = YAML(typ="safe", pure=True)
     try:
@@ -38,7 +38,7 @@ def _load_yaml(raw):
         problem = getattr(err, "problem", None)
         mark = getattr(err, "problem_mark", None)
         if problem and mark is not None:
-            return None, f"{problem} (line {mark.line + 1}, col {mark.column + 1})"
+            return None, f"{problem} (line {mark.line + 1 + line_offset}, col {mark.column + 1})"
         return None, problem or str(err).splitlines()[0]
 
 
@@ -52,7 +52,7 @@ def frontmatter(text):
     if not m:
         return None, text, None
     body = text[m.end():]
-    data, error = _load_yaml(m.group(1) or "")
+    data, error = _load_yaml(m.group(1) or "", line_offset=1)
     if error is not None:
         return None, body, error
     if not isinstance(data, dict):

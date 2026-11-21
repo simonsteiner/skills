@@ -89,7 +89,8 @@ FENCED = re.compile(r"^[ \t]*(`{3,}|~{3,})[^\n]*\n(.*?)^[ \t]*\1(?:(?<=`)`*|(?<=
 BARE_SCRIPT = re.compile(r"(?<![\w/.>-])(?:\./)?(scripts/[\w.-]+)")
 CODE = re.compile(r"```.*?```|`[^`\n]+`", re.DOTALL)  # fenced blocks and inline code spans
 PROMPTS = re.compile(r"\bread\s+(?:-\w+\s+)*-p\b|/dev/tty|\binput\(|\bgetpass\b")
-PEP723_SCRIPT = re.compile(r"^# /// script\s*$", re.MULTILINE)
+PEP723_BLOCK = re.compile(r"(?m)^# /// script[ \t]*\r?\n((?:^#[^\n]*\n)*?)^# ///[ \t]*$")
+PEP723_DEPS = re.compile(r"""(?m)^dependencies\s*=\s*\[[^\]]*['"]""")
 
 
 def check(repo, skills):
@@ -282,13 +283,23 @@ def _command_problems(folder, text):
     return out
 
 
+def _has_pep723_dependencies(text):
+    """Whether `text` has a closed `# /// script` block declaring at least one dependency."""
+    for block in PEP723_BLOCK.finditer(text):
+        lines = [line[2:] if line.startswith("# ") else line[1:] for line in block.group(1).splitlines()]
+        body = "\n".join(line for line in lines if not line.lstrip().startswith("#"))
+        if PEP723_DEPS.search(body):
+            return True
+    return False
+
+
 def _python_import_problems(f, text):
     """Bundled Python scripts stay stdlib-only unless they declare PEP 723 dependencies."""
     try:
         tree = ast.parse(text, filename=str(f))
     except SyntaxError as err:
         return [(f, f"bundled Python script has a syntax error: {err.msg}")]
-    if PEP723_SCRIPT.search(text):
+    if _has_pep723_dependencies(text):
         return []
     local = {p.stem for p in f.parent.glob("*.py")} | {
         p.name for p in f.parent.iterdir() if p.is_dir() and (p / "__init__.py").exists()
