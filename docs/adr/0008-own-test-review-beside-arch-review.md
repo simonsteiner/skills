@@ -6,7 +6,7 @@ The ask was a skill that reviews a project's test setup, finds blind spots and w
 
 Three ways to get a test review:
 
-1. **A fourth lens in arch-review.** Reuses everything. But arch-review's candidates are structural fixes phrased as module changes, designed in a Design phase and built as refactors; a test candidate is fixed by writing tests through `tdd` or deleting them through `prune-tests`, and it needs evidence arch-review never gathers (suite timings, CI reruns, fix commits without a test). arch-review's `SKILL.md` is already 15.7 KB of a 20 KB body budget.
+1. **A fourth lens in arch-review.** Reuses everything. But arch-review's candidates are structural fixes phrased as module changes, designed in a Design phase and built as refactors; a test candidate is fixed by writing tests through `tdd` or deleting them through `prune-tests`, and it needs evidence arch-review never gathers (suite timings, CI reruns, fix commits without a test). And every test-specific step would grow arch-review's `SKILL.md`, whose body `scripts/lint-skills.py` caps at about 5,000 tokens.
 2. **A test-review skill that calls arch-review's pieces.** arch-review is user-invoked, so no skill can reach it through the Skill tool ([docs/invocation.md](../invocation.md)), and skills don't link into each other's folders. Its templates and `co-change.py` aren't reachable from another skill, and a user can install either skill alone.
 3. **An owned test-review with its own copy of the shape.**
 
