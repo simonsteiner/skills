@@ -65,13 +65,20 @@ class GitError(Exception):
     pass
 
 
+def git(*args, cwd=None, stdin=None):
+    """Run git; decode its output byte for byte. Text mode would turn a "\\r" in a path into
+    "\\n" and fail on a path that isn't UTF-8, so take bytes and round-trip what isn't UTF-8."""
+    r = subprocess.run(["git", *args], cwd=cwd, capture_output=True, check=False,
+                       input=None if stdin is None else stdin.encode("utf-8", "surrogateescape"))
+    return subprocess.CompletedProcess(r.args, r.returncode, r.stdout.decode("utf-8", "surrogateescape"),
+                                       r.stderr.decode("utf-8", "surrogateescape"))
+
+
 def commits(since):
     """Each non-merge commit's changed files, repo-root relative, as git stores them."""
     # -z keeps every path verbatim: without it git C-quotes a name holding a ", \\, tab or newline.
-    result = subprocess.run(
-        ["git", "log", "-z", "--no-merges", "--no-show-signature", f"--since={since}",
-         "--name-only", "--format=%x1e"],
-        capture_output=True, text=True, check=False)
+    result = git("log", "-z", "--no-merges", "--no-show-signature", f"--since={since}",
+                 "--name-only", "--format=%x1e")
     if result.returncode:
         raise GitError(result.stderr.strip())
     # Each commit is its %x1e header, then "\0\n" and its paths, each ended by "\0". A path that
@@ -95,9 +102,7 @@ def generated(paths, root):
     """The paths whose linguist-generated attribute is set (from any .gitattributes)."""
     if not paths:
         return set()
-    result = subprocess.run(
-        ["git", "check-attr", "-z", "--stdin", "linguist-generated"], cwd=root,
-        input="\0".join(paths) + "\0", capture_output=True, text=True, check=False)
+    result = git("check-attr", "-z", "--stdin", "linguist-generated", cwd=root, stdin="\0".join(paths) + "\0")
     if result.returncode:
         raise GitError(result.stderr.strip())
     fields = result.stdout.split("\0")
@@ -113,6 +118,7 @@ def count(value):
 
 
 def main(argv):
+    sys.stdout.reconfigure(errors="surrogateescape")  # print what git() decoded back byte for byte
     parser = argparse.ArgumentParser(prog="co-change.py", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--churn", action="store_true",
@@ -131,12 +137,12 @@ def main(argv):
 
     if not SINCE.fullmatch(args.since):
         parser.error(f"--since: not a date or relative time: {args.since!r}")
-    top = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=False)
+    top = git("rev-parse", "--show-toplevel")
     if top.returncode:
         print("co-change.py: not inside a git repository", file=sys.stderr)
         return 2
     root = Path(top.stdout.strip()).resolve()
-    head = subprocess.run(["git", "rev-parse", "--verify", "--quiet", "HEAD"], capture_output=True, check=False)
+    head = git("rev-parse", "--verify", "--quiet", "HEAD")
     if head.returncode:
         return 0
 

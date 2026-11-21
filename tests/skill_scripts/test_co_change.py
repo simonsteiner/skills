@@ -129,6 +129,24 @@ class CoChangeTest(unittest.TestCase):
                 self.assertIn(f"3\t{name}\n", churn)
                 self.assertIn(f"\t{name}", pairs)
 
+    def test_names_that_are_not_utf8_or_hold_a_carriage_return_are_kept(self):
+        # read the output as bytes: text mode would turn the "\r" into "\n" here too
+        names = ["caf\udce9.py", "Icon\r"]
+        try:
+            (self.repo / names[0]).write_text("")
+        except (OSError, UnicodeEncodeError):
+            self.skipTest("the filesystem won't hold a non-UTF-8 name")
+        for _ in range(3):
+            self.commit(*names)
+        churn = subprocess.run([str(SCRIPT), "--churn"], cwd=self.repo, env=ENV, capture_output=True, check=False)
+        pairs = subprocess.run([str(SCRIPT)], cwd=self.repo, env=ENV, capture_output=True, check=False)
+        self.assertEqual((churn.returncode, pairs.returncode), (0, 0), churn.stderr + pairs.stderr)
+        for name in names:
+            raw = os.fsencode(name)
+            with self.subTest(name=name):
+                self.assertIn(b"3\t" + raw + b"\n", churn.stdout)
+                self.assertIn(raw, pairs.stdout)
+
     def test_a_repo_without_commits_prints_nothing(self):
         self.assertEqual(self.rows(), [])
 

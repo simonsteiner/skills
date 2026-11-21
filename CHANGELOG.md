@@ -1,5 +1,21 @@
 # simonsteiner-skills
 
+## 1.16.0
+
+### Minor Changes
+
+- [#84](https://github.com/simonsteiner/skills/pull/84) [`3e43fd9`](https://github.com/simonsteiner/skills/commit/3e43fd948b7b17f5cebfc5a856b711acca58754c) Thanks [@simonsteiner](https://github.com/simonsteiner)! - `scripts/link-skills.py` and `scripts/sync-third-party.py` now link owned and curated skills into Antigravity's global `~/.gemini/config/skills/` directory instead of the legacy IDE path `~/.gemini/antigravity/skills/`, and `third-party/skills.json` adds `antigravity` to its default `agents` list.
+
+- [#60](https://github.com/simonsteiner/skills/pull/60) [`da6a319`](https://github.com/simonsteiner/skills/commit/da6a319f318934c93d6920edfffd958048a0b795) Thanks [@simonsteiner](https://github.com/simonsteiner)! - address-review-findings and review-prs now weigh a correct finding before fixing it: how likely a real user is to reach the trigger, how bad the outcome is, and whether the fix closes a defect or adds a feature. A finding that's real but not worth fixing in this PR gets a new _deferred_ verdict: a reply with the reason, its bot thread resolved, and a line in the report's follow-ups. Fixing every bot finding never converged, because each round lands on the last fix.
+
+### Patch Changes
+
+- [#60](https://github.com/simonsteiner/skills/pull/60) [`f2b3c8e`](https://github.com/simonsteiner/skills/commit/f2b3c8e20daf3e2a5253b19f94df3dfc14f83e7d) Thanks [@simonsteiner](https://github.com/simonsteiner)! - address-review-findings and review-prs now push each PR once per fix round. Commits wait for the last one, and a stack layer's carried-up merge goes out in the same push as that layer's own fixes, so CodeRabbit and other bot reviewers start one review per round instead of one per push.
+
+- [#60](https://github.com/simonsteiner/skills/pull/60) [`ccaa0c0`](https://github.com/simonsteiner/skills/commit/ccaa0c0a9369d77fce1432c17a05ad52770a7627) Thanks [@simonsteiner](https://github.com/simonsteiner)! - address-review-findings pushes a fix round through a bundled `scripts/push-once.sh` instead of an inline shell chain. Before pushing anything, the script refuses a bare repo, uncommitted changes, an unfinished merge, a start commit that isn't an ancestor of HEAD, or a commit count that's off. It names untracked files the round may have forgotten to add. A rejected push and any other push failure get different exit codes, so a failed login or hook no longer sends the agent into a merge.
+
+- [#64](https://github.com/simonsteiner/skills/pull/64) [`8a418fd`](https://github.com/simonsteiner/skills/commit/8a418fd90d4027e54f56890c18f22976c88a7ba0) Thanks [@simonsteiner](https://github.com/simonsteiner)! - review-prs has a Security lens. A **Security** finding now names the lower-trust caller, what they control, the check that fails, the boundary it crosses and the concrete result for someone else, and carries a rating (`**Security** (high) — …`). A missing second layer behind a control that works is a **Smell**, and a finding that hinges on deployment config the repo doesn't hold goes in the summary with the fact to check. Adapted from Cloudflare's `security-audit` skill, which is now also curated for full codebase audits.
+
 ## 1.15.1
 
 ### Patch Changes

@@ -113,7 +113,7 @@ az devops invoke <thread-route> threadId=<summary-thread-id> commentId=1 --resou
 
 address-review-findings works only on GitHub, so do its loop here yourself, with the steps below. Per PR, stacks bottom-up:
 
-1. Keep the review worktree from *Read a PR* after posting and fix in it — or, if the review ran in a delegate-owned worktree, create a fresh worktree at `<head-oid>` as in *Read a PR* and fix there. Each posted finding and each bot thread you confirmed gets a fix, after the weighing in LENSES.md (*Weigh and disagree*); run the repo's checks again.
+1. Keep the review worktree from *Read a PR* after posting and fix in it — or, if the review ran in a delegate-owned worktree, create a fresh worktree at `<head-oid>` as in *Read a PR* and fix there. Each posted finding and each bot thread you confirmed gets a fix, after the weighing in LENSES.md (*Weigh and disagree*), except a finding you posted as the user's call, which waits for their answer; run the repo's checks again.
 2. Call the Skill tool with "conventional-commit" to commit. Then push once with `git push origin HEAD:<source branch>`, after the PR's last commit: each push starts another bot review. A PR from a fork (`forkSource` set) pushes to `forkSource.repository.remoteUrl` instead; when that isn't writable, say so, leave its threads open, and stop fixing that PR.
 3. Per thread — yours and the bots' you confirmed, deferred or disagree with — reply, and resolve only when a fix landed or for a bot's deferred thread, with the reason in the reply:
 
@@ -124,7 +124,7 @@ address-review-findings works only on GitHub, so do its loop here yourself, with
    az devops invoke <thread-route> threadId=<thread-id> --resource pullRequestThreads --http-method PATCH --in-file <file> -o json
    ```
 
-   (`threadId=` joins the other `--route-parameters`.) A thread you disagree with gets a reply and stays `active`, and so does a human's deferred thread.
+   (`threadId=` joins the other `--route-parameters`.) A thread you disagree with gets a reply and stays `active`, and so do a human's deferred thread and a finding left as the user's call.
 4. Record the fix commits (*Record fixes*).
 5. In a stack, carry the fixes up before the next layer starts: merge the layer as pushed into the one stacked on it, in that layer's worktree — merge, not rebase. Don't push the merge yet: it goes out in that layer's own step 2 push, with its fixes. A layer with nothing to fix pushes the merge alone.
 6. Remove the worktree once the PR's fixes are pushed and carried up: `git worktree remove --force <path> && rmdir <its parent>`.
