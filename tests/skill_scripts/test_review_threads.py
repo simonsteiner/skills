@@ -1,6 +1,6 @@
 """Tests for skills/engineering/review-prs/scripts/review-threads.sh, through a fake gh.
 
-    python3 -m unittest discover -s tests -t .
+    uv run --locked --no-build python3 -m unittest discover -s tests -t .
 """
 
 import json

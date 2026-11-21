@@ -1,6 +1,6 @@
 """Every script bundled in a skill answers --help without touching gh.
 
-    python3 -m unittest discover -s tests -t .
+    uv run --locked --no-build python3 -m unittest discover -s tests -t .
 """
 
 import tempfile

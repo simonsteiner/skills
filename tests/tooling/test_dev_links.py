@@ -1,6 +1,6 @@
 """Tests for dev_links.py, against a throwaway repo and home directory.
 
-    python3 -m unittest discover -s tests -t .
+    uv run --locked --no-build python3 -m unittest discover -s tests -t .
 """
 
 import os

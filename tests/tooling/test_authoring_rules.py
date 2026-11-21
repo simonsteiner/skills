@@ -1,6 +1,6 @@
 """Tests for authoring_rules.py, against throwaway repos.
 
-    python3 -m unittest discover -s tests -t .
+    uv run --locked --no-build python3 -m unittest discover -s tests -t .
 """
 
 import tempfile

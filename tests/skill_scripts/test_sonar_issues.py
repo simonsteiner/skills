@@ -1,6 +1,6 @@
 """Tests for skills/engineering/review-prs/scripts/sonar-issues.sh, through a fake curl.
 
-    python3 -m unittest discover -s tests -t .
+    uv run --locked --no-build python3 -m unittest discover -s tests -t .
 """
 
 import json

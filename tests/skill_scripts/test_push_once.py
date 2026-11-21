@@ -1,6 +1,6 @@
 """Tests for skills/engineering/address-review-findings/scripts/push-once.sh, in throwaway repos.
 
-    python3 -m unittest discover -s tests -t .
+    uv run --locked --no-build python3 -m unittest discover -s tests -t .
 """
 
 import os

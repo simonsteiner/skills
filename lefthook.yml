@@ -10,9 +10,9 @@ pre-commit:
       glob: "{skills/**,third-party/**,README.md,.claude-plugin/**,scripts/*.py,scripts/**/*.py,pyproject.toml,uv.lock}"
       run: uv run --locked --no-build python3 scripts/lint-skills.py
 
-    # Same as CI: the tooling, and the scripts bundled in skills against a fake gh.
+    # Same as CI: the tooling, the scripts bundled in skills against a fake gh, and the skills' prose.
     tests:
-      glob: "{scripts/*.py,scripts/**/*.py,tests/*.py,tests/**/*.py,skills/*/*/scripts/*,.lefthook/**,pyproject.toml,uv.lock}"
+      glob: "{scripts/*.py,scripts/**/*.py,tests/*.py,tests/**/*.py,skills/**,.lefthook/**,pyproject.toml,uv.lock}"
       run: uv run --locked --no-build python3 -m unittest discover -s tests -t .
 
     # Same as CI's Ruff step; bump the version in both places.
