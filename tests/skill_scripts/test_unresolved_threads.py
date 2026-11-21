@@ -36,11 +36,11 @@ class UnresolvedThreadsTest(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         self.gh = FakeGh(tmp.name)
         self.gh.on("pr", "view", "--json", "number", json={"number": 7})
-        self.gh.on("repo", "view", json={"nameWithOwner": "o/r"})
+        self.gh.on("repo", "view", json={"url": "https://github.com/o/r"})
         self.gh.on("api", "user", json={"login": "me"})
 
-    def run_with(self, reviews, threads, pr=None, env=None, comments=()):
-        n, repo = pr or 7, "/".join((env or {}).get("GH_REPO", "o/r").split("/")[-2:])
+    def run_with(self, reviews, threads, pr=None, env=None, comments=(), repo=None):
+        n, repo = pr or 7, repo or "/".join((env or {}).get("GH_REPO", "o/r").split("/")[-2:])
         self.gh.on("api", f"repos/{repo}/pulls/{n}/reviews?per_page=100", pages=[reviews])
         self.gh.on("api", f"repos/{repo}/pulls/{n}/comments?per_page=100", pages=[list(comments)])
         self.gh.on("api", "graphql", json={"data": {"repository": {"pullRequest": {"reviewThreads": {
@@ -67,6 +67,16 @@ class UnresolvedThreadsTest(unittest.TestCase):
                 [graphql] = [c["args"] for c in self.gh.calls if c["args"][:2] == ["api", "graphql"]]
                 self.assertIn("owner=fork", graphql)
                 self.assertIn("repo=r2", graphql)
+
+    def test_an_enterprise_checkout_queries_its_own_host(self):
+        self.gh.rules = [r for r in self.gh.rules if r["args"][:2] != ["repo", "view"]]
+        self.gh.on("repo", "view", json={"url": "https://ghe.example.com/me/web"})
+        self.run_with([review("")], [], repo="me/web")
+        api = [c for c in self.gh.calls if c["args"][0] == "api"]
+        self.assertEqual({c["env"].get("GH_HOST") for c in api}, {"ghe.example.com"})
+        self.assertIn("repos/me/web/pulls/7/reviews?per_page=100", [c["args"][1] for c in api])
+        [graphql] = [c["args"] for c in api if c["args"][1] == "graphql"]
+        self.assertIn("owner=me", graphql)
 
     def test_awaiting_reviewer_only_when_you_answered_someone_else_last(self):
         _, threads = self.run_with([review("")], [thread("A", "bot", "me"), thread("B", "bot", "me", "bot"),

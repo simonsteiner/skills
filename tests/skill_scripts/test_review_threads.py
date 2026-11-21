@@ -28,7 +28,7 @@ class ReviewThreadsTest(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.gh = FakeGh(tmp.name)
-        self.gh.on("repo", "view", json={"nameWithOwner": "o/r"})
+        self.gh.on("repo", "view", json={"url": "https://github.com/o/r"})
 
     def threads(self, *pages, env=None):
         self.gh.on("api", "graphql", pages=list(pages))
@@ -69,6 +69,21 @@ class ReviewThreadsTest(unittest.TestCase):
         self.assertIn("owner=me", call["args"])
         self.assertIn("repo=web", call["args"])
         self.assertEqual(call["env"]["GH_HOST"], "ghe.example.com")
+
+    def test_an_enterprise_checkout_queries_its_own_host(self):
+        self.gh.rules.clear()
+        self.gh.on("repo", "view", json={"url": "https://ghe.example.com/me/web"})
+        self.threads(page([]))
+        [graphql] = [c for c in self.gh.calls if c["args"][:2] == ["api", "graphql"]]
+        self.assertIn("owner=me", graphql["args"])
+        self.assertIn("repo=web", graphql["args"])
+        self.assertEqual(graphql["env"]["GH_HOST"], "ghe.example.com")
+
+    def test_an_unqualified_gh_repo_skips_the_checkout(self):
+        self.threads(page([]), env={"GH_REPO": "me/web"})
+        [call] = self.gh.calls
+        self.assertIn("owner=me", call["args"])
+        self.assertNotIn("GH_HOST", call["env"])
 
     def test_a_failed_query_fails_the_script(self):
         self.gh.on("api", "graphql", exit=1)
