@@ -44,7 +44,8 @@ https://github.com/William-Yeh/agent-skill-linter):
   CREDITS.md and evals/ are exempt
 
 From https://agentskills.io/skill-creation/evaluating-skills: evals/evals.json, when
-present, is valid (tooling/evals.py).
+present, is valid (tooling/evals.py); evals/triggers.json, when present, is valid, sits on a
+model-invoked skill, and has prompts that should and shouldn't trigger it (tooling/triggers.py).
 
 From AGENTS.md: disable-model-invocation is YAML boolean `true`, `false`, or absent.
 
@@ -63,7 +64,7 @@ import re
 import sys
 from pathlib import Path
 
-from . import evals
+from . import evals, triggers
 
 MAX_BODY_LINES = 500
 MAX_BODY_TOKENS = 5000
@@ -122,6 +123,7 @@ def check_skill(s):
     if s.fields is None:
         return [(s.skill_md, "no YAML frontmatter")]
     out = [(s.folder / "evals/evals.json", msg) for msg in evals.problems(s)]
+    out += [(s.folder / triggers.FILE, msg) for msg in triggers.problems(s)]
     out += [(s.skill_md, msg) for msg in (
         _frontmatter_problems(s) + _name_problems(s) + _description_problems(s)
         + _compatibility_problems(s) + _size_problems(s.body)
