@@ -16,9 +16,9 @@ A source that fails to install doesn't stop the rest: the sync carries on, links
 
 **Run the sync from a plain terminal, not from inside a coding-agent session.** The CLI detects the agent it's running under and installs to that agent alone, so a sync started inside Claude Code updates the store and Claude Code and silently leaves every other agent on its old copy.
 
-A source can override the top-level `agents` list — `cloudflare/skills` is curated into five agents, while the other sources are curated into Claude Code and Codex.
+A source can override the top-level `agents` list — `cloudflare/skills` is curated into five agents, while the other sources are curated into Claude Code, Codex and Antigravity.
 
-The skills.sh CLI treats Codex, GitHub Copilot, Gemini CLI and Antigravity as "universal" agents: a global install writes only the store, `~/.agents/skills`, and never their own directories. So the sync links each curated skill into `~/.codex/skills`, `~/.copilot/skills`, `~/.gemini/skills` and `~/.gemini/antigravity/skills` itself, for the agents its source lists. A real directory already sitting there is a stale copy from another channel; the sync refuses to replace it, and `--check` says so.
+The skills.sh CLI treats Codex, GitHub Copilot, Gemini CLI and Antigravity as "universal" agents: a global install writes only the store, `~/.agents/skills`, and never their own directories. So the sync links each curated skill into `~/.codex/skills`, `~/.copilot/skills`, `~/.gemini/skills` and `~/.gemini/config/skills` itself, for the agents its source lists. A real directory already sitting there is a stale copy from another channel; the sync refuses to replace it, and `--check` says so.
 
 What `--check` reports. The first three rows mean the installs disagree with the manifest and make it exit 1; the rest only report, since another channel's install may be deliberate:
 
