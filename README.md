@@ -57,7 +57,7 @@ To hack on a skill with live edits, symlink this repo's skills into your local a
 ./scripts/link-skills.py --check  # report owned skills that aren't linked, and dead links
 ```
 
-This is the dev-mode equivalent of `npx skills add`: it links each skill into `~/.agents/skills` (and mirrors it for Claude Code under `~/.claude/skills`), so edits here take effect immediately. Use it on the machine where you develop the skills, and install with skills.sh everywhere else — pick one path per skill, not both.
+This is the dev-mode equivalent of `npx skills add`: it links each skill into `~/.agents/skills` (and mirrors it for Claude Code under `~/.claude/skills` and Antigravity under `~/.gemini/config/skills`), so edits here take effect immediately. Use it on the machine where you develop the skills, and install with skills.sh everywhere else — pick one path per skill, not both.
 
 On that machine, `./scripts/sync-skills.py` runs `link-skills.py` and then `sync-third-party.py` (pass `--check` to check both). The links point at this checkout's working tree, so whatever branch is checked out is what your agents run. That decides when a sync is needed:
 

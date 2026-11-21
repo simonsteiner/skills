@@ -175,6 +175,9 @@ class ThirdPartyTest(unittest.TestCase):
         lines = third_party.listing(self.manifest)
         self.assertEqual(lines[:4], ["", "a/one — w", f"  {'alpha':<30} w", f"  {'old (archived)':<30} w"])
 
+    def test_antigravity_uses_shared_gemini_config_skills_dir(self):
+        self.assertEqual(self.home.agent_dir("antigravity"), self.home.root / ".gemini/config/skills")
+
 
 
 if __name__ == "__main__":
