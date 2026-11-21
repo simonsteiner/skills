@@ -20,6 +20,7 @@ class NoteFixesTest(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.gh = FakeGh(tmp.name)
+        self.gh.on("repo", "view", json={"url": "https://github.com/o/r"})
 
     def run_with(self, body, *shas):
         self.gh.on("api", REVIEW, "--jq", ".body", json={"body": body})
