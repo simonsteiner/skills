@@ -248,16 +248,19 @@ class AuthoringRulesTest(unittest.TestCase):
 
     def test_bundled_python_scripts_must_be_stdlib_only_unless_pep723(self):
         folder = self.skill(
-            body="Run scripts/ok.py, scripts/helper.py, scripts/pep.py, scripts/bad.py, scripts/broken.py.\n",
+            body=("Run scripts/ok.py, scripts/helper.py, scripts/pep.py, scripts/pep_no_deps.py, "
+                  "scripts/pep_unclosed.py, scripts/bad.py, scripts/broken.py.\n"),
             files={
                 "scripts/helper.py": "#!/usr/bin/env python3\n# --help\nimport json\n",
                 "scripts/ok.py": "#!/usr/bin/env python3\n# --help\nimport json\nimport helper\n",
-                "scripts/pep.py": "#!/usr/bin/env -S uv run --script\n# /// script\n# dependencies = [\"requests\"]\n# ///\n# --help\nimport requests\n",
+                "scripts/pep.py": "#!/usr/bin/env -S uv run --script\n# /// script\n# dependencies = [\n#   \"requests\",\n# ]\n# ///\n# --help\nimport requests\n",
+                "scripts/pep_no_deps.py": "#!/usr/bin/env -S uv run --script\n# /// script\n# requires-python = \">=3.11\"\n# ///\n# --help\nimport requests\n",
+                "scripts/pep_unclosed.py": "#!/usr/bin/env -S uv run --script\n# /// script\n# dependencies = [\"requests\"]\n# --help\nimport requests\n",
                 "scripts/bad.py": "#!/usr/bin/env python3\n# --help\nimport requests\nfrom yaml import safe_load\n",
                 "scripts/broken.py": "#!/usr/bin/env python3\n# --help\ndef nope(:\n",
             },
         )
-        for name in ("helper.py", "ok.py", "pep.py", "bad.py", "broken.py"):
+        for name in ("helper.py", "ok.py", "pep.py", "pep_no_deps.py", "pep_unclosed.py", "bad.py", "broken.py"):
             (folder / "scripts" / name).chmod(0o755)
         problems = self.problems()
         self.assertEqual(
@@ -267,6 +270,12 @@ class AuthoringRulesTest(unittest.TestCase):
                 "bundled Python script imports non-stdlib module 'yaml' without PEP 723 dependencies",
             ],
         )
+        for bad_pep in ("pep_no_deps.py", "pep_unclosed.py"):
+            self.assertEqual(
+                [p.split(": ", 1)[1] for p in problems if bad_pep in p],
+                ["bundled Python script imports non-stdlib module 'requests' without PEP 723 dependencies"],
+                bad_pep,
+            )
         self.assertTrue(any("broken.py: bundled Python script has a syntax error" in p for p in problems), problems)
         for clean in ("helper.py", "ok.py", "pep.py"):
             self.assertFalse([p for p in problems if clean in p], problems)
