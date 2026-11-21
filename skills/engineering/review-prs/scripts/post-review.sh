@@ -33,11 +33,11 @@ jq -e '(.body | type == "string" and length > 0) and ((.comments // []) | type =
   || { echo "error: payload must be JSON with a non-empty \"body\" and an optional \"comments\" array — nothing posted" >&2; exit 1; }
 
 # gh api takes its host from GH_HOST, never from GH_REPO or the checkout, so pass the host on: a
-# host-qualified GH_REPO's, else (no GH_REPO) the checkout's, or a GitHub Enterprise checkout would
-# query github.com. An unqualified GH_REPO means github.com or GH_HOST, as it does to gh.
+# host-qualified GH_REPO's, else (no GH_REPO and no GH_HOST) the checkout's, or a GitHub Enterprise
+# checkout would query github.com. An explicit GH_HOST is preserved.
 if [[ -n "${GH_REPO:-}" ]]; then
   if [[ "$GH_REPO" == */*/* ]]; then export GH_HOST="${GH_REPO%%/*}"; fi
-else
+elif [[ -z "${GH_HOST:-}" ]]; then
   url="$(gh repo view --json url --jq .url)"  # https://HOST/OWNER/REPO
   url="${url#*://}"
   export GH_HOST="${url%%/*}"
