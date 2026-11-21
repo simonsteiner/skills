@@ -31,7 +31,7 @@
       "expected_behavior": [
         "Puts the Paraphrase lens's paragraphs to the user as the first question of round 1's batch, asking whether they match what the user meant, because this thread didn't write the doc",
         "Disagrees with the 'use Redis' finding by citing the Alternatives section and infra/compose.yml, records it on the settled list with that evidence, and doesn't edit the doc for it",
-        "Fixes the undefined 'TTL' and 'stale window' in the doc rather than disagreeing with them",
+        "Fixes the undefined 'stale window' in the doc rather than disagreeing with it, and doesn't report 'TTL' as undefined, since the Paraphrase lens leaves out general engineering terms",
         "Gives every later round's fresh reviewers the settled list along with the doc path and reading list",
         "When a later round raises Redis again, keeps it settled: doesn't reopen it, doesn't ask the user about it again, and still counts that round clean if nothing else unsettled is a Blocker or Major",
         "Lists the Redis finding under the report's disagreed-with findings with its evidence, so the user can overrule it"
