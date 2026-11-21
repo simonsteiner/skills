@@ -16,7 +16,7 @@ Reports written before this layout are single files. They're dated records: leav
 
 ## What changes after the scan
 
-Only three parts: the **Status** table and **Departures** in the overview, and each card's **Decisions**. Everything else is the dated record of what the scan found — never rewritten. A new scan is a new folder.
+Only three parts: the **Status** table (including `S` rows a Build phase adds, with their **Smaller findings** entries) and **Departures** in the overview, and each card's **Decisions**. Everything else is the dated record of what the scan found — never rewritten. A new scan is a new folder.
 
 ## Overview sections, in order
 

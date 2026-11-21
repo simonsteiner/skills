@@ -35,7 +35,7 @@ flowchart LR
 
 ## Status
 
-The backlog, in rank order. After the scan only three parts of the report change: this table, each card's **Decisions**, and **Departures**. The findings stay as found.
+The backlog, in rank order. After the scan only three parts of the report change: this table (with the **Smaller findings** entry for each `S` row a Build phase adds), each card's **Decisions**, and **Departures**. The findings stay as found.
 
 | ID | Candidate | Strength | Door | Lens | Status | Branch | PR | Breaking | Notes |
 |---|---|---|---|---|---|---|---|---|---|
