@@ -24,7 +24,7 @@ if importlib.util.find_spec("ruamel") is None and not os.environ.get("LINT_SKILL
     os.environ["LINT_SKILLS_REEXEC"] = "1"
     cmd = ["uv", "run", "--locked", "--no-build", "--project", str(repo), "python3", str(Path(__file__).resolve())]
     try:
-        os.execvp("uv", cmd + sys.argv[1:])
+        os.execvp("uv", cmd)  # the script takes no arguments
     except FileNotFoundError:
         sys.exit("lint-skills.py needs ruamel.yaml: install uv, or run it inside the repo's environment")
 
