@@ -2,7 +2,7 @@
   test-review overview. Copy to docs/test-review/YYYY-MM-DD-<slug>/README.md and fill it in;
   each candidate gets its own file beside it from card-template.md.
   Keep the section order, the badge emoji, and the classDef block: every report looking the same is the point.
-  Replace each <placeholder>; repeat the marked rows; drop "Hand-offs" when empty and "Since the last review" on a first review.
+  Replace each <placeholder>; repeat the marked rows; drop "Hand-offs" (and its Jump to link) when empty and "Since the last review" on a first review.
   Stay under the project's token budget (5,000 tokens = 20 KB without one); over it, move Smaller findings to smaller-findings.md.
   Mermaid: quote every label ("like this") and never write {{ }} in a diagram; double braces are Mermaid's hexagon shape.
   Delete this comment.
@@ -12,7 +12,7 @@
 
 `<YYYY-MM-DD>` · at `<sha>` (`<branch>`) · scope: <direction, or the churn hot spots and how they were found> · glossary: `<GLOSSARY.md | none>` · ADRs read: <list>
 
-**Jump to:** [Status](#status) · [Vitals](#vitals) · [Where it hurts](#where-it-hurts) · [Hand-offs](#hand-offs) · [Smaller findings](#smaller-findings) · [Recommendation](#recommendation) · cards: [C1](C1-<card-slug>.md) · [C2](C2-<card-slug>.md)
+**Jump to:** [Status](#status) · [Vitals](#vitals) · [Where it hurts](#where-it-hurts) · [Hand-offs](#hand-offs) <!-- only when the report has Hand-offs --> · [Smaller findings](#smaller-findings) · [Recommendation](#recommendation) · cards: [C1](C1-<card-slug>.md) · [C2](C2-<card-slug>.md)
 
 ## Status
 
