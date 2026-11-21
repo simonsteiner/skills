@@ -1,7 +1,8 @@
 """arch-review and test-review own copies of the same report-and-stack machinery
 (docs/adr/0008-own-test-review-beside-arch-review.md). This guards the parts that
 must not drift apart: the status values, the reconcile command, the shared
-loose-ends checks, how a Ship phase ends, and that a `blocked` row stops its candidate.
+loose-ends checks, how a Ship phase ends (its approval bar's rule and hand-back included),
+and that a `blocked` row stops its candidate.
 
     uv run --locked --no-build python3 -m unittest discover -s tests -t .
 """
@@ -48,6 +49,11 @@ def loose_ends(skill):
     return text[start.start():end]
 
 
+def approval_bar_frame(bar):
+    """The approval bar's non-bullet lines: the rule before its checks and the hand-back after them."""
+    return [line for line in bar.splitlines()[1:] if line.strip() and not line.startswith("- ")]
+
+
 class ReviewSkillsAgreeTest(unittest.TestCase):
     def test_same_status_values(self):
         values = {s: status_values(s) for s in SKILLS}
@@ -78,7 +84,19 @@ class ReviewSkillsAgreeTest(unittest.TestCase):
             ship = read(skill, "phases/ship.md")
             for step in ('"review-prs" in local mode', "gh pr create --base <base>", '"pr-body"', "Never merge"):
                 self.assertIn(step, ship, f"{skill} ship phase lost {step}")
-            self.assertTrue(section(ship, "Approval bar"), f"{skill} ship phase has no approval bar")
+
+    def test_approval_bar_frames_its_checks_the_same_way(self):
+        # The checks themselves differ (structural vs test smells); the rule around them doesn't.
+        frames = {}
+        for skill in SKILLS:
+            bar = section(read(skill, "phases/ship.md"), "Approval bar")
+            self.assertTrue(bar, f"{skill} ship phase has no approval bar")
+            frames[skill] = approval_bar_frame(bar)
+        self.assertEqual(frames["arch-review"], [
+            "The PR isn't done while any of these hold, unless the report's Departures explain why:",
+            "**Hand back:** the PR number, its base, and the status row updated and pushed.",
+        ])
+        self.assertEqual(frames["arch-review"], frames["test-review"])
 
     def test_a_blocked_row_stops_its_candidate(self):
         for skill in SKILLS:
