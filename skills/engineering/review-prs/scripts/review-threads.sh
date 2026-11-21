@@ -28,8 +28,8 @@ pr="${1:-}"
 #
 # GH_REPO wins: `gh repo view` ignores it, and in a fork with an upstream remote names the upstream.
 # gh api takes its host from GH_HOST, never from GH_REPO or the checkout, so pass the host on: a
-# host-qualified GH_REPO's, else (no GH_REPO) the checkout's, or a GitHub Enterprise checkout would
-# query github.com. An unqualified GH_REPO means github.com or GH_HOST, as it does to gh.
+# host-qualified GH_REPO's, else (no GH_REPO and no GH_HOST) the checkout's, or a GitHub Enterprise
+# checkout would query github.com. An explicit GH_HOST is preserved.
 if [[ -n "${GH_REPO:-}" ]]; then
   owner_repo="$GH_REPO"
   if [[ "$GH_REPO" == */*/* ]]; then export GH_HOST="${GH_REPO%%/*}"; fi
