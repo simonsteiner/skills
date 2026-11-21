@@ -163,39 +163,122 @@ class AuthoringRulesTest(unittest.TestCase):
                 self.skill("a", fm)
                 self.assertEqual(self.problems(), [expected])
 
-    def test_unquoted_colon_in_frontmatter_is_rejected(self):
+    def test_invalid_yaml_frontmatter_is_rejected(self):
         bad = {
             "colon-space in description": "name: a\ndescription: Use when: the user asks.",
             "trailing colon": "name: a\ndescription: Use when asked:",
             "colon-space in compatibility": GOOD + "\ncompatibility: Requires git: 2.30+",
             "folded plain continuation": "name: a\ndescription: Does it.\n  Use when: the user asks.",
-            "indented without block indicator": "name: a\ndescription:\n  Use when: the user asks.",
             "comment then indented plain": "name: a\ndescription: # draft\n  Does it.\n  Use when: the user asks.",
             "leading quoted phrase then colon": 'name: a\ndescription: "Ship it" helper: Use when the user asks.',
+            "unclosed quote": 'name: a\ndescription: "Use when asked.',
+            "duplicate key": "name: a\nname: a\ndescription: Use when asked.",
+            "tab indentation": "name: a\ndescription:\n\tUse when asked.",
+            "list frontmatter": "- a\n- b",
+            "empty frontmatter": "",
         }
         for case, fm in bad.items():
             with self.subTest(case):
                 self.setUp()
                 self.skill("a", fm)
-                self.assertProblem("unquoted ':'")
+                self.assertProblem("invalid YAML frontmatter")
 
-    def test_valid_colons_in_frontmatter_are_allowed(self):
+    def test_valid_yaml_frontmatter_shapes_are_allowed(self):
         ok = {
             "double-quoted": 'name: a\ndescription: "Use when: the user asks."',
             "double-quoted with comment": 'name: a\ndescription: "Use when: the user asks." # note: keep short',
+            "escaped quotes": 'name: a\ndescription: "Use when the user says \\"ship it\\"."',
             "single-quoted": "name: a\ndescription: 'Use when: the user asks.'",
             "indented quoted": 'name: a\ndescription:\n  "Use when: the user asks."',
             "folded block": "name: a\ndescription: >\n  Use when: the user asks.",
+            "folded keep block": "name: a\ndescription: >+\n  Use when: the user asks.",
+            "indented block indicator": "name: a\ndescription:\n  >\n  Use when: the user asks.",
             "literal block": "name: a\ndescription: |-\n  Use when: the user asks.",
             "url": "name: a\ndescription: See https://example.com when asked.",
             "trailing comment": "name: a\ndescription: Use when asked. # note: keep short",
-            "comment-only value": GOOD + "\nlicense: # note: optional",
+            "license with comment": GOOD + "\nlicense: MIT # note: optional",
+            "allowed-tools": GOOD + "\nallowed-tools: Read Grep",
         }
         for case, fm in ok.items():
             with self.subTest(case):
                 self.setUp()
                 self.skill("a", fm)
                 self.assertEqual(self.problems(), [])
+
+    def test_unknown_frontmatter_fields_are_rejected(self):
+        for case, extra in {
+            "typo in disable-model-invocation": "disable-model-invocaton: true",
+            "typo in compatibility": "compatability: git",
+            "arbitrary extension": "argument-hint: <file>",
+        }.items():
+            with self.subTest(case):
+                self.setUp()
+                self.skill("a", GOOD + "\n" + extra)
+                self.assertProblem("unknown frontmatter field")
+
+    def test_frontmatter_field_types_are_checked(self):
+        cases = {
+            "yaml 1.2 yes string": (GOOD + "\ndisable-model-invocation: yes", "disable-model-invocation is 'yes'"),
+            "quoted boolean": (GOOD + '\ndisable-model-invocation: "true"', "disable-model-invocation is 'true'"),
+            "mapping description": ("name: a\ndescription:\n  Use when: the user asks.", "description must be a string"),
+            "list description": ("name: a\ndescription:\n  - a\n  - b", "description must be a string"),
+            "numeric name": ("name: 123\ndescription: Use when asked.", "name must be a string"),
+            "null license": (GOOD + "\nlicense: # note: optional", "license must be a non-empty string"),
+            "empty allowed-tools": (GOOD + '\nallowed-tools: "   "', "allowed-tools must be a non-empty string"),
+            "numeric compatibility": (GOOD + "\ncompatibility: 42", "compatibility must be 1-500 chars"),
+        }
+        for case, (fm, fragment) in cases.items():
+            with self.subTest(case):
+                self.setUp()
+                self.skill("a", fm)
+                self.assertProblem(fragment)
+
+    def test_description_vague_phrases_and_routing_labels(self):
+        for case, desc, fragment in (
+            ("helps with", "Helps with git commits when asked.", 'vague description phrase "helps with"'),
+            ("various", "Handles various git tasks when asked.", 'vague description phrase "various"'),
+            ("general purpose", "General purpose helper when asked.", 'vague description phrase "general purpose"'),
+            ("triggers on label", 'Does it. Triggers on: when asked.', "routing label 'Triggers on:'"),
+            ("use cases label", 'Does it. Use cases: when asked.', "routing label 'Use cases:'"),
+        ):
+            with self.subTest(case):
+                self.setUp()
+                self.skill("a", f"name: a\ndescription: >\n  {desc}")
+                self.assertProblem(fragment)
+
+    def test_bundled_python_scripts_must_be_stdlib_only_unless_pep723(self):
+        folder = self.skill(
+            body=("Run scripts/ok.py, scripts/helper.py, scripts/pep.py, scripts/pep_no_deps.py, "
+                  "scripts/pep_unclosed.py, scripts/bad.py, scripts/broken.py.\n"),
+            files={
+                "scripts/helper.py": "#!/usr/bin/env python3\n# --help\nimport json\n",
+                "scripts/ok.py": "#!/usr/bin/env python3\n# --help\nimport json\nimport helper\n",
+                "scripts/pep.py": "#!/usr/bin/env -S uv run --script\n# /// script\n# dependencies = [\n#   \"requests\",\n# ]\n# ///\n# --help\nimport requests\n",
+                "scripts/pep_no_deps.py": "#!/usr/bin/env -S uv run --script\n# /// script\n# requires-python = \">=3.11\"\n# ///\n# --help\nimport requests\n",
+                "scripts/pep_unclosed.py": "#!/usr/bin/env -S uv run --script\n# /// script\n# dependencies = [\"requests\"]\n# --help\nimport requests\n",
+                "scripts/bad.py": "#!/usr/bin/env python3\n# --help\nimport requests\nfrom yaml import safe_load\n",
+                "scripts/broken.py": "#!/usr/bin/env python3\n# --help\ndef nope(:\n",
+            },
+        )
+        for name in ("helper.py", "ok.py", "pep.py", "pep_no_deps.py", "pep_unclosed.py", "bad.py", "broken.py"):
+            (folder / "scripts" / name).chmod(0o755)
+        problems = self.problems()
+        self.assertEqual(
+            [p.split(": ", 1)[1] for p in problems if "bad.py" in p],
+            [
+                "bundled Python script imports non-stdlib module 'requests' without PEP 723 dependencies",
+                "bundled Python script imports non-stdlib module 'yaml' without PEP 723 dependencies",
+            ],
+        )
+        for bad_pep in ("pep_no_deps.py", "pep_unclosed.py"):
+            self.assertEqual(
+                [p.split(": ", 1)[1] for p in problems if bad_pep in p],
+                ["bundled Python script imports non-stdlib module 'requests' without PEP 723 dependencies"],
+                bad_pep,
+            )
+        self.assertTrue(any("broken.py: bundled Python script has a syntax error" in p for p in problems), problems)
+        for clean in ("helper.py", "ok.py", "pep.py"):
+            self.assertFalse([p for p in problems if clean in p], problems)
 
     def test_frontmatter_rules(self):
         cases = {

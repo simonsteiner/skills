@@ -59,6 +59,23 @@ class GhHostTest(unittest.TestCase):
                 self.assertTrue(api, f"{script} made no gh api call: {gh.calls}")
                 self.assertEqual({c["env"].get("GH_HOST") for c in api}, {"ghe.example.com"})
 
+    def test_explicit_gh_host_without_gh_repo_is_preserved(self):
+        needs_owner_repo = {
+            "address-review-findings/scripts/unresolved-threads.sh",
+            "review-prs/scripts/review-threads.sh",
+        }
+        for script, args, stdin in CASES:
+            with self.subTest(script=script), tempfile.TemporaryDirectory() as tmp:
+                gh = FakeGh(tmp)
+                gh.on("repo", "view", json={"url": "https://github.com/acme/web"})
+                gh.on("pr", "view", json={"headRefOid": "abc123"})
+                gh.run(SKILLS / script, *args, stdin=stdin, env={"GH_HOST": "ghe.example.com"}, cwd=tmp)
+                api = [c for c in gh.calls if c["args"][:1] == ["api"]]
+                self.assertTrue(api, f"{script} made no gh api call: {gh.calls}")
+                self.assertEqual({c["env"].get("GH_HOST") for c in api}, {"ghe.example.com"})
+                if script not in needs_owner_repo:
+                    self.assertFalse(any(c["args"][:2] == ["repo", "view"] for c in gh.calls), gh.calls)
+
 
 if __name__ == "__main__":
     unittest.main()

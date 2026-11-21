@@ -4,10 +4,12 @@ From the Agent Skills spec and best practices (https://agentskills.io/specificat
 https://agentskills.io/skill-creation/best-practices,
 https://agentskills.io/skill-creation/using-scripts):
 
+- frontmatter is valid YAML 1.2 (parsed by ruamel.yaml; duplicate keys rejected) and uses
+  only spec fields plus `disable-model-invocation`
 - name: 1-64 lowercase letters, digits, hyphens; no leading, trailing or doubled
   hyphen; matches its folder
-- description: non-empty, at most 1024 chars; compatibility, when present, 1-500 chars
-- unquoted plain frontmatter values don't contain ": " or end with ":" (invalid YAML)
+- description: non-empty string, at most 1024 chars; compatibility, when present, 1-500 chars;
+  license and allowed-tools, when present, are non-empty strings
 - SKILL.md body under 500 lines and about 5,000 tokens
 - bundled files sit at most one level below the skill folder (scripts/, references/, …),
   and output templates (`*template*` files outside scripts/ and evals/) sit in assets/
@@ -16,8 +18,9 @@ https://agentskills.io/skill-creation/using-scripts):
 - no vague filler ("handle errors appropriately", "follow best practices"): say what
   the agent would get wrong instead
 - one-off `npx` / `bunx` / `uvx` / `pipx run` commands in code pin a version, not a dist-tag
-- a bundled script has a shebang, is executable, answers `--help`, and never prompts
-  (no `read -p`, `/dev/tty`, `input()`, `getpass`): agents run in non-interactive shells
+- a bundled script has a shebang, is executable, answers `--help`, never prompts
+  (no `read -p`, `/dev/tty`, `input()`, `getpass`), and if Python, imports only stdlib
+  (or sibling modules) unless it declares PEP 723 dependencies (`# /// script`)
 
 From Anthropic's skill authoring best practices
 (https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices):
@@ -28,10 +31,14 @@ From Anthropic's skill authoring best practices
 - no Windows-style paths, no time-sensitive "before <Month> <year>" instructions
 - no quoted trigger phrase shared by two model-invoked descriptions
 
-From https://github.com/mgechev/skills-best-practices:
+From https://github.com/mgechev/skills-best-practices and description-routing guides
+(https://convergentskills.com/tools/description-linter/,
+https://github.com/William-Yeh/agent-skill-linter):
 
 - description is third person: no "I can…" / "You can use this…" (injected into the
-  system prompt), and a model-invoked one says when to use it, not only what it does
+  system prompt), avoids vague filler ("helps with", "various", "general purpose") and
+  routing-label prefixes ("Triggers on:", "Use cases:", "When to use:"), and a
+  model-invoked one says when to use it, not only what it does
 - no README / CHANGELOG / INSTALL files inside a skill folder
 - every bundled file is mentioned in SKILL.md (an unreferenced file is never read);
   CREDITS.md and evals/ are exempt
@@ -39,7 +46,7 @@ From https://github.com/mgechev/skills-best-practices:
 From https://agentskills.io/skill-creation/evaluating-skills: evals/evals.json, when
 present, is valid (tooling/evals.py).
 
-From AGENTS.md: disable-model-invocation is `true`, `false`, or absent.
+From AGENTS.md: disable-model-invocation is YAML boolean `true`, `false`, or absent.
 
 Repo convention:
 - no `metadata` field in owned skills (put credits in CREDITS.md, version in plugin.json)
@@ -50,17 +57,21 @@ Repo convention:
 lint-skills.py runs check(); tests/tooling/test_authoring_rules.py tests it.
 """
 
+import ast
 import os
 import re
+import sys
 from pathlib import Path
 
 from . import evals
-from .skill_inventory import uncommented
 
 MAX_BODY_LINES = 500
 MAX_BODY_TOKENS = 5000
 CHARS_PER_TOKEN = 4  # a rough estimate for English prose; no tokenizer dependency
 
+ALLOWED_FIELDS = frozenset({
+    "name", "description", "license", "compatibility", "allowed-tools", "disable-model-invocation",
+})
 VAGUE = (
     "handle errors appropriately",
     "handle edge cases appropriately",
@@ -68,6 +79,8 @@ VAGUE = (
     "use best practices",
     "as appropriate",
 )
+VAGUE_DESCRIPTION = ("helps with", "various", "general purpose", "general-purpose")
+DESCRIPTION_LABEL = re.compile(r"\b(?:triggers on|use cases|when to use)\s*:", re.IGNORECASE)
 MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
 UNPINNED = re.compile(r"\b(?:npx|bunx|uvx|pipx run)\s+(?:-\S*\s+)*(@?[a-z][\w./-]*(?:[@=]=?\S+)?)")
 # a fenced block: ``` or ~~~, three or more, indented or not (list items), closed by a line of
@@ -76,6 +89,8 @@ FENCED = re.compile(r"^[ \t]*(`{3,}|~{3,})[^\n]*\n(.*?)^[ \t]*\1(?:(?<=`)`*|(?<=
 BARE_SCRIPT = re.compile(r"(?<![\w/.>-])(?:\./)?(scripts/[\w.-]+)")
 CODE = re.compile(r"```.*?```|`[^`\n]+`", re.DOTALL)  # fenced blocks and inline code spans
 PROMPTS = re.compile(r"\bread\s+(?:-\w+\s+)*-p\b|/dev/tty|\binput\(|\bgetpass\b")
+PEP723_BLOCK = re.compile(r"(?m)^# /// script[ \t]*\r?\n((?:^#[^\n]*\n)*?)^# ///[ \t]*$")
+PEP723_DEPS = re.compile(r"""(?m)^dependencies\s*=\s*\[[^\]]*['"]""")
 
 
 def check(repo, skills):
@@ -89,7 +104,10 @@ def check(repo, skills):
     for s in skills:
         if not s.model_invoked or not s.fields:
             continue
-        for phrase in re.findall(r'"([^"]+)"', s.fields.get("description", "")):
+        desc = s.fields.get("description")
+        if not isinstance(desc, str):
+            continue
+        for phrase in re.findall(r'"([^"]+)"', desc):
             key = phrase.lower()
             if key in seen and seen[key] != s.name:
                 problems.append(f'trigger "{phrase}" is in both {seen[key]} and {s.name}')
@@ -99,10 +117,15 @@ def check(repo, skills):
 
 def check_skill(s):
     """(path, problem) pairs for one skill."""
+    if s.frontmatter_error is not None:
+        return [(s.skill_md, f"invalid YAML frontmatter: {s.frontmatter_error}")]
     if s.fields is None:
         return [(s.skill_md, "no YAML frontmatter")]
     out = [(s.folder / "evals/evals.json", msg) for msg in evals.problems(s)]
-    out += [(s.skill_md, msg) for msg in _frontmatter_problems(s) + _name_problems(s) + _description_problems(s) + _size_problems(s.body)]
+    out += [(s.skill_md, msg) for msg in (
+        _frontmatter_problems(s) + _name_problems(s) + _description_problems(s)
+        + _compatibility_problems(s) + _size_problems(s.body)
+    )]
     files = sorted(f for f in s.folder.rglob("*") if f.is_file())
     for f in files:
         out += _bundled_file_problems(s, f)
@@ -117,22 +140,28 @@ def check_skill(s):
 
 
 def _frontmatter_problems(s):
-    """Disallowed metadata and unquoted colons that make frontmatter invalid YAML."""
-    out = []
-    if "metadata" in s.fields:
+    """Allowed frontmatter keys, disallowed metadata, and optional string fields."""
+    fields, out = s.fields, []
+    if "metadata" in fields:
         out.append("metadata isn't allowed in owned skills (put credits in CREDITS.md, version in plugin.json)")
-    for key in _unquoted_colon_keys(s.skill_md.read_text()):
-        out.append(f"{key} has an unquoted ':' that YAML reads as a mapping; quote the value or use a '>' block")
+    for key in sorted(fields, key=str):
+        if key != "metadata" and key not in ALLOWED_FIELDS:
+            out.append(f"unknown frontmatter field {key!r} (allowed: {', '.join(sorted(ALLOWED_FIELDS))})")
+    for key in ("license", "allowed-tools"):
+        if key in fields and (not isinstance(fields[key], str) or not fields[key].strip()):
+            out.append(f"{key} must be a non-empty string")
     return out
 
 
 def _name_problems(s):
     """disable-model-invocation and name, against the spec and the skill's folder."""
     fields, out = s.fields, []
-    invocation = fields.get("disable-model-invocation")
-    if invocation not in (None, "true", "false"):
-        out.append(f"disable-model-invocation is {invocation!r}, not true or false")
+    if "disable-model-invocation" in fields and not isinstance(fields["disable-model-invocation"], bool):
+        out.append(f"disable-model-invocation is {fields['disable-model-invocation']!r}, not true or false")
     name = fields.get("name", "")
+    if not isinstance(name, str):
+        out.append(f"name must be a string, got {type(name).__name__}")
+        return out
     if not re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", name) or len(name) > 64:
         out.append(f"name {name!r} must be 1-64 lowercase letters, digits, or single inner hyphens")
     if re.search(r"anthropic|claude", name):
@@ -143,10 +172,12 @@ def _name_problems(s):
 
 
 def _description_problems(s):
-    """description and compatibility."""
-    fields, out = s.fields, []
-    desc = fields.get("description", "")
-    if not desc:
+    """description length, person, trigger cues, and clarity."""
+    desc = s.fields.get("description", "")
+    if not isinstance(desc, str):
+        return [f"description must be a string, got {type(desc).__name__}"]
+    out = []
+    if not desc.strip():
         out.append("description is empty")
     if len(desc) > 1024:
         out.append(f"description is {len(desc)} chars, over 1024")
@@ -156,9 +187,23 @@ def _description_problems(s):
         out.append("description isn't third person")
     if s.model_invoked and not re.search(r"\bwhen\b", desc, re.IGNORECASE):
         out.append("model-invoked description never says when to use it")
-    if "compatibility" in fields and not 1 <= len(fields["compatibility"]) <= 500:
-        out.append("compatibility must be 1-500 chars")
+    out += [
+        f'vague description phrase "{phrase}"; name the concrete action and artifact instead'
+        for phrase in VAGUE_DESCRIPTION if re.search(rf"\b{re.escape(phrase)}\b", desc, re.IGNORECASE)
+    ]
+    if label := DESCRIPTION_LABEL.search(desc):
+        out.append(f"description uses routing label {label.group(0)!r}; state the trigger condition in plain prose")
     return out
+
+
+def _compatibility_problems(s):
+    """compatibility, when present, is a 1-500 char string."""
+    if "compatibility" not in s.fields:
+        return []
+    compat = s.fields["compatibility"]
+    if not isinstance(compat, str) or not 1 <= len(compat.strip()) <= 500:
+        return ["compatibility must be 1-500 chars"]
+    return []
 
 
 def _size_problems(body):
@@ -238,62 +283,36 @@ def _command_problems(folder, text):
     return out
 
 
-TOP_KEY = re.compile(r"([a-z][a-z0-9-]*):(.*)")
-BLOCK_INDICATOR = re.compile(r"[|>][1-9+-]{0,2}")  # |, >-, |2, >+1, …
-QUOTED_SCALAR = re.compile(r""""(?:[^"\\]|\\.)*"|'(?:[^']|'')*'""")
-UNQUOTED_COLON = re.compile(r":(?:\s|$)")
+def _has_pep723_dependencies(text):
+    """Whether `text` has a closed `# /// script` block declaring at least one dependency."""
+    for block in PEP723_BLOCK.finditer(text):
+        lines = [line[2:] if line.startswith("# ") else line[1:] for line in block.group(1).splitlines()]
+        body = "\n".join(line for line in lines if not line.lstrip().startswith("#"))
+        if PEP723_DEPS.search(body):
+            return True
+    return False
 
 
-def _is_quoted(raw):
-    """Whether a raw value is a complete quoted scalar (with optional comment) or an unclosed multi-line quote."""
-    if raw[0] not in "'\"":
-        return False
-    m = QUOTED_SCALAR.match(raw)
-    if not m:
-        return True
-    tail = raw[m.end():].strip()
-    return not tail or tail.startswith("#")
-
-
-def _start_plain_key(key, raw):
-    """(plain_key, value_to_check, awaiting_first) for a top-level `key: raw` line."""
-    if key == "metadata":
-        return None, "", False
-    if not raw or raw[0] == "#":
-        return key, "", True
-    if _is_quoted(raw):
-        return None, "", False
-    value = uncommented(raw)
-    if BLOCK_INDICATOR.fullmatch(value):
-        return None, "", False
-    return key, value, False
-
-
-def _continuation(plain_key, awaiting_first, line):
-    """(plain_key, value_to_check) for an indented continuation line."""
-    stripped = line.strip()
-    if awaiting_first and _is_quoted(stripped):
-        return None, ""
-    return plain_key, uncommented(stripped)
-
-
-def _unquoted_colon_keys(text):
-    """Top-level keys whose unquoted plain value contains `: ` or ends with `:` (invalid YAML)."""
-    lines = re.match(r"---\n(.*?)\n---\n", text, re.DOTALL).group(1).split("\n")
-    bad, plain_key, awaiting_first = [], None, False
-    for line in lines:
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue
-        if top := TOP_KEY.match(line):
-            plain_key, value, awaiting_first = _start_plain_key(top.group(1), top.group(2).strip())
-        elif plain_key and line[0] in " \t":
-            plain_key, value = _continuation(plain_key, awaiting_first, line)
-            awaiting_first = False
-        else:
-            plain_key, value, awaiting_first = None, "", False
-        if plain_key and plain_key not in bad and UNQUOTED_COLON.search(value):
-            bad.append(plain_key)
-    return bad
+def _python_import_problems(f, text):
+    """Bundled Python scripts stay stdlib-only unless they declare PEP 723 dependencies."""
+    try:
+        tree = ast.parse(text, filename=str(f))
+    except SyntaxError as err:
+        return [(f, f"bundled Python script has a syntax error: {err.msg}")]
+    if _has_pep723_dependencies(text):
+        return []
+    local = {p.stem for p in f.parent.glob("*.py")} | {
+        p.name for p in f.parent.iterdir() if p.is_dir() and (p / "__init__.py").exists()
+    }
+    imported = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported.update(alias.name.split(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+            imported.add(node.module.split(".")[0])
+    third_party = sorted(imported - sys.stdlib_module_names - local)
+    return [(f, f"bundled Python script imports non-stdlib module {mod!r} without PEP 723 dependencies")
+            for mod in third_party]
 
 
 def check_script(f):
@@ -311,4 +330,6 @@ def check_script(f):
         out.append((f, "bundled script doesn't answer --help"))
     if PROMPTS.search(text):
         out.append((f, "bundled script prompts for input; take it from flags, env or stdin"))
+    if f.suffix == ".py":
+        out.extend(_python_import_problems(f, text))
     return out
