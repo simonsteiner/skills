@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --no-build --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = ["ruamel.yaml==0.18.10"]
+# ///
 """Check every owned skill against the rules this repo follows; CI and lefthook run it.
 
 - tooling/authoring_rules.py: the Agent Skills spec and best-practice guides, per skill
@@ -7,7 +11,8 @@
 - tooling/skill_inventory.py: known buckets, unique names, and no curated skill sharing
   a name with an owned one
 
-    scripts/lint-skills.py      exit 1 and list every problem, or print "ok"
+    scripts/lint-skills.py                      exit 1 and list every problem, or print "ok"
+    uv run --no-build scripts/lint-skills.py    same, explicit uv invocation
 """
 
 import sys

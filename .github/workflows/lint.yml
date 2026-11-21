@@ -19,16 +19,16 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Setup uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+
       - name: Check skills against the authoring rules
-        run: python3 scripts/lint-skills.py
+        run: uv run --no-build scripts/lint-skills.py
 
       # tests/tooling: the scripts/tooling package; tests/skill_scripts: the scripts
       # bundled in skills, against a fake gh; tests/skills: the skills' prose.
       - name: Test the tooling and the bundled scripts
-        run: python3 -m unittest discover -s tests -t .
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        run: uv run --no-build --with ruamel.yaml==0.18.10 python3 -m unittest discover -s tests -t .
 
       # Same version as lefthook; config in ruff.toml.
       - name: Ruff
