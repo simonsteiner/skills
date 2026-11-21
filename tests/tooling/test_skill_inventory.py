@@ -4,9 +4,11 @@
 """
 
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from tooling.skill_inventory import inventory
 
@@ -98,7 +100,7 @@ class InventoryTest(RepoFixture):
         self.skill("engineering", "b", "- not-a-mapping")
         a, b = inventory(self.repo).skills
         self.assertIsNone(a.fields)
-        self.assertIsNotNone(a.frontmatter_error)
+        self.assertIn("(line 3, col ", a.frontmatter_error)
         self.assertIsNone(b.fields)
         self.assertEqual(b.frontmatter_error, "frontmatter must be a YAML mapping")
 
@@ -107,6 +109,16 @@ class InventoryTest(RepoFixture):
         [s] = inventory(self.repo).skills
         self.assertIsNone(s.fields)
         self.assertIn("duplicate key", s.frontmatter_error)
+        self.assertIn("(line 3, col 1)", s.frontmatter_error)
+
+    def test_inventory_does_not_import_ruamel_until_frontmatter_is_read(self):
+        self.skill("engineering", "a")
+        with mock.patch.dict(sys.modules, {"ruamel": None, "ruamel.yaml": None}):
+            inv = inventory(self.repo)
+            [s] = inv.skills
+            self.assertEqual((s.name, s.bucket, s.published, s.active), ("a", "engineering", True, True))
+            with self.assertRaisesRegex(RuntimeError, r"uv run --locked --no-build"):
+                _ = s.fields
 
 
 if __name__ == "__main__":
