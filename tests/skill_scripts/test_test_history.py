@@ -220,6 +220,25 @@ class TestHistoryTest(unittest.TestCase):
                 fixes = self.run_script("fixes").stdout
                 self.assertRegex(fixes, f"^{fix}\t[0-9-]+\tfix: quoted\tsrc/{re.escape(name)}\\.py\n")
 
+    def test_names_that_are_not_utf8_or_hold_a_carriage_return_are_kept(self):
+        # read the output as bytes: text mode would turn the "\r" into "\n" here too
+        try:
+            (self.repo / "caf\udce9.py").write_text("")
+        except (OSError, UnicodeEncodeError):
+            self.skipTest("the filesystem won't hold a non-UTF-8 name")
+        for name in ("caf\udce9", "Icon\r"):
+            with self.subTest(name=name):
+                for i in range(3):
+                    self.commit(f"feat: {i}", f"src/{name}.py", f"tests/test_{name}.py")
+                fix = self.commit("fix: odd", f"src/{name}.py")
+                raw = os.fsencode(name)
+                drift = subprocess.run([str(SCRIPT), "drift"], cwd=self.repo, env=ENV, capture_output=True, check=False)
+                fixes = subprocess.run([str(SCRIPT), "fixes"], cwd=self.repo, env=ENV, capture_output=True, check=False)
+                self.assertEqual((drift.returncode, fixes.returncode), (0, 0), drift.stderr + fixes.stderr)
+                self.assertIn(b"\tsrc/" + raw + b".py\ttests/test_" + raw + b".py\n", drift.stdout)
+                self.assertIn(fix.encode() + b"\t", fixes.stdout)
+                self.assertIn(b"\tfix: odd\tsrc/" + raw + b".py\n", fixes.stdout)
+
     def test_negative_counts_exit_2(self):
         self.commit("feat: a", "a.py")
         for flag in ("--top", "--min", "--max-files"):

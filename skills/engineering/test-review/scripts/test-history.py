@@ -84,6 +84,15 @@ class GitError(Exception):
     pass
 
 
+def git(*args, cwd=None, stdin=None):
+    """Run git; decode its output byte for byte. Text mode would turn a "\\r" in a path into
+    "\\n" and fail on a path that isn't UTF-8, so take bytes and round-trip what isn't UTF-8."""
+    r = subprocess.run(["git", *args], cwd=cwd, capture_output=True, check=False,
+                       input=None if stdin is None else stdin.encode("utf-8", "surrogateescape"))
+    return subprocess.CompletedProcess(r.args, r.returncode, r.stdout.decode("utf-8", "surrogateescape"),
+                                       r.stderr.decode("utf-8", "surrogateescape"))
+
+
 class Kinds:
     def __init__(self, patterns):
         self.patterns = [re.compile(p) for p in patterns]
@@ -139,10 +148,8 @@ def pct(part, whole):
 def commits(since):
     """(sha, date, subject, files) for each non-merge commit, files repo-root relative."""
     # -z keeps every path verbatim: without it git C-quotes a name holding a ", \\, tab or newline.
-    result = subprocess.run(
-        ["git", "log", "-z", "--no-merges", "--no-show-signature", "--since", since,
-         "--date=short", "--name-only", "--format=%x1e%h%x09%ad%x09%s"],
-        capture_output=True, text=True, check=False)
+    result = git("log", "-z", "--no-merges", "--no-show-signature", "--since", since,
+                 "--date=short", "--name-only", "--format=%x1e%h%x09%ad%x09%s")
     if result.returncode:
         raise GitError(result.stderr.strip())
     # Each commit is its %x1e header, then "\0\n" and its paths, each ended by "\0". A path that
@@ -158,8 +165,7 @@ def in_scope(path, scopes):
 
 
 def drift(history, kinds, scopes, root, args):
-    tracked = subprocess.run(["git", "ls-files", "-z"], capture_output=True,
-                             text=True, check=False, cwd=root).stdout.split("\0")
+    tracked = git("ls-files", "-z", cwd=root).stdout.split("\0")
     by_stem = defaultdict(set)
     for t in (f for f in tracked if kinds.is_test(f) and PurePosixPath(f).suffix.lower() in CODE):
         by_stem[test_stem(t)].add(t)
@@ -256,14 +262,15 @@ def resolve_scopes(parser, paths, root):
 
 
 def main(argv):
+    sys.stdout.reconfigure(errors="surrogateescape")  # print what git() decoded back byte for byte
     parser, args = parse_args(argv)
-    top = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=False)
+    top = git("rev-parse", "--show-toplevel")
     if top.returncode:
         print("test-history.py: not inside a git repository", file=sys.stderr)
         return 2
     root = Path(top.stdout.strip()).resolve()
     scopes = resolve_scopes(parser, args.paths, root)
-    head = subprocess.run(["git", "rev-parse", "--verify", "--quiet", "HEAD"], capture_output=True, check=False)
+    head = git("rev-parse", "--verify", "--quiet", "HEAD")
     try:
         # no commits yet: an empty history, so fixes and refactors still print their `# 0 of 0` line
         history = [c for c in commits(args.since) if len(c[3]) <= args.max_files] if not head.returncode else []
