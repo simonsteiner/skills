@@ -11,15 +11,13 @@ set -euo pipefail
 #   BODY
 #
 # Prints the reply URL, then "resolved" when --resolve was given.
-# A host-qualified GH_REPO (HOST/owner/repo) sends the calls to that host.
+# Set GH_REPO=[HOST/]owner/repo to target another host; without GH_REPO, the checkout's
+# host is used, GitHub Enterprise included.
 
 if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
   sed -n '/^# [A-Z]/,/^$/{/^$/q;s/^# \{0,1\}//p;}' "$0"  # the comment above
   exit 0
 fi
-
-# gh api takes its host from GH_HOST, never from GH_REPO, so carry a host-qualified GH_REPO's over.
-[[ "${GH_REPO:-}" == */*/* ]] && export GH_HOST="${GH_REPO%%/*}"
 
 thread="${1:-}"
 resolve="${2:-}"
@@ -28,6 +26,17 @@ resolve="${2:-}"
 
 body="$(cat)"
 [[ -n "${body//[[:space:]]/}" ]] || { echo "error: empty reply body on stdin — a resolve without a reply is never allowed" >&2; exit 1; }
+
+# gh api takes its host from GH_HOST, never from GH_REPO or the checkout, so pass the host on: a
+# host-qualified GH_REPO's, else (no GH_REPO) the checkout's, or a GitHub Enterprise checkout would
+# query github.com. An unqualified GH_REPO means github.com or GH_HOST, as it does to gh.
+if [[ -n "${GH_REPO:-}" ]]; then
+  if [[ "$GH_REPO" == */*/* ]]; then export GH_HOST="${GH_REPO%%/*}"; fi
+else
+  url="$(gh repo view --json url --jq .url)"  # https://HOST/OWNER/REPO
+  url="${url#*://}"
+  export GH_HOST="${url%%/*}"
+fi
 
 gh api graphql -f threadId="$thread" -f body="$body" -f query='
 mutation($threadId:ID!, $body:String!) {

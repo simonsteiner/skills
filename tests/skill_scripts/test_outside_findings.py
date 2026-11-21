@@ -28,6 +28,7 @@ class OutsideFindingsTest(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.gh = FakeGh(tmp.name)
+        self.gh.on("repo", "view", json={"url": "https://github.com/o/r"})
         self.gh.on("pr", "view", "7", json={"headRefOid": "abc123"})
 
     def findings(self, result):

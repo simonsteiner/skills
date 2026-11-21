@@ -150,33 +150,52 @@ class AuthoringRulesTest(unittest.TestCase):
         (folder / "scripts/render-template.sh").chmod(0o755)
         self.assertEqual(self.problems(), [])
 
-    def test_metadata_values_are_strings(self):
-        flat = (GOOD + '\nmetadata:  # free-form\n  # who maintains it\n  author: example-org\n  version: "1.0"  # quoted\n'
-                "  release: '2026-11-20'\n  semver: 1.0.0\n  answer: nope\n"
-                '  notes: |\n    two\n    lines\n  indented: |2\n      kept indent\nlicense: MIT')
-        bad = {
-            "list of maps": GOOD + "\nmetadata:\n  credits:\n    - skill: x\n      author: y",
-            "nested map": GOOD + "\nmetadata:\n  credits:\n    author: y",
-            "list": GOOD + "\nmetadata:\n  - a",
-            "flow list": GOOD + "\nmetadata:\n  tags: [a, b]",
-            "inline value": GOOD + "\nmetadata: x",
-            "empty block": GOOD + "\nmetadata:\nlicense: MIT",
-            "float": GOOD + "\nmetadata:\n  version: 1.0",
-            "int": GOOD + "\nmetadata:\n  build: 3",
-            "bool": GOOD + "\nmetadata:\n  enabled: true",
-            "null": GOOD + "\nmetadata:\n  owner: null",
-            "comment only": GOOD + "\nmetadata:\n  owner: # nobody yet",
-            "tagged": GOOD + "\nmetadata:\n  build: !!int 3",
-            "date": GOOD + "\nmetadata:\n  released: 2026-11-20",
-            "int key": GOOD + "\nmetadata:\n  1: x",
-        }
-        self.skill("a", flat)
-        self.assertEqual(self.problems(), [])
-        for case, frontmatter in bad.items():
+    def test_metadata_field_is_not_allowed(self):
+        expected = ("skills/engineering/a/SKILL.md: metadata isn't allowed in owned skills "
+                    "(put credits in CREDITS.md, version in plugin.json)")
+        for case, fm in {
+            "flat map": GOOD + '\nmetadata:\n  author: example-org\n  version: "1.0"',
+            "nested": GOOD + "\nmetadata:\n  credits:\n    - skill: x",
+            "empty": GOOD + "\nmetadata:\nlicense: MIT",
+        }.items():
             with self.subTest(case):
                 self.setUp()
-                self.skill("a", frontmatter)
-                self.assertProblem("metadata must map string keys to string values")
+                self.skill("a", fm)
+                self.assertEqual(self.problems(), [expected])
+
+    def test_unquoted_colon_in_frontmatter_is_rejected(self):
+        bad = {
+            "colon-space in description": "name: a\ndescription: Use when: the user asks.",
+            "trailing colon": "name: a\ndescription: Use when asked:",
+            "colon-space in compatibility": GOOD + "\ncompatibility: Requires git: 2.30+",
+            "folded plain continuation": "name: a\ndescription: Does it.\n  Use when: the user asks.",
+            "indented without block indicator": "name: a\ndescription:\n  Use when: the user asks.",
+            "comment then indented plain": "name: a\ndescription: # draft\n  Does it.\n  Use when: the user asks.",
+            "leading quoted phrase then colon": 'name: a\ndescription: "Ship it" helper: Use when the user asks.',
+        }
+        for case, fm in bad.items():
+            with self.subTest(case):
+                self.setUp()
+                self.skill("a", fm)
+                self.assertProblem("unquoted ':'")
+
+    def test_valid_colons_in_frontmatter_are_allowed(self):
+        ok = {
+            "double-quoted": 'name: a\ndescription: "Use when: the user asks."',
+            "double-quoted with comment": 'name: a\ndescription: "Use when: the user asks." # note: keep short',
+            "single-quoted": "name: a\ndescription: 'Use when: the user asks.'",
+            "indented quoted": 'name: a\ndescription:\n  "Use when: the user asks."',
+            "folded block": "name: a\ndescription: >\n  Use when: the user asks.",
+            "literal block": "name: a\ndescription: |-\n  Use when: the user asks.",
+            "url": "name: a\ndescription: See https://example.com when asked.",
+            "trailing comment": "name: a\ndescription: Use when asked. # note: keep short",
+            "comment-only value": GOOD + "\nlicense: # note: optional",
+        }
+        for case, fm in ok.items():
+            with self.subTest(case):
+                self.setUp()
+                self.skill("a", fm)
+                self.assertEqual(self.problems(), [])
 
     def test_frontmatter_rules(self):
         cases = {

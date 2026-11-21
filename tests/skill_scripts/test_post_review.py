@@ -53,6 +53,7 @@ class PostReviewTest(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.gh = FakeGh(tmp.name)
+        self.gh.on("repo", "view", json={"url": "https://github.com/o/r"})
         self.gh.on("api", FILES, "--paginate", pages=FILES_PAGES)
         self.gh.on("api", "user", json={"login": "me"})
 
