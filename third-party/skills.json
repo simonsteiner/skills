@@ -4,18 +4,8 @@
     {
       "repo": "cloudflare/skills",
       "agents": ["claude-code", "github-copilot", "gemini-cli", "antigravity", "codex"],
-      "why": "Cloudflare's own skills for the developer platform. Curated across every agent that already had them — see docs/adr/0003. The repo also ships commands/ and rules/, which only its Claude Code plugin installs; skipped deliberately. Pared to the four in use as of October 2026; the rest are archived.",
+      "why": "Cloudflare's own skills for the developer platform. Curated across every agent that already had them — see docs/adr/0003. The repo also ships commands/ and rules/, which only its Claude Code plugin installs; skipped deliberately. Pared to the four in use as of October 2026, then to two in November 2026, when cloudflare and wrangler had gone unused; the rest are archived. The October entries below point at the umbrella cloudflare skill, which is now archived too.",
       "skills": [
-        {
-          "name": "cloudflare",
-          "path": "skills/cloudflare",
-          "why": "Umbrella platform skill — Workers, storage, AI, networking, security. Retrieval-first over live Cloudflare docs rather than pre-trained knowledge."
-        },
-        {
-          "name": "wrangler",
-          "path": "skills/wrangler",
-          "why": "Correct CLI syntax for deploys and resource management. Worth having loaded before any wrangler command."
-        },
         {
           "name": "workers-best-practices",
           "path": "skills/workers-best-practices",
@@ -62,6 +52,16 @@
           "name": "cloudflare-one-migrations",
           "path": "skills/cloudflare-one-migrations",
           "why": "Never invoked in chat history (Claude transcripts from 30 Aug, prompt history from May, Codex sessions Aug–Sep 2026). The umbrella cloudflare skill still covers the product and points to its docs."
+        },
+        {
+          "name": "cloudflare",
+          "path": "skills/cloudflare",
+          "why": "Never used in Claude Code; archived in November 2026. workers-best-practices and web-perf stay curated, and Cloudflare's docs cover the products directly."
+        },
+        {
+          "name": "wrangler",
+          "path": "skills/wrangler",
+          "why": "Never used in Claude Code; archived in November 2026. The CLI's own --help and Cloudflare's docs cover its syntax."
         }
       ]
     },
@@ -160,11 +160,6 @@
           "why": "The interview engine. Model-invoked, so it fires on 'grill me' on its own; used to stress-test plans, often with 'answer with your recommendations'."
         },
         {
-          "name": "handoff",
-          "path": "skills/productivity/handoff",
-          "why": "Compacts a long thread into a handoff document in $TMPDIR so a fresh agent can pick the work up, referencing specs, ADRs and commits rather than copying them. User-invoked and self-contained."
-        },
-        {
           "name": "research",
           "path": "skills/engineering/research",
           "why": "Delegates reading legwork to a background agent and lands findings as Markdown in the repo."
@@ -235,6 +230,11 @@
           "name": "writing-beats",
           "path": "skills/in-progress/writing-beats",
           "why": "Never curated; see writing-fragments."
+        },
+        {
+          "name": "handoff",
+          "path": "skills/productivity/handoff",
+          "why": "Never used in Claude Code; archived in November 2026."
         }
       ]
     },
@@ -264,19 +264,18 @@
     },
     {
       "repo": "vercel-labs/agent-skills",
-      "why": "Vercel's official collection — a different repo from vercel-labs/skills above, the smaller discovery-tooling one. One prose reviewer is curated; the rest are Vercel-platform or React-specific.",
-      "skills": [
-        {
-          "name": "writing-guidelines",
-          "path": "skills/writing-guidelines",
-          "why": "Reviews docs and prose against Vercel's writing handbook: voice, tone, structure. Nothing owned reviews prose. A thin wrapper: each run fetches the handbook's latest command.md, so the rules move with upstream rather than with a sync."
-        }
-      ],
+      "why": "Vercel's official collection — a different repo from vercel-labs/skills above, the smaller discovery-tooling one. Nothing curated right now: the prose reviewer that was is archived below, and the rest are Vercel-platform or React-specific.",
+      "skills": [],
       "archived": [
         {
           "name": "web-design-guidelines",
           "path": "skills/web-design-guidelines",
           "why": "Never curated: it triggers on the same requests ('review my UI', 'audit design') as the owned frontend-craft's audit mode, and ADR 0007 keeps one skill answering UI requests. Its source-level rules, which frontend-craft lacked, are adapted into frontend-craft's MECHANICS.md lens instead."
+        },
+        {
+          "name": "writing-guidelines",
+          "path": "skills/writing-guidelines",
+          "why": "Never used in Claude Code; archived in November 2026."
         }
       ]
     },
