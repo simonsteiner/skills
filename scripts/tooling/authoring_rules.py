@@ -7,7 +7,7 @@ https://agentskills.io/skill-creation/using-scripts):
 - name: 1-64 lowercase letters, digits, hyphens; no leading, trailing or doubled
   hyphen; matches its folder
 - description: non-empty, at most 1024 chars; compatibility, when present, 1-500 chars
-- metadata, when present, maps string keys to string values: no nested maps or lists
+- unquoted plain frontmatter values don't contain ": " or end with ":" (invalid YAML)
 - SKILL.md body under 500 lines and about 5,000 tokens
 - bundled files sit at most one level below the skill folder (scripts/, references/, …),
   and output templates (`*template*` files outside scripts/ and evals/) sit in assets/
@@ -41,9 +41,11 @@ present, is valid (tooling/evals.py).
 
 From AGENTS.md: disable-model-invocation is `true`, `false`, or absent.
 
-Repo convention: a command in a code block runs a bundled script as
-`<skill-dir>/scripts/…` (not `scripts/…` or `./scripts/…`): agents run it from the
-user's repo, where a bare path names that repo's scripts, not the skill's.
+Repo convention:
+- no `metadata` field in owned skills (put credits in CREDITS.md, version in plugin.json)
+- a command in a code block runs a bundled script as `<skill-dir>/scripts/…` (not `scripts/…`
+  or `./scripts/…`): agents run it from the user's repo, where a bare path names that repo's
+  scripts, not the skill's.
 
 lint-skills.py runs check(); tests/tooling/test_authoring_rules.py tests it.
 """
@@ -100,7 +102,7 @@ def check_skill(s):
     if s.fields is None:
         return [(s.skill_md, "no YAML frontmatter")]
     out = [(s.folder / "evals/evals.json", msg) for msg in evals.problems(s)]
-    out += [(s.skill_md, msg) for msg in _name_problems(s) + _description_problems(s) + _size_problems(s.body)]
+    out += [(s.skill_md, msg) for msg in _frontmatter_problems(s) + _name_problems(s) + _description_problems(s) + _size_problems(s.body)]
     files = sorted(f for f in s.folder.rglob("*") if f.is_file())
     for f in files:
         out += _bundled_file_problems(s, f)
@@ -111,6 +113,16 @@ def check_skill(s):
         if md.name != "CREDITS.md":
             text = md.read_text()
             out += [(md, msg) for msg in _prose_problems(text) + _command_problems(s.folder, text)]
+    return out
+
+
+def _frontmatter_problems(s):
+    """Disallowed metadata and unquoted colons that make frontmatter invalid YAML."""
+    out = []
+    if "metadata" in s.fields:
+        out.append("metadata isn't allowed in owned skills (put credits in CREDITS.md, version in plugin.json)")
+    for key in _unquoted_colon_keys(s.skill_md.read_text()):
+        out.append(f"{key} has an unquoted ':' that YAML reads as a mapping; quote the value or use a '>' block")
     return out
 
 
@@ -131,7 +143,7 @@ def _name_problems(s):
 
 
 def _description_problems(s):
-    """description, compatibility and metadata."""
+    """description and compatibility."""
     fields, out = s.fields, []
     desc = fields.get("description", "")
     if not desc:
@@ -146,8 +158,6 @@ def _description_problems(s):
         out.append("model-invoked description never says when to use it")
     if "compatibility" in fields and not 1 <= len(fields["compatibility"]) <= 500:
         out.append("compatibility must be 1-500 chars")
-    if "metadata" in fields and not metadata_is_strings(s.skill_md.read_text()):
-        out.append("metadata must map string keys to string values, with no nested maps or lists")
     return out
 
 
@@ -228,79 +238,35 @@ def _command_problems(folder, text):
     return out
 
 
-METADATA_ENTRY = re.compile(r"\s+([^\s:#-][^:]*):\s+(\S.*)$")
 BLOCK_INDICATOR = re.compile(r"[|>][1-9+-]{0,2}")  # |, >-, |2, >+1, …
-# plain scalars YAML 1.1 or 1.2 loads as null, a bool, a number or a date rather than a string
-NOT_STRING_WORDS = {"~", "null", "true", "false", "yes", "no", "on", "off", ".inf", "-.inf", "+.inf", ".nan"}
-DATE = re.compile(r"\d{4}-\d\d?-\d\d?(?:[Tt ].*)?")
+UNQUOTED_COLON = re.compile(r":(?:\s|$)")
 
 
-def _is_number(value):
-    """Whether a plain scalar reads as an int or a float: 3, -1.5, 1e3, 1_000, .5, 0x1F, 0o17."""
-    digits = value.replace("_", "")
-    if not digits.lstrip("+-")[:1] or digits.lstrip("+-")[0] not in "0123456789.":
-        return False  # float() would also take inf, nan and infinity, which YAML reads as strings
-    for parse in (float, lambda v: int(v, 0)):
-        try:
-            parse(digits)
-            return True
-        except ValueError:
-            pass
-    return False
-
-
-def _is_string(value):
-    """Whether a plain or quoted scalar loads as a string."""
-    value = uncommented(value)
-    if value[:1] in "'\"":
-        return True
-    return bool(value) and value[0] not in "#!" and value.lower() not in NOT_STRING_WORDS \
-        and not _is_number(value) and not DATE.fullmatch(value)
-
-
-def _metadata_entry(line):
-    """"block" for a `key:` opening a block scalar, "scalar" for a string `key: value`, None otherwise."""
-    entry = METADATA_ENTRY.match(line)
-    if not entry or entry.group(2)[0] in "[{&*" or not _is_string(entry.group(1)):
+def _plain_value(key, raw):
+    """The uncommented plain scalar on a top-level line, or None for quotes, blocks, comments or metadata."""
+    if key == "metadata" or not raw or raw[0] in "'\"#":
         return None
-    if BLOCK_INDICATOR.fullmatch(uncommented(entry.group(2))):
-        return "block"
-    return "scalar" if _is_string(entry.group(2)) else None
+    value = uncommented(raw)
+    return None if not value or BLOCK_INDICATOR.fullmatch(value) else value
 
 
-def _metadata_lines(lines):
-    """(depth, line) for each line of the block, up to the next top-level key; blank and comment lines skipped."""
+def _unquoted_colon_keys(text):
+    """Top-level keys whose unquoted plain value contains `: ` or ends with `:` (invalid YAML)."""
+    lines = re.match(r"---\n(.*?)\n---\n", text, re.DOTALL).group(1).split("\n")
+    bad, plain_key = [], None
     for line in lines:
         if not line.strip() or line.lstrip().startswith("#"):
             continue
-        depth = len(line) - len(line.lstrip(" "))
-        if depth == 0:
-            return
-        yield depth, line
-
-
-def metadata_is_strings(text):
-    """Whether the frontmatter's `metadata:` block is a flat map of string keys to string values.
-
-    Entries are one-line `key: value` pairs or block scalars (`|`, `>`); a folded plain scalar,
-    a multi-line quoted one or a flow map reads as not strings.
-    """
-    lines = re.match(r"---\n(.*?)\n---\n", text, re.DOTALL).group(1).split("\n")
-    start = next(i for i, line in enumerate(lines) if line.startswith("metadata:"))
-    if uncommented(lines[start][len("metadata:"):]):
-        return False  # an inline value: a string or a flow collection, not a block map
-    indent, block = None, False
-    for depth, line in _metadata_lines(lines[start + 1:]):
-        if indent is not None and depth > indent:
-            if block:
-                continue  # a block scalar's text
-            return False
-        indent = indent or depth
-        kind = _metadata_entry(line) if depth == indent else None
-        if kind is None:
-            return False
-        block = kind == "block"
-    return indent is not None  # an empty block is null, not a map
+        if top := re.match(r"([a-z][a-z0-9-]*):\s*(.*)$", line):
+            value = _plain_value(top.group(1), top.group(2).strip())
+            plain_key = top.group(1) if value is not None else None
+        elif plain_key and line[0] in " \t":
+            value = uncommented(line.strip())
+        else:
+            plain_key, value = None, None
+        if plain_key and plain_key not in bad and UNQUOTED_COLON.search(value):
+            bad.append(plain_key)
+    return bad
 
 
 def check_script(f):
