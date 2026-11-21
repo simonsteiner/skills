@@ -4,6 +4,7 @@
 """
 
 import os
+import re
 import subprocess
 import tempfile
 import unittest
@@ -202,8 +203,30 @@ class TestHistoryTest(unittest.TestCase):
         self.assertEqual(self.rows("drift", "--max-files", "2"), [])
         self.assertEqual(self.lines("fixes", "--max-files", "2"), ["# 0 of 0 fix commits changed no test"])
 
-    def test_empty_repo_prints_nothing(self):
+    def test_empty_repo_prints_no_rows_but_still_the_summary(self):
         self.assertEqual(self.lines("drift"), [])
+        self.assertEqual(self.lines("fixes"), ["# 0 of 0 fix commits changed no test"])
+        self.assertEqual(self.lines("refactors"), ["# 0 of 0 refactor commits changed a test"])
+
+    def test_names_git_quotes_are_kept(self):
+        # a tab or newline in a name splits its row, so look for each row in the raw output
+        for name in ('say "hi"', "back\\slash", "tab\tname", "new\nline"):
+            with self.subTest(name=name):
+                for i in range(3):
+                    self.commit(f"feat: {i}", f"src/{name}.py", f"tests/test_{name}.py")
+                drift = self.run_script("drift").stdout
+                self.assertIn(f"3\t100%\t100%\tsrc/{name}.py\ttests/test_{name}.py\n", drift)
+                fix = self.commit("fix: quoted", f"src/{name}.py")
+                fixes = self.run_script("fixes").stdout
+                self.assertRegex(fixes, f"^{fix}\t[0-9-]+\tfix: quoted\tsrc/{re.escape(name)}\\.py\n")
+
+    def test_negative_counts_exit_2(self):
+        self.commit("feat: a", "a.py")
+        for flag in ("--top", "--min", "--max-files"):
+            with self.subTest(flag=flag):
+                result = self.run_script("drift", flag, "-1")
+                self.assertEqual(result.returncode, 2)
+                self.assertIn(flag, result.stderr)
 
     def test_bad_usage_exits_2(self):
         self.commit("feat: a", "a.py")
