@@ -73,13 +73,7 @@ class LinkError(Exception):
     pass
 
 
-def link(skills, home, repo, log=print):
-    """Link every skill into the store and each target agent dir, then prune dead links.
-
-    A real directory where a link belongs is replaced: it's a prior `npx skills add`
-    copy, and the dev link is meant to take over.
-    """
-    dirs = [home.agent_dir(a) for a in AGENTS]
+def _prepare_dirs(home, dirs, repo):
     # A destination that is itself a link into this repo would get the per-skill links
     # written back into the working copy.
     for d in (home.store, *dirs):
@@ -92,12 +86,8 @@ def link(skills, home, repo, log=print):
     for d in (home.store, *dirs):
         d.mkdir(parents=True, exist_ok=True)
 
-    for s in skills:
-        replace(home.store / s.name, s.folder)
-        for d in dirs:
-            replace(d / s.name, entry_target(home, d, s.name))
-        log(f"dev-linked {s.name} -> {s.folder}")
 
+def _prune_dead(skills, home, dirs, repo, log):
     for dead in dead_links(skills, home, repo):
         dead.unlink()
         for d in dirs:
@@ -106,6 +96,24 @@ def link(skills, home, repo, log=print):
             if entry.is_symlink() and os.readlink(entry) == entry_target(home, d, dead.name):
                 entry.unlink()
         log(f"pruned {dead.name}")
+
+
+def link(skills, home, repo, log=print):
+    """Link every skill into the store and each target agent dir, then prune dead links.
+
+    A real directory where a link belongs is replaced: it's a prior `npx skills add`
+    copy, and the dev link is meant to take over.
+    """
+    dirs = [home.agent_dir(a) for a in AGENTS]
+    _prepare_dirs(home, dirs, repo)
+
+    for s in skills:
+        replace(home.store / s.name, s.folder)
+        for d in dirs:
+            replace(d / s.name, entry_target(home, d, s.name))
+        log(f"dev-linked {s.name} -> {s.folder}")
+
+    _prune_dead(skills, home, dirs, repo, log)
 
 
 def replace(path, target):
