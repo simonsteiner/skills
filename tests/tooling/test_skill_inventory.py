@@ -1,12 +1,14 @@
 """Tests for skill_inventory.py, against throwaway repos.
 
-    python3 -m unittest discover -s tests -t .
+    uv run --locked --no-build python3 -m unittest discover -s tests -t .
 """
 
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from tooling.skill_inventory import inventory
 
@@ -78,8 +80,45 @@ class InventoryTest(RepoFixture):
         self.assertEqual(s.fields["description"], "x # y")
 
     def test_a_quoted_value_ends_at_its_own_quote(self):
-        self.skill("engineering", "a", 'name: a\ndescription: x\ndisable-model-invocation: "true" # "x"')
-        self.assertFalse(inventory(self.repo).skills[0].model_invoked)
+        self.skill("engineering", "a", 'name: a\ndescription: "says hi" # "x"\ndisable-model-invocation: true # "x"')
+        [s] = inventory(self.repo).skills
+        self.assertFalse(s.model_invoked)
+        self.assertEqual(s.fields["description"], "says hi")
+
+    def test_a_quoted_value_keeps_the_other_quote(self):
+        self.skill("engineering", "a", """name: a\ndescription: 'says "hi"'  # x""")
+        self.assertEqual(inventory(self.repo).skills[0].fields["description"], 'says "hi"')
+
+    def test_block_scalars_and_escaped_quotes_parse_as_yaml(self):
+        self.skill("engineering", "a", 'name: a\ndescription: >+\n  Says "hi": when asked.\ncompatibility: "Uses \\"git\\""')
+        [s] = inventory(self.repo).skills
+        self.assertEqual(s.fields["description"], 'Says "hi": when asked.\n')
+        self.assertEqual(s.fields["compatibility"], 'Uses "git"')
+
+    def test_invalid_yaml_and_non_mapping_record_frontmatter_error(self):
+        self.skill("engineering", "a", "name: a\ndescription: Use when: asked")
+        self.skill("engineering", "b", "- not-a-mapping")
+        a, b = inventory(self.repo).skills
+        self.assertIsNone(a.fields)
+        self.assertIn("(line 3, col ", a.frontmatter_error)
+        self.assertIsNone(b.fields)
+        self.assertEqual(b.frontmatter_error, "frontmatter must be a YAML mapping")
+
+    def test_duplicate_keys_are_rejected(self):
+        self.skill("engineering", "a", "name: a\nname: b\ndescription: Use when asked.")
+        [s] = inventory(self.repo).skills
+        self.assertIsNone(s.fields)
+        self.assertIn("duplicate key", s.frontmatter_error)
+        self.assertIn("(line 3, col 1)", s.frontmatter_error)
+
+    def test_inventory_does_not_import_ruamel_until_frontmatter_is_read(self):
+        self.skill("engineering", "a")
+        with mock.patch.dict(sys.modules, {"ruamel": None, "ruamel.yaml": None}):
+            inv = inventory(self.repo)
+            [s] = inv.skills
+            self.assertEqual((s.name, s.bucket, s.published, s.active), ("a", "engineering", True, True))
+            with self.assertRaisesRegex(RuntimeError, r"uv run --locked --no-build"):
+                _ = s.fields
 
 
 if __name__ == "__main__":

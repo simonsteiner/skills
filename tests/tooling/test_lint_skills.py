@@ -1,0 +1,31 @@
+"""Tests for scripts/lint-skills.py as a command.
+
+    uv run --locked --no-build python3 -m unittest discover -s tests -t .
+"""
+
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "lint-skills.py"
+
+
+@unittest.skipUnless(shutil.which("uv"), "needs uv on PATH")
+class LintSkillsCommandTest(unittest.TestCase):
+    def test_runs_from_outside_the_repo_without_ruamel(self):
+        # -S hides site-packages, so ruamel.yaml can't be imported and the script must
+        # re-execute itself through the repo's uv project, whatever the current directory.
+        env = {k: v for k, v in os.environ.items() if k != "LINT_SKILLS_REEXEC"}
+        with tempfile.TemporaryDirectory() as tmp:
+            out = subprocess.run([sys.executable, "-S", str(SCRIPT)], cwd=tmp, env=env,
+                                 capture_output=True, text=True, check=False)
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+        self.assertEqual(out.stdout.strip(), "ok")
+
+
+if __name__ == "__main__":
+    unittest.main()

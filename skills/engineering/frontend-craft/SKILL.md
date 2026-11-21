@@ -2,17 +2,6 @@
 name: frontend-craft
 description: >
   Designs and builds frontend UI with a deliberate point of view instead of templated defaults — picks the surface's mode, plans a compact token system, reviews the plan against the brief, builds to a quality floor, and checks the render in bounded passes. Also critiques or audits existing UI and handles bolder, quieter, simpler, or polish requests. Use when building or redesigning a website, landing page, dashboard, app screen, component, form, or settings page; when the user asks for a UI to look less generic, better designed, bolder, or calmer; or when asked to critique, audit, or polish a frontend. Not for backend-only work.
-metadata:
-  credits:
-    - skill: frontend-design
-      author: Anthropic
-      url: "https://github.com/anthropics/skills/tree/main/skills/frontend-design"
-    - skill: impeccable
-      author: Paul Bakaus
-      url: "https://github.com/pbakaus/impeccable"
-    - skill: web-interface-guidelines
-      author: Vercel Labs
-      url: "https://github.com/vercel-labs/web-interface-guidelines"
 ---
 
 # Frontend Craft

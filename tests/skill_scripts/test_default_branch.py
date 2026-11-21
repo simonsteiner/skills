@@ -1,6 +1,6 @@
 """Tests for skills/engineering/sync-and-branch/scripts/default-branch.sh, against throwaway repos.
 
-    python3 -m unittest discover -s tests -t .
+    uv run --locked --no-build python3 -m unittest discover -s tests -t .
 """
 
 import os

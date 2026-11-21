@@ -1,6 +1,6 @@
 """Tests for evals.py, against throwaway repos.
 
-    python3 -m unittest discover -s tests -t .
+    uv run --locked --no-build python3 -m unittest discover -s tests -t .
 """
 
 import json
@@ -95,12 +95,17 @@ class EvalsTest(unittest.TestCase):
 
     def test_prepare_rejects_a_bad_ref_and_invalid_evals(self):
         git(self.repo, "init", "-q")
+        skill = self.skill()
         with self.assertRaisesRegex(ValueError, "can't read"):
-            evals.prepare(self.repo, self.skill(), baseline="nope")
+            evals.prepare(self.repo, skill, baseline="nope")
+        with self.assertRaisesRegex(ValueError, "not a git ref"):
+            evals.prepare(self.repo, skill, baseline="--output=x.tar")
         self.assertFalse((self.repo / ".eval-workspace/a/iteration-1").exists())
+        self.assertFalse((self.repo / "x.tar").exists())
         self.write_evals({"skills": ["a"], "evals": []})
+        skill = self.skill()
         with self.assertRaisesRegex(ValueError, "non-empty list"):
-            evals.prepare(self.repo, self.skill())
+            evals.prepare(self.repo, skill)
 
     def test_benchmark(self):
         iteration, runs = evals.prepare(self.repo, self.skill())

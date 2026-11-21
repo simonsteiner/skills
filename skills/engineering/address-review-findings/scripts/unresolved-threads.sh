@@ -10,6 +10,7 @@ set -euo pipefail
 #
 # Set GH_REPO=[HOST/]owner/repo to target another repo, e.g. a fork whose checkout has an
 # upstream remote and no `gh repo set-default`.
+# Without GH_REPO, the checkout's repo and its host, GitHub Enterprise included.
 #
 # stderr warns when the PR has no real review: no reviews, only ones that report their
 # own failure ("Copilot encountered an error…", rate-limit notices), only bots'
@@ -24,13 +25,24 @@ if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
   exit 0
 fi
 
-# gh api takes its host from GH_HOST, never from GH_REPO, so carry a host-qualified GH_REPO's over.
-[[ "${GH_REPO:-}" == */*/* ]] && export GH_HOST="${GH_REPO%%/*}"
+# Twin: this repo-and-host resolution is duplicated on purpose in
+# review-prs/scripts/review-threads.sh, so each skill stays self-contained. Change both together.
+#
+# GH_REPO wins: `gh repo view` ignores it, and in a fork with an upstream remote names the upstream.
+# gh api takes its host from GH_HOST, never from GH_REPO or the checkout, so pass the host on: a
+# host-qualified GH_REPO's, else (no GH_REPO and no GH_HOST) the checkout's, or a GitHub Enterprise
+# checkout would query github.com. An explicit GH_HOST is preserved.
+if [[ -n "${GH_REPO:-}" ]]; then
+  owner_repo="$GH_REPO"
+  if [[ "$GH_REPO" == */*/* ]]; then export GH_HOST="${GH_REPO%%/*}"; fi
+else
+  url="$(gh repo view --json url --jq .url)"  # https://HOST/OWNER/REPO
+  url="${url#*://}"
+  owner_repo="${url#*/}"
+  [[ -n "${GH_HOST:-}" ]] || export GH_HOST="${url%%/*}"
+fi
 
 pr="${1:-$(gh pr view --json number --jq .number)}"
-# GH_REPO ([HOST/]OWNER/REPO) wins: `gh pr` honours it but `gh repo view` doesn't, and in
-# a fork with an upstream remote the latter names the upstream.
-owner_repo="${GH_REPO:-$(gh repo view --json nameWithOwner --jq .nameWithOwner)}"
 repo="${owner_repo##*/}"
 owner="${owner_repo%/*}"
 owner="${owner##*/}"

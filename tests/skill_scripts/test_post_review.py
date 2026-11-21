@@ -1,6 +1,6 @@
 """Tests for skills/engineering/review-prs/scripts/post-review.sh, through a fake gh.
 
-    python3 -m unittest discover -s tests -t .
+    uv run --locked --no-build python3 -m unittest discover -s tests -t .
 """
 
 import json
@@ -53,6 +53,7 @@ class PostReviewTest(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.gh = FakeGh(tmp.name)
+        self.gh.on("repo", "view", json={"url": "https://github.com/o/r"})
         self.gh.on("api", FILES, "--paginate", pages=FILES_PAGES)
         self.gh.on("api", "user", json={"login": "me"})
 

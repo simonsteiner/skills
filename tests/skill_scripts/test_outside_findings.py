@@ -1,6 +1,6 @@
 """Tests for skills/engineering/review-prs/scripts/outside-findings.sh, through a fake gh.
 
-    python3 -m unittest discover -s tests -t .
+    uv run --locked --no-build python3 -m unittest discover -s tests -t .
 """
 
 import json
@@ -28,6 +28,7 @@ class OutsideFindingsTest(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.gh = FakeGh(tmp.name)
+        self.gh.on("repo", "view", json={"url": "https://github.com/o/r"})
         self.gh.on("pr", "view", "7", json={"headRefOid": "abc123"})
 
     def findings(self, result):

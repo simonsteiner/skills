@@ -13,14 +13,12 @@ set -euo pipefail
 # The review id is the number after "pullrequestreview-" in post-review.sh's URL.
 # Prints the review URL.
 # Set GH_REPO=[HOST/]owner/repo to target another repo, e.g. a fork with an upstream remote.
+# Without GH_REPO, the checkout's repo and its host, GitHub Enterprise included.
 
 if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
   sed -n '/^# [A-Z]/,/^$/{/^$/q;s/^# \{0,1\}//p;}' "$0"  # the comment above
   exit 0
 fi
-
-# gh api takes its host from GH_HOST, never from GH_REPO, so carry a host-qualified GH_REPO's over.
-[[ "${GH_REPO:-}" == */*/* ]] && export GH_HOST="${GH_REPO%%/*}"
 
 pr="${1:-}" review="${2:-}"
 [[ "$pr" =~ ^[0-9]+$ ]] || { echo "error: expected a PR number, got '$pr'" >&2; exit 1; }
@@ -30,6 +28,17 @@ shift 2
 for sha in "$@"; do
   [[ "$sha" =~ ^[0-9a-f]{7,40}$ ]] || { echo "error: not a commit SHA: '$sha'" >&2; exit 1; }
 done
+
+# gh api takes its host from GH_HOST, never from GH_REPO or the checkout, so pass the host on: a
+# host-qualified GH_REPO's, else (no GH_REPO and no GH_HOST) the checkout's, or a GitHub Enterprise
+# checkout would query github.com. An explicit GH_HOST is preserved.
+if [[ -n "${GH_REPO:-}" ]]; then
+  if [[ "$GH_REPO" == */*/* ]]; then export GH_HOST="${GH_REPO%%/*}"; fi
+elif [[ -z "${GH_HOST:-}" ]]; then
+  repo_url="$(gh repo view --json url --jq .url)"  # https://HOST/OWNER/REPO
+  repo_url="${repo_url#*://}"
+  export GH_HOST="${repo_url%%/*}"
+fi
 
 url="repos/{owner}/{repo}/pulls/$pr/reviews/$review"
 body="$(gh api "$url" --jq .body)"

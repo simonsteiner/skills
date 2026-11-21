@@ -6,11 +6,13 @@ unusable: an unknown bucket, two skills with one name, an owned skill that a cur
 one (third-party/skills.json) would overwrite in the global store.
 
 A skill's name is its folder's name; lint-skills.py checks the frontmatter `name`
-against it.
+against it. Frontmatter is parsed lazily with ruamel.yaml (YAML 1.2, duplicate keys
+rejected), so scripts that only need folder names stay stdlib-only.
 """
 
 import re
 from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 
 from . import third_party
@@ -18,51 +20,71 @@ from . import third_party
 REPO = Path(__file__).resolve().parents[2]
 PUBLISHED = ("engineering", "productivity", "misc")
 UNPUBLISHED = ("personal", "in-progress", "deprecated")
+FRONTMATTER = re.compile(r"\A---[ \t]*\r?\n(?:(.*?)\r?\n)?---[ \t]*(?:\r?\n|\Z)", re.DOTALL)
 
 
-def scalar(value):
-    """A top-level value: quotes removed, or a trailing ` # comment` cut from a plain one.
-
-    A block indicator (`>`, `|`, …) starts empty; its indented lines are appended.
-    """
-    quoted = re.match(r"""(['"])((?:(?!\1).)*)\1\s*(#.*)?$""", value)
-    if quoted:
-        return quoted.group(2)
-    value = re.sub(r"\s+#.*$", "", value).strip()
-    return "" if value in (">", "|", ">-", "|-") else value
+def _load_yaml(raw, line_offset=0):
+    """Parse YAML 1.2 frontmatter safely, rejecting duplicate keys."""
+    try:
+        from ruamel.yaml import YAML, YAMLError
+    except ModuleNotFoundError as err:
+        raise RuntimeError(
+            "ruamel.yaml is required to parse SKILL.md frontmatter; run via `uv run --locked --no-build`"
+        ) from err
+    yaml = YAML(typ="safe", pure=True)
+    try:
+        return yaml.load(raw), None
+    except YAMLError as err:
+        problem = getattr(err, "problem", None)
+        mark = getattr(err, "problem_mark", None)
+        if problem and mark is not None:
+            return None, f"{problem} (line {mark.line + 1 + line_offset}, col {mark.column + 1})"
+        return None, problem or str(err).splitlines()[0]
 
 
 def frontmatter(text):
-    """Top-level keys of a SKILL.md's YAML frontmatter, folded scalars joined.
+    """(fields, body, error) for a SKILL.md's YAML frontmatter.
 
-    Enough YAML for these files — plain `key: value` and `key: >` blocks — without a
-    dependency. Nested maps (metadata:) are kept as their raw indented text.
+    No `---` fence returns `(None, text, None)`. Invalid YAML or a non-mapping
+    root returns `(None, body, error)`.
     """
-    m = re.match(r"---\n(.*?)\n---\n", text, re.DOTALL)
+    m = FRONTMATTER.match(text)
     if not m:
-        return None, text
-    fields, key = {}, None
-    for line in m.group(1).split("\n"):
-        top = re.match(r"([a-z][a-z0-9-]*):\s*(.*)$", line)
-        if top:
-            key, value = top.groups()
-            fields[key] = scalar(value)
-        elif key:
-            fields[key] = (fields[key] + " " + line.strip()).strip()
-    return fields, text[m.end():]
+        return None, text, None
+    body = text[m.end():]
+    data, error = _load_yaml(m.group(1) or "", line_offset=1)
+    if error is not None:
+        return None, body, error
+    if not isinstance(data, dict):
+        return None, body, "frontmatter must be a YAML mapping"
+    return data, body, None
 
 
-@dataclass(frozen=True)
+@dataclass
 class Skill:
     name: str
     bucket: str
     folder: Path
-    fields: dict | None  # None: SKILL.md has no frontmatter
-    body: str
 
     @property
     def skill_md(self):
         return self.folder / "SKILL.md"
+
+    @cached_property
+    def _parsed(self):
+        return frontmatter(self.skill_md.read_text())
+
+    @property
+    def fields(self):
+        return self._parsed[0]
+
+    @property
+    def body(self):
+        return self._parsed[1]
+
+    @property
+    def frontmatter_error(self):
+        return self._parsed[2]
 
     @property
     def published(self):
@@ -74,7 +96,7 @@ class Skill:
 
     @property
     def model_invoked(self):
-        return (self.fields or {}).get("disable-model-invocation") != "true"
+        return (self.fields or {}).get("disable-model-invocation") is not True
 
 
 @dataclass(frozen=True)
@@ -88,8 +110,7 @@ def inventory(repo=REPO):
     skills, problems, seen = [], [], {}
     for skill_md in sorted(repo.glob("skills/*/*/SKILL.md")):
         folder = skill_md.parent
-        fields, body = frontmatter(skill_md.read_text())
-        skill = Skill(folder.name, folder.parent.name, folder, fields, body)
+        skill = Skill(folder.name, folder.parent.name, folder)
         skills.append(skill)
         where = skill_md.relative_to(repo).as_posix()
         if skill.bucket not in PUBLISHED + UNPUBLISHED:
@@ -108,4 +129,3 @@ def inventory(repo=REPO):
                 f"the owned skill at {seen[curated.name]}"
             )
     return Inventory(skills, problems)
-
