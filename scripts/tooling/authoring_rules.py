@@ -20,7 +20,12 @@ https://agentskills.io/skill-creation/using-scripts):
 - one-off `npx` / `bunx` / `uvx` / `pipx run` commands in code pin a version, not a dist-tag
 - a bundled script has a shebang, is executable, answers `--help`, never prompts
   (no `read -p`, `/dev/tty`, `input()`, `getpass`), and if Python, imports only stdlib
-  (or sibling modules) unless it declares PEP 723 dependencies (`# /// script`)
+  (or sibling modules) unless it declares PEP 723 dependencies (`# /// script`); an import
+  in an `except ImportError:` fallback (`try: import tomllib` / `except ImportError: import
+  tomli`) is optional, so it doesn't count
+- a Python script with a PEP 723 `# /// script` block has a `uv run --script` shebang, so
+  running it directly installs what the block declares
+  (https://docs.astral.sh/uv/guides/scripts/#using-a-shebang-to-create-an-executable-file)
 
 From Anthropic's skill authoring best practices
 (https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices):
@@ -91,6 +96,8 @@ CODE = re.compile(r"```.*?```|`[^`\n]+`", re.DOTALL)  # fenced blocks and inline
 PROMPTS = re.compile(r"\bread\s+(?:-\w+\s+)*-p\b|/dev/tty|\binput\(|\bgetpass\b")
 PEP723_BLOCK = re.compile(r"(?m)^# /// script[ \t]*\r?\n((?:^#[^\n]*\n)*?)^# ///[ \t]*$")
 PEP723_DEPS = re.compile(r"""(?m)^dependencies\s*=\s*\[[^\]]*['"]""")
+UV_SCRIPT_SHEBANG = re.compile(r"#!.*\buv\s+run\b.*\s--script\b")
+IMPORT_ERRORS = frozenset({"ImportError", "ModuleNotFoundError"})
 
 
 def check(repo, skills):
@@ -293,6 +300,22 @@ def _has_pep723_dependencies(text):
     return False
 
 
+def _catches_import_error(handler):
+    """Whether an `except` clause catches ImportError (alone, or in a tuple)."""
+    names = handler.type.elts if isinstance(handler.type, ast.Tuple) else [handler.type]
+    return any(isinstance(n, ast.Name) and n.id in IMPORT_ERRORS for n in names)
+
+
+def _import_fallbacks(tree):
+    """The import nodes inside an `except ImportError:` clause: optional, tried only when the first import fails."""
+    return {
+        node
+        for t in ast.walk(tree) if isinstance(t, ast.Try)
+        for handler in t.handlers if handler.type is not None and _catches_import_error(handler)
+        for node in ast.walk(handler) if isinstance(node, (ast.Import, ast.ImportFrom))
+    }
+
+
 def _python_import_problems(f, text):
     """Bundled Python scripts stay stdlib-only unless they declare PEP 723 dependencies."""
     try:
@@ -304,8 +327,11 @@ def _python_import_problems(f, text):
     local = {p.stem for p in f.parent.glob("*.py")} | {
         p.name for p in f.parent.iterdir() if p.is_dir() and (p / "__init__.py").exists()
     }
+    fallbacks = _import_fallbacks(tree)
     imported = set()
     for node in ast.walk(tree):
+        if node in fallbacks:
+            continue
         if isinstance(node, ast.Import):
             imported.update(alias.name.split(".")[0] for alias in node.names)
         elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
@@ -331,5 +357,7 @@ def check_script(f):
     if PROMPTS.search(text):
         out.append((f, "bundled script prompts for input; take it from flags, env or stdin"))
     if f.suffix == ".py":
+        if PEP723_BLOCK.search(text) and not UV_SCRIPT_SHEBANG.match(text):
+            out.append((f, "bundled Python script has a PEP 723 block but no `uv run --script` shebang"))
         out.extend(_python_import_problems(f, text))
     return out
