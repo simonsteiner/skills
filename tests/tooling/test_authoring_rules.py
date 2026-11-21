@@ -169,6 +169,9 @@ class AuthoringRulesTest(unittest.TestCase):
             "trailing colon": "name: a\ndescription: Use when asked:",
             "colon-space in compatibility": GOOD + "\ncompatibility: Requires git: 2.30+",
             "folded plain continuation": "name: a\ndescription: Does it.\n  Use when: the user asks.",
+            "indented without block indicator": "name: a\ndescription:\n  Use when: the user asks.",
+            "comment then indented plain": "name: a\ndescription: # draft\n  Does it.\n  Use when: the user asks.",
+            "leading quoted phrase then colon": 'name: a\ndescription: "Ship it" helper: Use when the user asks.',
         }
         for case, fm in bad.items():
             with self.subTest(case):
@@ -179,7 +182,9 @@ class AuthoringRulesTest(unittest.TestCase):
     def test_valid_colons_in_frontmatter_are_allowed(self):
         ok = {
             "double-quoted": 'name: a\ndescription: "Use when: the user asks."',
+            "double-quoted with comment": 'name: a\ndescription: "Use when: the user asks." # note: keep short',
             "single-quoted": "name: a\ndescription: 'Use when: the user asks.'",
+            "indented quoted": 'name: a\ndescription:\n  "Use when: the user asks."',
             "folded block": "name: a\ndescription: >\n  Use when: the user asks.",
             "literal block": "name: a\ndescription: |-\n  Use when: the user asks.",
             "url": "name: a\ndescription: See https://example.com when asked.",

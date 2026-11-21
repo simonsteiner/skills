@@ -238,32 +238,59 @@ def _command_problems(folder, text):
     return out
 
 
+TOP_KEY = re.compile(r"([a-z][a-z0-9-]*):(.*)")
 BLOCK_INDICATOR = re.compile(r"[|>][1-9+-]{0,2}")  # |, >-, |2, >+1, …
+QUOTED_SCALAR = re.compile(r""""(?:[^"\\]|\\.)*"|'(?:[^']|'')*'""")
 UNQUOTED_COLON = re.compile(r":(?:\s|$)")
 
 
-def _plain_value(key, raw):
-    """The uncommented plain scalar on a top-level line, or None for quotes, blocks, comments or metadata."""
-    if key == "metadata" or not raw or raw[0] in "'\"#":
-        return None
+def _is_quoted(raw):
+    """Whether a raw value is a complete quoted scalar (with optional comment) or an unclosed multi-line quote."""
+    if raw[0] not in "'\"":
+        return False
+    m = QUOTED_SCALAR.match(raw)
+    if not m:
+        return True
+    tail = raw[m.end():].strip()
+    return not tail or tail.startswith("#")
+
+
+def _start_plain_key(key, raw):
+    """(plain_key, value_to_check, awaiting_first) for a top-level `key: raw` line."""
+    if key == "metadata":
+        return None, "", False
+    if not raw or raw[0] == "#":
+        return key, "", True
+    if _is_quoted(raw):
+        return None, "", False
     value = uncommented(raw)
-    return None if not value or BLOCK_INDICATOR.fullmatch(value) else value
+    if BLOCK_INDICATOR.fullmatch(value):
+        return None, "", False
+    return key, value, False
+
+
+def _continuation(plain_key, awaiting_first, line):
+    """(plain_key, value_to_check) for an indented continuation line."""
+    stripped = line.strip()
+    if awaiting_first and _is_quoted(stripped):
+        return None, ""
+    return plain_key, uncommented(stripped)
 
 
 def _unquoted_colon_keys(text):
     """Top-level keys whose unquoted plain value contains `: ` or ends with `:` (invalid YAML)."""
     lines = re.match(r"---\n(.*?)\n---\n", text, re.DOTALL).group(1).split("\n")
-    bad, plain_key = [], None
+    bad, plain_key, awaiting_first = [], None, False
     for line in lines:
         if not line.strip() or line.lstrip().startswith("#"):
             continue
-        if top := re.match(r"([a-z][a-z0-9-]*):\s*(.*)$", line):
-            value = _plain_value(top.group(1), top.group(2).strip())
-            plain_key = top.group(1) if value is not None else None
+        if top := TOP_KEY.match(line):
+            plain_key, value, awaiting_first = _start_plain_key(top.group(1), top.group(2).strip())
         elif plain_key and line[0] in " \t":
-            value = uncommented(line.strip())
+            plain_key, value = _continuation(plain_key, awaiting_first, line)
+            awaiting_first = False
         else:
-            plain_key, value = None, None
+            plain_key, value, awaiting_first = None, "", False
         if plain_key and plain_key not in bad and UNQUOTED_COLON.search(value):
             bad.append(plain_key)
     return bad
