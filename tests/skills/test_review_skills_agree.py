@@ -3,7 +3,7 @@
 must not drift apart: the status values, the reconcile command, the shared
 loose-ends checks, how a Ship phase ends, and that a `blocked` row stops its candidate.
 
-    python3 -m unittest discover -s tests -t .
+    uv run --locked --no-build python3 -m unittest discover -s tests -t .
 """
 
 import re

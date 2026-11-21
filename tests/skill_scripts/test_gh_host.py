@@ -4,7 +4,7 @@
 without this a GitHub Enterprise GH_REPO=<host>/<owner>/<repo> or Enterprise checkout would
 send the calls to github.com.
 
-    python3 -m unittest discover -s tests -t .
+    uv run --locked --no-build python3 -m unittest discover -s tests -t .
 """
 
 import tempfile

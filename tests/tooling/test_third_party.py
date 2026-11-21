@@ -1,6 +1,6 @@
 """Tests for third_party.py, against a throwaway home directory and manifest.
 
-    python3 -m unittest discover -s tests -t .
+    uv run --locked --no-build python3 -m unittest discover -s tests -t .
 """
 
 import json
