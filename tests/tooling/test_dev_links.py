@@ -36,7 +36,7 @@ class DevLinksTest(unittest.TestCase):
         link(self.skills, self.home, self.repo, self.log.append)
         self.assertEqual(os.readlink(self.store / "a"), str(self.repo / "skills/engineering/a"))
         self.assertEqual(os.readlink(self.claude / "b"), "../../.agents/skills/b")
-        self.assertEqual(os.readlink(self.antigravity / "b"), "../../../.agents/skills/b")
+        self.assertEqual(os.readlink(self.home.root / ".gemini/config/skills/b"), "../../../.agents/skills/b")
         self.assertFalse((self.store / "c").exists())
         self.assertEqual(self.statuses(), ["ok        a", "ok        b"])
 
