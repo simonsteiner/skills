@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Dev-mode skill linker — the local equivalent of `npx skills add <repo>`.
 
-Links every owned skill outside deprecated/ into ~/.agents/skills and ~/.claude/skills,
-so edits in this repo are live without reinstalling; dev_links.py has the layout. Use it
+Links every owned skill outside deprecated/ into ~/.agents/skills, ~/.claude/skills
+and ~/.gemini/config/skills, so edits in this repo are live without reinstalling;
+dev_links.py has the layout. Use it
 on the machine where you develop the skills; everywhere else, and once a skill is
 committed, install the published version with `npx skills add <repo>`. For a given
 skill, pick one: dev-link OR skills.sh, not both.

@@ -1,5 +1,5 @@
 {
-  "agents": ["claude-code", "codex"],
+  "agents": ["claude-code", "codex", "antigravity"],
   "sources": [
     {
       "repo": "cloudflare/skills",

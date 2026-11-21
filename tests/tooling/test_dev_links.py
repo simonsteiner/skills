@@ -24,7 +24,9 @@ class DevLinksTest(unittest.TestCase):
             folder.mkdir(parents=True)
             (folder / "SKILL.md").write_text(f"---\nname: {name}\n---\n")
         self.skills = [s for s in inventory(self.repo).skills if s.active]
-        self.store, self.claude = self.home.store, self.home.agent_dir("claude-code")
+        self.store = self.home.store
+        self.claude = self.home.agent_dir("claude-code")
+        self.antigravity = self.home.agent_dir("antigravity")
         self.log = []
 
     def statuses(self):
@@ -34,13 +36,20 @@ class DevLinksTest(unittest.TestCase):
         link(self.skills, self.home, self.repo, self.log.append)
         self.assertEqual(os.readlink(self.store / "a"), str(self.repo / "skills/engineering/a"))
         self.assertEqual(os.readlink(self.claude / "b"), "../../.agents/skills/b")
+        self.assertEqual(os.readlink(self.antigravity / "b"), "../../../.agents/skills/b")
         self.assertFalse((self.store / "c").exists())
         self.assertEqual(self.statuses(), ["ok        a", "ok        b"])
 
     def test_check_reports_what_isnt_linked(self):
         self.assertEqual(self.statuses(), [
-            f"missing   a (not linked into {self.claude} — run link)",
-            f"missing   b (not linked into {self.claude} — run link)",
+            f"missing   a (not linked into {self.claude}, {self.antigravity} — run link)",
+            f"missing   b (not linked into {self.claude}, {self.antigravity} — run link)",
+        ])
+        link(self.skills, self.home, self.repo, self.log.append)
+        (self.antigravity / "a").unlink()
+        self.assertEqual(self.statuses(), [
+            f"missing   a (not linked into {self.antigravity} — run link)",
+            "ok        b",
         ])
 
     def test_replaces_an_installed_copy(self):
@@ -50,7 +59,7 @@ class DevLinksTest(unittest.TestCase):
         self.assertTrue((self.store / "a").is_symlink())
 
     def test_replaces_a_plain_file(self):
-        for d in (self.store, self.claude):
+        for d in (self.store, self.claude, self.antigravity):
             d.mkdir(parents=True, exist_ok=True)
             (d / "a").write_text("stray")
         link(self.skills, self.home, self.repo, self.log.append)
@@ -60,6 +69,7 @@ class DevLinksTest(unittest.TestCase):
         link(self.skills, self.home, self.repo, self.log.append)
         (self.store / "gone").symlink_to(self.repo / "skills/engineering/gone")
         (self.claude / "gone").symlink_to("../../.agents/skills/gone")
+        (self.antigravity / "gone").symlink_to("../../../.agents/skills/gone")
         (self.store / "other").symlink_to("/elsewhere")
         (self.store / "c").symlink_to(self.repo / "skills/deprecated/c")
         self.assertEqual(self.statuses()[2:], [
@@ -69,6 +79,7 @@ class DevLinksTest(unittest.TestCase):
         link(self.skills, self.home, self.repo, self.log.append)
         self.assertEqual(self.log[-2:], ["pruned c", "pruned gone"])
         self.assertFalse((self.claude / "gone").is_symlink())
+        self.assertFalse((self.antigravity / "gone").is_symlink())
         self.assertTrue((self.store / "other").is_symlink())
 
     def test_refuses_a_store_that_links_into_the_repo(self):

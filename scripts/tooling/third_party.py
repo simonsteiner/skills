@@ -35,7 +35,7 @@ AGENT_DIRS = {
     "claude-code": ".claude/skills",
     "github-copilot": ".copilot/skills",
     "gemini-cli": ".gemini/skills",
-    "antigravity": ".gemini/antigravity/skills",
+    "antigravity": ".gemini/config/skills",
     "codex": ".codex/skills",
 }
 
