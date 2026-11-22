@@ -26,7 +26,7 @@ flowchart LR
   I["skill_inventory.inventory(repo)"]:::deep
   A["authoring_rules.check(repo, skills)"]:::deep
   P["published_rules.check(repo, skills)"]:::deep
-  S["sync-skills.py · 7 commits, 2 fixes"]:::leak
+  S["sync-skills.py · 5 commits, 2 fixes"]:::leak
   K["link-skills.py"]:::module
   T["sync-third-party.py"]:::module
   X["test_sync_skills.py"]:::module
