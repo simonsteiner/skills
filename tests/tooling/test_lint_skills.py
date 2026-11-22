@@ -4,7 +4,6 @@
 """
 
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -14,7 +13,6 @@ from pathlib import Path
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "lint-skills.py"
 
 
-@unittest.skipUnless(shutil.which("uv"), "needs uv on PATH")
 class LintSkillsCommandTest(unittest.TestCase):
     def test_runs_from_outside_the_repo_without_ruamel(self):
         # -S hides site-packages, so ruamel.yaml can't be imported and the script must
