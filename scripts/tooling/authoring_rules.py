@@ -59,6 +59,10 @@ Repo convention:
 - a command in a code block runs a bundled script as `<skill-dir>/scripts/…` (not `scripts/…`
   or `./scripts/…`): agents run it from the user's repo, where a bare path names that repo's
   scripts, not the skill's.
+- no Skill tool call names a user-invoked skill: its description never reaches the model,
+  so the call can't fire (docs/invocation.md); the step tells the user to run `/<name>`
+- tests live in tests/, never beside the code: no test_*.py, *_test.py, *.test.* or *.spec.*
+  file in skills/ or scripts/
 
 lint-skills.py runs check(); tests/tooling/test_authoring_rules.py tests it.
 """
@@ -99,6 +103,7 @@ PEP723_BLOCK = re.compile(r"(?m)^# /// script[ \t]*\r?\n((?:^#[^\n]*\n)*?)^# ///
 PEP723_DEPS = re.compile(r"""(?m)^dependencies\s*=\s*\[[^\]]*['"]""")
 UV_SCRIPT_SHEBANG = re.compile(r"#!.*\buv\s+run\b.*\s--script\b")
 IMPORT_ERRORS = frozenset({"ImportError", "ModuleNotFoundError"})
+STRAY_TEST = re.compile(r"test_.*\.py|.*_test\.py|.*\.(?:test|spec)\.\w+")
 
 
 def check(repo, skills):
@@ -120,7 +125,35 @@ def check(repo, skills):
             if key in seen and seen[key] != s.name:
                 problems.append(f'trigger "{phrase}" is in both {seen[key]} and {s.name}')
             seen.setdefault(key, s.name)
+    return problems + _user_invoked_calls(repo, skills) + _stray_tests(repo)
+
+
+def _user_invoked_calls(repo, skills):
+    """A line that mentions the Skill tool and quotes an owned user-invoked skill's name."""
+    user_invoked = {s.name for s in skills if s.fields and not s.model_invoked}
+    problems = []
+    for s in skills:
+        for md in sorted(s.folder.rglob("*.md")):
+            if md.name == "CREDITS.md" or "evals" in md.relative_to(s.folder).parts:
+                continue
+            for n, line in enumerate(md.read_text().splitlines(), 1):
+                if "Skill tool" not in line:
+                    continue
+                problems += [
+                    f"{md.relative_to(repo).as_posix()}:{n}: calls the user-invoked {name} through the Skill tool, "
+                    f"which can't reach it; tell the user to run `/{name}` instead"
+                    for name in re.findall(r'"([a-z0-9-]+)"', line) if name in user_invoked
+                ]
     return problems
+
+
+def _stray_tests(repo):
+    """Test files under skills/ or scripts/, which belong in tests/."""
+    return [
+        f"{path.relative_to(repo).as_posix()}: tests live in tests/, never beside the code"
+        for top in ("skills", "scripts") for path in sorted((repo / top).rglob("*"))
+        if path.is_file() and STRAY_TEST.fullmatch(path.name)
+    ]
 
 
 def check_skill(s):
