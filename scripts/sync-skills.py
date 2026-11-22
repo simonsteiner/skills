@@ -58,14 +58,15 @@ def checkout(check):
     if not behind:
         print(f"up to date with {upstream}")
         return 0
-    if check:
-        print(f"{behind} commit(s) behind {upstream}; a sync pulls them")
-        return 1
     branch = git("rev-parse", "--abbrev-ref", "HEAD")[1]
     default = git("symbolic-ref", "--short", "refs/remotes/origin/HEAD")[1].removeprefix("origin/")
     if branch != default:
+        # Never pulled, so nothing a sync would change: the same report and status in both modes.
         print(f"{branch} is {behind} commit(s) behind {upstream}; only {default or 'the default branch'} is pulled")
         return 0
+    if check:
+        print(f"{behind} commit(s) behind {upstream}; a sync pulls them")
+        return 1
     code = subprocess.run(["git", "-C", str(REPO), "pull", "--ff-only", "--quiet"], check=False).returncode
     print(f"pulled {behind} commit(s) from {upstream}" if code == 0 else "git pull --ff-only failed; see above")
     return 1 if code else 0
@@ -90,8 +91,9 @@ def main(argv):
         status = checkout(check)
         print(flush=True)
         if git("rev-parse", "HEAD")[1] != before:
-            # The pull may have changed the steps below, or this script: run the new copy.
-            os.execve(sys.executable, [sys.executable, str(SCRIPTS / "sync-skills.py"), *argv],
+            # The pull may have changed the steps below, or this script: run the new copy. A sync
+            # takes no arguments (main refused anything but --check), so the rerun passes none.
+            os.execve(sys.executable, [sys.executable, str(SCRIPTS / "sync-skills.py")],
                       {**os.environ, PULLED: str(status)})
         return finish(status, argv)
     return finish(int(os.environ.get(PULLED) or 0), argv)

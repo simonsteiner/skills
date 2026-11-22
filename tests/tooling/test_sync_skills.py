@@ -72,6 +72,11 @@ class CheckoutTest(unittest.TestCase):
                          (0, "feat/x is 1 commit(s) behind origin/main; only main is pulled"))
         self.assertEqual(git(self.clone, "log", "-1", "--format=%s"), "first")
 
+    def test_check_on_another_branch_reports_what_a_sync_does(self):
+        git(self.clone, "switch", "--quiet", "-c", "feat/x", "--track", "origin/main")
+        self.assertEqual(self.checkout(check=True),
+                         (0, "feat/x is 1 commit(s) behind origin/main; only main is pulled"))
+
     def test_a_branch_with_no_upstream_is_not_pulled(self):
         git(self.clone, "switch", "--quiet", "-c", "local")
         self.assertEqual(self.checkout(check=False), (0, "this branch tracks no remote branch; not pulled"))
