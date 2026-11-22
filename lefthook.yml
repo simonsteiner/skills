@@ -15,11 +15,6 @@ pre-commit:
         printf '%s\n' "$out" | sed -n 's/^wrote //p' | xargs -r git add &&
         uv run --locked --no-build python3 scripts/lint-skills.py
 
-    # Same as CI: the tooling, the scripts bundled in skills against a fake gh, and the skills' prose.
-    tests:
-      glob: "{scripts/*.py,scripts/**/*.py,tests/*.py,tests/**/*.py,skills/**,.lefthook/**,pyproject.toml,uv.lock}"
-      run: uv run --locked --no-build python3 -m unittest discover -s tests -t .
-
     # Same as CI: every staged file an agent writes stays under 5,000 tokens (bytes / 4),
     # so an agent can read it whole. The setup-lefthook skill's script, run from here
     # rather than through the remote other repos use; tool-written files are marked
@@ -58,3 +53,12 @@ pre-commit:
       glob: "*.md"
       run: npx rumdl check --fix {staged_files}
       stage_fixed: true
+
+pre-push:
+  commands:
+    # Same as CI, once per push: the suite is ~19 s, over setup-lefthook's ~10 s pre-commit
+    # budget. Covers the tooling, the scripts bundled in skills against a fake gh, and the
+    # skills' prose. Runs whole; the glob only decides whether the pushed files need it.
+    tests:
+      glob: "{scripts/*.py,scripts/**/*.py,tests/*.py,tests/**/*.py,skills/**,.lefthook/**,pyproject.toml,uv.lock}"
+      run: uv run --locked --no-build python3 -m unittest discover -s tests -t .

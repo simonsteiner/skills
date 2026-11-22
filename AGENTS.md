@@ -11,7 +11,8 @@ Domain terms are in `GLOSSARY.md`; decisions and their trade-offs are in `docs/a
 ./scripts/sync-skills.py --check  # what a sync would change: checkout, links, curated installs, upstream versions
 uv run --locked --no-build python3 -m unittest discover -s tests -t .  # run every test
 uv run --locked --no-build python3 -m unittest tests.tooling.test_catalog  # run one test module
-uvx ruff@0.17.0 check scripts tests  # lint the Python
+uv run --locked --no-build python3 -m unittest tests.skill_scripts.test_post_review.PostReviewTest.test_summary_without_comments_posts  # run one test
+uvx ruff@0.17.0 check scripts tests skills  # lint the Python
 npx rumdl check .  # lint the Markdown
 shellcheck skills/*/*/scripts/*.sh  # lint the bundled shell scripts
 npx changeset  # add a changeset for a user-visible change

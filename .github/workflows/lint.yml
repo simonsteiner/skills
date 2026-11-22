@@ -39,7 +39,7 @@ jobs:
 
       # Same version as lefthook; config in ruff.toml.
       - name: Ruff
-        run: uvx --no-build ruff@0.17.0 check scripts tests
+        run: uvx --no-build ruff@0.17.0 check scripts tests skills
 
       - name: Shellcheck
         run: shellcheck skills/*/*/scripts/*.sh

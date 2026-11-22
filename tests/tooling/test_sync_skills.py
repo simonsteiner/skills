@@ -7,7 +7,9 @@ import contextlib
 import importlib.util
 import io
 import os
+import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -44,7 +46,9 @@ class CheckoutTest(unittest.TestCase):
         git(self.clone, "remote", "set-head", "origin", "main")
         self.commit(self.upstream, "second")
         git(self.upstream, "push", "--quiet", "origin", "main")
-        sync_skills.REPO = self.clone
+        patcher = mock.patch.object(sync_skills, "REPO", self.clone)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def commit(self, repo, message):
         git(repo, "-c", "user.name=t", "-c", "user.email=t@example.com",
@@ -82,23 +86,37 @@ class CheckoutTest(unittest.TestCase):
         self.assertEqual(self.checkout(check=False), (0, "this branch tracks no remote branch; not pulled"))
 
 
-    def test_a_sync_that_pulls_reruns_the_updated_script(self):
-        calls = []
-        with mock.patch.object(sync_skills.os, "execve", side_effect=lambda *a: calls.append(a) or 0), \
-             mock.patch.object(sync_skills, "finish", side_effect=lambda status, argv: status), \
-             contextlib.redirect_stdout(io.StringIO()):
-            sync_skills.main([])
-        (_exe, args, env), = calls
-        self.assertEqual(args[1:], [str(sync_skills.SCRIPTS / "sync-skills.py")])
-        self.assertEqual(env[sync_skills.PULLED], "0")
+    def test_a_sync_pulls_then_reruns_the_pulled_copy_and_checks_out_once(self):
+        # The command from a fixture checkout: a copy of sync-skills.py and stub siblings, which
+        # are substituted at the process seam (each just says it ran).
+        stub = "import sys; print('stub', __file__.rsplit('/', 1)[-1], *sys.argv[1:])\n"
+        scripts = self.upstream / "scripts"
+        scripts.mkdir()
+        shutil.copy(SCRIPT, scripts / "sync-skills.py")
+        for name in ("link-skills.py", "sync-third-party.py"):
+            (scripts / name).write_text(stub)
+        git(self.upstream, "add", "scripts")
+        self.commit(self.upstream, "scripts")
+        git(self.upstream, "push", "--quiet", "origin", "main")
+        git(self.clone, "pull", "--quiet", "--ff-only")
+        # Upstream then changes sync-skills.py: only the pulled copy prints "(pulled copy)".
+        text = (scripts / "sync-skills.py").read_text()
+        (scripts / "sync-skills.py").write_text(text.replace('"owned skills"', '"owned skills (pulled copy)"'))
+        git(self.upstream, "add", "scripts")
+        self.commit(self.upstream, "new sync-skills.py")
+        git(self.upstream, "push", "--quiet", "origin", "main")
 
-    def test_the_rerun_skips_the_checkout(self):
-        finish = mock.Mock(return_value=0)
-        with mock.patch.dict(os.environ, {sync_skills.PULLED: "0"}), \
-             mock.patch.object(sync_skills, "finish", finish), mock.patch.object(sync_skills, "checkout") as checkout:
-            sync_skills.main([])
-        checkout.assert_not_called()
-        finish.assert_called_once_with(0, [])
+        done = subprocess.run([sys.executable, str(self.clone / "scripts/sync-skills.py")], cwd=self.clone,
+                              capture_output=True, text=True, check=False)
+
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        self.assertEqual(done.stdout.count("==> checkout"), 1)
+        self.assertIn("pulled 1 commit(s) from origin/main", done.stdout)
+        order = [done.stdout.index(x) for x in
+                 ("==> checkout", "==> owned skills (pulled copy)", "stub link-skills.py",
+                  "==> third-party skills", "stub sync-third-party.py")]
+        self.assertEqual(order, sorted(order))
+
 
 if __name__ == "__main__":
     unittest.main()
