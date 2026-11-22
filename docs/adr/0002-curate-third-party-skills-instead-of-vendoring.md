@@ -35,3 +35,5 @@ Three ways to do that:
 Half of that critique doesn't land here, because this isn't fully DIY: fetching from upstream and wiring skills into each agent's directory are the skills.sh CLI's job, and the format is the [Agent Skills](https://github.com/agentskills/agentskills) spec, so there's no per-tool translation to maintain. What this repo owns is only the curated list. The half that does land is versioning — no pinning, no rollback — and there is no access control at all, which is fine while everything curated is public and the audience is one person.
 
 The triggers to move to a registry with real versioning (localskills.sh, or whatever the equivalent is by then) are: more than a couple of people consuming this list, needing to pin or roll back a skill version, or wanting private skills in the same flow.
+
+> **Note (2026-11-22):** `third-party/README.md` is now generated from `skills.json`, and isn't grouped by invocation, which `skills.json` doesn't record ([ADR 0011](./0011-generate-the-skill-catalogs.md)).

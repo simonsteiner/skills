@@ -23,3 +23,5 @@ Two review skills for one activity meant two descriptions competing for the same
 - **This repo maintains the adapted parts.** Upstream changes to `code-review` (the 2026-10-07 standards-search and foreground sub-agents change is already folded in) won't arrive by sync; re-read upstream occasionally.
 - **`tdd` still names `code-review`** in a prose aside about the review stage. It's upstream's text, harmless, and not worth forking.
 - The curated entry moves to `archived` in `skills.json`; `--check` reports a leftover install, cleared with `npx skills remove -g code-review`.
+
+> **Note (2026-11-22):** The scripts bullet is superseded. `review-prs` now ships tested forge scripts, reads review threads through GraphQL itself, and supports Azure DevOps ([ADR 0010](./0010-review-prs-ships-forge-scripts-and-supports-azure-devops.md)). The rest of the decision stands.
