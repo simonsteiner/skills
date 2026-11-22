@@ -85,7 +85,9 @@ def main(argv):
         print(f"error: unknown argument '{' '.join(argv)}'\n{USAGE}", file=sys.stderr)
         return 2
     check = bool(argv)
-    if not check and not os.environ.get(PULLED):
+    if os.environ.get(PULLED):
+        status = int(os.environ[PULLED])  # the rerun after a pull: the checkout is already done
+    else:
         print("==> checkout", flush=True)
         before = git("rev-parse", "HEAD")[1]
         status = checkout(check)
@@ -95,17 +97,9 @@ def main(argv):
             # takes no arguments (main refused anything but --check), so the rerun passes none.
             os.execve(sys.executable, [sys.executable, str(SCRIPTS / "sync-skills.py")],
                       {**os.environ, PULLED: str(status)})
-        return finish(status, argv)
-    return finish(int(os.environ.get(PULLED) or 0), argv)
-
-
-def finish(status, argv):
-    """The steps after the checkout: links, curated installs, and with --check the checkout too."""
-    check = bool(argv)
     steps = [("owned skills", lambda: run("link-skills.py", *argv)),
              ("third-party skills", lambda: run("sync-third-party.py", *argv))]
     if check:
-        steps.insert(0, ("checkout", lambda: checkout(check)))
         steps.append(("third-party versions", lambda: run("sync-third-party.py", "--outdated")))
     for title, step in steps:
         print(f"==> {title}", flush=True)
