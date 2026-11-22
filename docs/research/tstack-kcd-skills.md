@@ -2,6 +2,8 @@
 
 What [t3dotgg/tstack](https://github.com/t3dotgg/tstack) (at `7de017b`, 2026-10-24) and [kentcdodds/kcd-skills](https://github.com/kentcdodds/kcd-skills) (at `3dbec3c`, 2026-10-25) offer this repo, assessed 2026-10-26. Both are MIT-licensed.
 
+> **Research notes, 2026-10-26.** Everything under Done landed. Nothing under Next has happened yet: `third-party/skills.json` has no `t3dotgg/tstack` source, `leaving-pr-comments` is undecided, and there's no owned ship-it skill.
+
 ## Quick summary
 
 - **tstack** fits. It targets Claude Code, Codex and T3 Code, which is the setup used here, and fills one real gap: nothing here waits on CI, follows a PR through review bots, or merges. `review-prs` and `address-review-findings` each make one pass and stop.
