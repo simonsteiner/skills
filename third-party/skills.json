@@ -4,8 +4,18 @@
     {
       "repo": "cloudflare/skills",
       "agents": ["claude-code", "github-copilot", "gemini-cli", "antigravity", "codex"],
-      "why": "Cloudflare's own skills for the developer platform. Curated across every agent that already had them — see docs/adr/0003. The repo also ships commands/ and rules/, which only its Claude Code plugin installs; skipped deliberately. Pared to the four in use as of October 2026, then to two in November 2026, when cloudflare and wrangler had gone unused; the rest are archived. The October entries below point at the umbrella cloudflare skill, which is now archived too.",
+      "why": "Cloudflare's own skills for the developer platform. Curated across every agent that already had them — see docs/adr/0003. The repo also ships commands/ and rules/, which only its Claude Code plugin installs; skipped deliberately. Pared to the four in use as of October 2026; the rest are archived.",
       "skills": [
+        {
+          "name": "cloudflare",
+          "path": "skills/cloudflare",
+          "why": "Umbrella platform skill — Workers, storage, AI, networking, security. Retrieval-first over live Cloudflare docs rather than pre-trained knowledge."
+        },
+        {
+          "name": "wrangler",
+          "path": "skills/wrangler",
+          "why": "Correct CLI syntax for deploys and resource management. Worth having loaded before any wrangler command."
+        },
         {
           "name": "workers-best-practices",
           "path": "skills/workers-best-practices",
@@ -52,16 +62,6 @@
           "name": "cloudflare-one-migrations",
           "path": "skills/cloudflare-one-migrations",
           "why": "Never invoked in chat history (Claude transcripts from 30 Aug, prompt history from May, Codex sessions Aug–Sep 2026). The umbrella cloudflare skill still covers the product and points to its docs."
-        },
-        {
-          "name": "cloudflare",
-          "path": "skills/cloudflare",
-          "why": "Never used in Claude Code; archived in November 2026. workers-best-practices and web-perf stay curated, and Cloudflare's docs cover the products directly."
-        },
-        {
-          "name": "wrangler",
-          "path": "skills/wrangler",
-          "why": "Never used in Claude Code; archived in November 2026. The CLI's own --help and Cloudflare's docs cover its syntax."
         }
       ]
     },

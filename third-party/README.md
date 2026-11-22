@@ -55,6 +55,8 @@ Cloudflare's own skills for the developer platform, all retrieval-first over liv
 
 ### Model-invoked
 
+- **[cloudflare](https://github.com/cloudflare/skills/blob/main/skills/cloudflare/SKILL.md)** — umbrella platform skill: Workers, storage, AI, networking, security, IaC.
+- **[wrangler](https://github.com/cloudflare/skills/blob/main/skills/wrangler/SKILL.md)** — correct CLI syntax for deploys and resource management.
 - **[workers-best-practices](https://github.com/cloudflare/skills/blob/main/skills/workers-best-practices/SKILL.md)** — authoring and reviewing Workers against production practices.
 - **[web-perf](https://github.com/cloudflare/skills/blob/main/skills/web-perf/SKILL.md)** — Core Web Vitals and load analysis via Chrome DevTools MCP.
 
@@ -107,7 +109,6 @@ Archived in October 2026 because chat history (Claude transcripts from late Augu
 Archived in November 2026 because they were never used in Claude Code:
 
 - **mattpocock/skills:** `handoff`.
-- **cloudflare/skills:** `cloudflare` and `wrangler`. `workers-best-practices` and `web-perf` stay curated; the October entries above that point at the umbrella `cloudflare` skill predate its archiving.
 - **vercel-labs/agent-skills:** `writing-guidelines`, which leaves nothing curated from that repo.
 
 Considered in October 2026 and declined, having sat installed outside the manifest:
