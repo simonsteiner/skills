@@ -18,7 +18,7 @@ The `tests` job runs all 356 tests (18.8 s, serial) on every commit that stages 
 |---|---|---|
 | Every commit, including every commit an agent makes in a `tdd` loop, waits ~19 s for a suite CI runs again anyway. | Run the suite once per push, or in parallel, as setup-lefthook prescribes. | −16 s per commit<br>repo follows its own hook rule |
 
-**After:** <!-- filled at Ship -->
+**After:** the `tests` job moved unchanged to a new `pre-push` section (`349b523`); pre-commit with a touched `scripts/tooling/catalog.py` staged takes 0.41 s, down from 19.07 s (the tests job was 18.85 s of it; target under 3 s). `npx lefthook run pre-push` on a docs-only range skips the suite ("no matching push files") and on a range with a `.py` file runs it in 18.84 s. The suite is unchanged at 356 tests, 18.5 s. S1 (`skills` added to CI's ruff paths and `AGENTS.md`, `a5b01d5`), S2 (single-test command in `AGENTS.md`, `a5b01d5`) and S3 (`skipUnless(uv)` and the `shutil` import dropped, `5fa459f`) rode along. No tests added; the one skip is gone. Found while building, not fixed: lefthook 2.2.1 takes pre-push files from `git diff HEAD @{push}` (fallback `origin/main...HEAD`), not the pushed refs; a push touching only `lefthook.yml` skips the suite because the glob (moved unchanged) doesn't list it; existing clones need `npx lefthook install` once (or `npm install`, whose `prepare` runs it) to get the pre-push hook.
 
 <details>
 <summary>Decisions</summary>
