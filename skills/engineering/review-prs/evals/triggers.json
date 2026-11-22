@@ -46,7 +46,7 @@
       "should_trigger": false
     },
     {
-      "query": "get this reviewed",
+      "query": "open one PR ready for review and don't merge it",
       "should_trigger": false
     }
   ]
