@@ -10,8 +10,8 @@ The backlog, in rank order. After the scan only three parts of the report change
 
 | ID | Candidate | Strength | Door | Lens | Status | Branch | PR | Breaking | Notes |
 |---|---|---|---|---|---|---|---|---|---|
-| [S1](#s1--lint-skillspy-takes-its-repo-like-the-modules-it-calls) | `lint-skills.py` takes its repo like the modules it calls | - | ↔ two-way | maintainability | in-progress | `refactor/sync-and-lint-seams` | | no | |
-| [S2](#s2--one-checkout-step-for-a-sync-and---check-tested-at-the-command) | One checkout step for a sync and `--check`, tested at the command | - | ↔ two-way | maintainability | in-progress | `refactor/sync-and-lint-seams` | | no | |
+| [S1](#s1--lint-skillspy-takes-its-repo-like-the-modules-it-calls) | `lint-skills.py` takes its repo like the modules it calls | - | ↔ two-way | maintainability | pr-open | `refactor/sync-and-lint-seams` | #106 | no | |
+| [S2](#s2--one-checkout-step-for-a-sync-and---check-tested-at-the-command) | One checkout step for a sync and `--check`, tested at the command | - | ↔ two-way | maintainability | pr-open | `refactor/sync-and-lint-seams` | #106 | no | |
 
 Strength: 🟢 Strong · 🟡 Worth exploring · ⚪ Speculative · 🔴 live defect (a bug reproduced during the scan).
 Door: ↔ two-way (a revert undoes it) · 🚪 one-way (a data migration, a published wire or file format, deleted user data; stops at Step 6 for the user).
