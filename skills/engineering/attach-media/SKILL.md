@@ -1,7 +1,7 @@
 ---
 name: attach-media
 description: >
-  Uploads local screenshots, images, GIFs, or screen recordings to GitHub and embeds them in a pull request, issue, or comment — the same attachment drag-and-drop makes in the web UI, no external hosting. Use when the user wants a screenshot or recording in a PR body, issue, or comment, asks to attach or embed an image on GitHub, or when a PR-body or review step has local before/after captures to show.
+  Uploads local screenshots, images, GIFs, or screen recordings to GitHub and embeds them in a pull request, issue, or comment: the same attachment drag-and-drop makes in the web UI, no external hosting. Use when the user wants a screenshot or recording in a PR body, issue, or comment, asks to attach or embed an image on GitHub, or when a PR-body or review step has local before/after captures to show.
 compatibility: Requires an authenticated gh CLI (2.99+ for --attach); the fallback script also needs jq.
 ---
 
@@ -11,9 +11,9 @@ Since gh 2.99, `gh pr create|edit|comment` and `gh issue create|edit|comment` ta
 
 ## 1. Collect the files
 
-Take only local paths the user gave or that this session produced (a screenshot just taken, a recording just rendered). A URL is already hosted: use it as is. No file, no upload — don't guess a path.
+Take only local paths the user gave or that this session produced (a screenshot just taken, a recording just rendered). A URL is already hosted: use it as is. No file, no upload; don't guess a path.
 
-Accepted: png, jpg, jpeg, gif, webp, svg, mov, mp4, webm. Anything else (pdf, zip, logs) is refused; say so and offer to put a log's relevant lines in a fenced block instead. GitHub caps images at 10 MB and videos at 10 MB on free plans, 100 MB on paid ones; downscale or trim a bigger capture first. Don't attach a capture that shows secrets, tokens, or personal data — crop or redact it: the upload can't be deleted, and it's public once a public body references it.
+Accepted: png, jpg, jpeg, gif, webp, svg, mov, mp4, webm. Anything else (pdf, zip, logs) is refused; say so and offer to put a log's relevant lines in a fenced block instead. GitHub caps images at 10 MB and videos at 10 MB on free plans, 100 MB on paid ones; downscale or trim a bigger capture first. Don't attach a capture that shows secrets, tokens, or personal data; crop or redact it: the upload can't be deleted, and it's public once a public body references it.
 
 ## 2. Write the body with local references
 
@@ -42,7 +42,7 @@ gh pr edit 12 --body-file "$shots/body.md" \
 - **Video:** `![](./flow.mp4)` alone in its paragraph becomes the bare URL GitHub renders as a player; anywhere else it degrades to a link. A bare `./flow.mp4` line is not a reference and stays as written.
 - **Not rewritten:** paths inside code spans or fences, and HTML `<img src>`. Use Markdown references.
 - **Existing body:** `gh pr edit <n> --attach <file>` with no body flag keeps the body and appends the file. To place it inside the existing text, fetch the body (`gh pr view <n> --json body --jq .body > /tmp/body.md`), add the reference, and pass `--body-file`.
-- **Partial failure:** what uploaded is still written, the command exits non-zero, and the error names the file. Fix that file and attach it with a second edit — don't rerun the whole command, which uploads every file again.
+- **Partial failure:** what uploaded is still written, the command exits non-zero, and the error names the file. Fix that file and attach it with a second edit; don't rerun the whole command, which uploads every file again.
 
 When this is a step in writing a PR body, hand the body back to that step with the `--attach` flags it needs, rather than posting it yourself.
 

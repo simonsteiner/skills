@@ -2,6 +2,7 @@
 """Check every owned skill against the rules this repo follows; CI and lefthook run it.
 
 - tooling/authoring_rules.py: the Agent Skills spec and best-practice guides, per skill
+  (tooling/script_rules.py: the rules for its bundled scripts)
 - tooling/published_rules.py: the AGENTS.md listing rules (the skill catalog that
   build-catalog.py renders is up to date, no unpublished skill in README.md, a reason
   for every curated and archived skill)

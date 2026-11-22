@@ -162,8 +162,8 @@ skill is loaded by calling the Skill tool with its name.
 
 {catalogue}
 
-For each message below, list every skill you would load before acting on it — none, one or
-several — as the agent in a real session with exactly these skills would. A skill whose
+For each message below, list every skill you would load before acting on it (none, one or
+several) as the agent in a real session with exactly these skills would. A skill whose
 description says to use it for this kind of request should be loaded even when you could do the
 work unaided. Judge each message on its own: they come from different sessions, in a repo with
 uncommitted work, and nothing else was said before it.

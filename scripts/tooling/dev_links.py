@@ -2,11 +2,11 @@
 
 The local equivalent of `npx skills add <repo>`, for live edits while developing skills
 here. It mirrors the layout skills.sh produces, so a dev link and a skills.sh install
-are interchangeable (never additive — no skill is linked twice):
+are interchangeable (never additive: no skill is linked twice):
 
     ~/.agents/skills/<name>               canonical store; a symlink to skills/<bucket>/<name>
     ~/.claude/skills/<name>               Claude Code's entry, a relative symlink into the
-      -> ../../.agents/skills/<name>      store — exactly as skills.sh creates it
+      -> ../../.agents/skills/<name>      store, exactly as skills.sh creates it
     ~/.gemini/config/skills/<name>        Antigravity's global entry, a relative symlink into
       -> ../../../.agents/skills/<name>   the store
 
@@ -41,8 +41,8 @@ def entry_target(home, agent_dir, name):
 
 
 def dead_links(skills, home, repo):
-    """Store links into this repo whose skill is gone — deleted, renamed, or moved to
-    deprecated/. Linking only ever adds, so these would otherwise linger."""
+    """Store links into this repo whose skill is gone (deleted, renamed, or moved to
+    deprecated/). Linking only ever adds, so these would otherwise linger."""
     live = {str(s.folder) for s in skills}
     prefix = f"{repo / 'skills'}{os.sep}"
     if not home.store.is_dir():
@@ -63,9 +63,9 @@ def check(skills, home, repo, command="scripts/link-skills.py"):
         if not missing:
             found.append(Status("ok", s.name))
         else:
-            found.append(Status("missing", s.name, f"(not linked into {', '.join(missing)} — run {command})"))
+            found.append(Status("missing", s.name, f"(not linked into {', '.join(missing)}; run {command})"))
     for link in dead_links(skills, home, repo):
-        found.append(Status("dead", link.name, f"({link} -> {os.readlink(link)} — run {command})"))
+        found.append(Status("dead", link.name, f"({link} -> {os.readlink(link)}; run {command})"))
     return found
 
 

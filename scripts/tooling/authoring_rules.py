@@ -18,14 +18,7 @@ https://agentskills.io/skill-creation/using-scripts):
 - no vague filler ("handle errors appropriately", "follow best practices"): say what
   the agent would get wrong instead
 - one-off `npx` / `bunx` / `uvx` / `pipx run` commands in code pin a version, not a dist-tag
-- a bundled script has a shebang, is executable, answers `--help`, never prompts
-  (no `read -p`, `/dev/tty`, `input()`, `getpass`), and if Python, imports only stdlib
-  (or sibling modules) unless it declares PEP 723 dependencies (`# /// script`); an import
-  in an `except ImportError:` fallback (`try: import tomllib` / `except ImportError: import
-  tomli`) is optional, so it doesn't count
-- a Python script with a PEP 723 `# /// script` block has a `uv run --script` shebang, so
-  running it directly installs what the block declares
-  (https://docs.astral.sh/uv/guides/scripts/#using-a-shebang-to-create-an-executable-file)
+- a bundled script passes the rules in tooling/script_rules.py
 
 From Anthropic's skill authoring best practices
 (https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices):
@@ -67,13 +60,11 @@ Repo convention:
 lint-skills.py runs check(); tests/tooling/test_authoring_rules.py tests it.
 """
 
-import ast
-import os
 import re
-import sys
 from pathlib import Path
 
 from . import evals, third_party, triggers
+from .script_rules import check_script
 
 MAX_BODY_LINES = 500
 MAX_BODY_TOKENS = 5000
@@ -93,16 +84,9 @@ VAGUE_DESCRIPTION = ("helps with", "various", "general purpose", "general-purpos
 DESCRIPTION_LABEL = re.compile(r"\b(?:triggers on|use cases|when to use)\s*:", re.IGNORECASE)
 MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
 UNPINNED = re.compile(r"\b(?:npx|bunx|uvx|pipx run)\s+(?:-\S*\s+)*(@?[a-z][\w./-]*(?:[@=]=?\S+)?)")
-# a fenced block: ``` or ~~~, three or more, indented or not (list items), closed by a line of
-# nothing but at least the same run; a fence line with an info string inside is content (CommonMark)
-FENCED = re.compile(r"^[ \t]*(`{3,}|~{3,})[^\n]*\n(.*?)^[ \t]*\1(?:(?<=`)`*|(?<=~)~*)[ \t]*$", re.DOTALL | re.MULTILINE)
+FENCE_OPEN = re.compile(r"[ \t]*(`{3,}|~{3,})")
 BARE_SCRIPT = re.compile(r"(?<![\w/.>-])(?:\./)?(scripts/[\w.-]+)")
 CODE = re.compile(r"```.*?```|`[^`\n]+`", re.DOTALL)  # fenced blocks and inline code spans
-PROMPTS = re.compile(r"\bread\s+(?:-\w+\s+)*-p\b|/dev/tty|\binput\(|\bgetpass\b")
-PEP723_BLOCK = re.compile(r"(?m)^# /// script[ \t]*\r?\n((?:^#[^\n]*\n)*?)^# ///[ \t]*$")
-PEP723_DEPS = re.compile(r"""(?m)^dependencies\s*=\s*\[[^\]]*['"]""")
-UV_SCRIPT_SHEBANG = re.compile(r"#!.*\buv\s+run\b.*\s--script\b")
-IMPORT_ERRORS = frozenset({"ImportError", "ModuleNotFoundError"})
 CREDITS = "CREDITS.md"  # upstream notices, exempt from the prose and reference checks
 STRAY_TEST = re.compile(r"test_.*\.py|.*_test\.py|.*\.(?:test|spec)\.\w+")
 
@@ -315,87 +299,32 @@ def _prose_problems(text):
     return out
 
 
+def _fenced_blocks(text):
+    """The contents of each fenced block: ``` or ~~~, three or more, indented or not (list items),
+    closed by a line of nothing but at least the same run; a fence line with an info string inside
+    is content (CommonMark). An opener that never closes is skipped."""
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        opener = FENCE_OPEN.match(lines[i])
+        if opener:
+            run = opener[1]
+            closer = re.compile(rf"[ \t]*{re.escape(run[0])}{{{len(run)},}}[ \t]*")
+            end = next((j for j in range(i + 1, len(lines)) if closer.fullmatch(lines[j])), None)
+            if end is not None:
+                yield "\n".join(lines[i + 1:end]) + "\n"
+                i = end
+        i += 1
+
+
 def _command_problems(folder, text):
     """Commands in one Markdown file: bundled scripts run by a bare path, unpinned one-off packages."""
     out = []
-    for block in FENCED.finditer(text):
-        for path in sorted(set(BARE_SCRIPT.findall(block[2]))):
+    for block in _fenced_blocks(text):
+        for path in sorted(set(BARE_SCRIPT.findall(block))):
             if (folder / path).is_file():
                 out.append(f"code block runs {path!r}; write <skill-dir>/{path}, agents run it from the user's repo")
     for pkg in UNPINNED.findall("\n".join(CODE.findall(text))):
         if not re.search(r"@\d|==\d", pkg):
             out.append(f"unpinned one-off command for {pkg!r}; pin a version (pkg@1.2.3)")
-    return out
-
-
-def _has_pep723_dependencies(text):
-    """Whether `text` has a closed `# /// script` block declaring at least one dependency."""
-    for block in PEP723_BLOCK.finditer(text):
-        lines = [line[2:] if line.startswith("# ") else line[1:] for line in block.group(1).splitlines()]
-        body = "\n".join(line for line in lines if not line.lstrip().startswith("#"))
-        if PEP723_DEPS.search(body):
-            return True
-    return False
-
-
-def _catches_import_error(handler):
-    """Whether an `except` clause catches ImportError (alone, or in a tuple)."""
-    names = handler.type.elts if isinstance(handler.type, ast.Tuple) else [handler.type]
-    return any(isinstance(n, ast.Name) and n.id in IMPORT_ERRORS for n in names)
-
-
-def _import_fallbacks(tree):
-    """The import nodes inside an `except ImportError:` clause: optional, tried only when the first import fails."""
-    return {
-        node
-        for t in ast.walk(tree) if isinstance(t, ast.Try)
-        for handler in t.handlers if handler.type is not None and _catches_import_error(handler)
-        for node in ast.walk(handler) if isinstance(node, (ast.Import, ast.ImportFrom))
-    }
-
-
-def _python_import_problems(f, text):
-    """Bundled Python scripts stay stdlib-only unless they declare PEP 723 dependencies."""
-    try:
-        tree = ast.parse(text, filename=str(f))
-    except SyntaxError as err:
-        return [(f, f"bundled Python script has a syntax error: {err.msg}")]
-    if _has_pep723_dependencies(text):
-        return []
-    local = {p.stem for p in f.parent.glob("*.py")} | {
-        p.name for p in f.parent.iterdir() if p.is_dir() and (p / "__init__.py").exists()
-    }
-    fallbacks = _import_fallbacks(tree)
-    imported = set()
-    for node in ast.walk(tree):
-        if node in fallbacks:
-            continue
-        if isinstance(node, ast.Import):
-            imported.update(alias.name.split(".")[0] for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
-            imported.add(node.module.split(".")[0])
-    third_party = sorted(imported - sys.stdlib_module_names - local)
-    return [(f, f"bundled Python script imports non-stdlib module {mod!r} without PEP 723 dependencies")
-            for mod in third_party]
-
-
-def check_script(f):
-    """(path, problem) pairs for one file under a skill's scripts/."""
-    try:
-        text = f.read_text()
-    except UnicodeDecodeError:
-        return [(f, "bundled script isn't text")]
-    out = []
-    if not text.startswith("#!"):
-        out.append((f, "bundled script has no shebang"))
-    if not os.access(f, os.X_OK):
-        out.append((f, "bundled script isn't executable"))
-    if "--help" not in text:
-        out.append((f, "bundled script doesn't answer --help"))
-    if PROMPTS.search(text):
-        out.append((f, "bundled script prompts for input; take it from flags, env or stdin"))
-    if f.suffix == ".py":
-        if PEP723_BLOCK.search(text) and not UV_SCRIPT_SHEBANG.match(text):
-            out.append((f, "bundled Python script has a PEP 723 block but no `uv run --script` shebang"))
-        out.extend(_python_import_problems(f, text))
     return out

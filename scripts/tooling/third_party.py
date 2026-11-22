@@ -32,7 +32,7 @@ def _stderr(msg):
     print(msg, file=sys.stderr, flush=True)
 
 # The per-agent skill directories the skills.sh CLI wires up, relative to the home
-# directory. Used only to report drift and to link universal agents — installs go
+# directory. Used only to report drift and to link universal agents; installs go
 # through the CLI, which owns the real agent-to-path map, so an agent missing here just
 # goes unreported, never uninstalled.
 AGENT_DIRS = {
@@ -46,7 +46,7 @@ AGENT_DIRS = {
 # skills.sh treats these agents as "universal": a global install writes the store and
 # never touches the agent's own directory. Whether each agent also reads the store
 # varies by agent and version, so the sync links every curated skill into their
-# directories itself — a symlink into the store is current whichever path is read
+# directories itself; a symlink into the store is current whichever path is read
 # (docs/adr/0003).
 UNIVERSAL = ("codex", "github-copilot", "gemini-cli", "antigravity")
 
@@ -157,7 +157,7 @@ def install_commands(manifest):
     """One `npx skills add` per source with something curated.
 
     A source with nothing curated is skipped: with no --skill flag the CLI would install
-    every skill in the repo. One --skill / --agent flag per value — the CLI reads a
+    every skill in the repo. One --skill / --agent flag per value; the CLI reads a
     comma-separated list as a single name.
     """
     commands = []
@@ -210,7 +210,7 @@ def link(manifest, home, log=_stdout, err=_stderr):
         if destination.exists() or destination.is_symlink():
             if os.path.realpath(destination) == os.path.realpath(source):
                 continue
-            err(f"error: refusing to replace '{destination}' — it isn't a link to the curated copy in the store.")
+            err(f"error: refusing to replace '{destination}'; it isn't a link to the curated copy in the store.")
             err("       If it's a stale copy from another channel, move it aside and re-run the sync.")
             failed.append(f"link {want.name} into {want.agent}")
             continue
@@ -267,7 +267,7 @@ def _lock_findings(manifest, lock):
     archived = {k.name for k in manifest.archived}
     for name, entry in lock.items():
         if name in archived:
-            found.append(Finding("archived", name, f"is still installed — remove it with: npx skills remove -g {name}"))
+            found.append(Finding("archived", name, f"is still installed; remove it with: npx skills remove -g {name}"))
         elif entry.get("source") and entry.get("sourceType") == "github" and name not in curated:
             found.append(Finding("uncurated", name, f"(installed from {entry['source']})"))
     return found
@@ -276,7 +276,7 @@ def _lock_findings(manifest, lock):
 def _unmanaged_findings(manifest, home, lock, owned):
     """Sitting in the store or an agent's directory with nothing managing it: absent from
     the lock file, uncurated, and not owned here. That's how another channel's install
-    shows up — a plugin marketplace, or a hand copy — as a frozen snapshot with no
+    shows up (a plugin marketplace, or a hand copy) as a frozen snapshot with no
     upgrade path (docs/adr/0003). The store is scanned too: a store entry whose lock
     record is gone is unmanaged in exactly the sense that matters."""
     known = set(lock) | {k.name for k in manifest.curated} | set(owned)
@@ -293,7 +293,7 @@ def _unmanaged_findings(manifest, home, lock, owned):
 
 def _copy_findings(manifest, home):
     """A curated skill can hold different content in the store and in an agent directory.
-    Only an agent copy older than the store is actionable — an agent that missed an
+    Only an agent copy older than the store is actionable: an agent that missed an
     update. The reverse is a vestigial store entry: the CLI installs new skills straight
     into the agent directory and never refreshes an old store copy, so those get one
     summary line. Universal agents' directories are checked link by link instead."""
@@ -308,7 +308,7 @@ def _copy_findings(manifest, home):
             if not there.exists() or not here.exists() or there.read_bytes() == here.read_bytes():
                 continue
             if there.stat().st_mtime < here.stat().st_mtime:
-                found.append(Finding("drift", k.name, f"({d} is older than the store — re-sync from a plain terminal)"))
+                found.append(Finding("drift", k.name, f"({d} is older than the store; re-sync from a plain terminal)"))
             else:
                 vestigial += 1
     if vestigial:
@@ -324,9 +324,9 @@ def _link_findings(manifest, home):
         if os.path.realpath(destination) == os.path.realpath(home.store / want.name):
             continue
         if destination.is_symlink() or not destination.exists():
-            detail = f"({want.agent} is missing the link {destination} — run the sync)"
+            detail = f"({want.agent} is missing the link {destination}; run the sync)"
         else:
-            detail = f"({destination} is a stale copy, not a link into the store — move it aside, then run the sync)"
+            detail = f"({destination} is a stale copy, not a link into the store; move it aside, then run the sync)"
         found.append(Finding("drift", want.name, detail))
     return found
 
@@ -365,8 +365,8 @@ def _invocation_findings(manifest, home):
         actual = invocation(installed)
         if actual != k.invocation:
             found.append(Finding("invocation", k.name,
-                                 f"(skills.json says {k.invocation}-invoked; the installed copy is {actual}-invoked "
-                                 "— update skills.json and run scripts/build-catalog.py)"))
+                                 f"(skills.json says {k.invocation}-invoked; the installed copy is {actual}-invoked; "
+                                 "update skills.json and run scripts/build-catalog.py)"))
     return found
 
 
@@ -421,7 +421,7 @@ def outdated(manifest, home, folders=github_folders):
             found.append(Finding("outdated", k.name, f"({k.repo} no longer has {folder or 'a root skill'}/)"))
         elif upstream != entry.get("skillFolderHash"):
             since = (entry.get("updatedAt") or entry.get("installedAt") or "?")[:10]
-            found.append(Finding("outdated", k.name, f"({k.repo} changed it since the install of {since} — run the sync)"))
+            found.append(Finding("outdated", k.name, f"({k.repo} changed it since the install of {since}; run the sync)"))
     return found
 
 
@@ -429,7 +429,7 @@ def listing(manifest):
     """The curated list with the reason for each skill, as lines."""
     lines = []
     for s in manifest.sources:
-        lines += ["", f"{s.repo} — {s.why}"]
+        lines += ["", f"{s.repo}: {s.why}"]
         lines += [f"  {k.name:<30} {k.why}" for k in s.skills]
         lines += [f"  {k.name + ' (archived)':<30} {k.why}" for k in s.archived]
     return lines

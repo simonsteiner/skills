@@ -42,13 +42,13 @@ class DevLinksTest(unittest.TestCase):
 
     def test_check_reports_what_isnt_linked(self):
         self.assertEqual(self.statuses(), [
-            f"missing   a (not linked into {self.claude}, {self.antigravity} — run link)",
-            f"missing   b (not linked into {self.claude}, {self.antigravity} — run link)",
+            f"missing   a (not linked into {self.claude}, {self.antigravity}; run link)",
+            f"missing   b (not linked into {self.claude}, {self.antigravity}; run link)",
         ])
         link(self.skills, self.home, self.repo, self.log.append)
         (self.antigravity / "a").unlink()
         self.assertEqual(self.statuses(), [
-            f"missing   a (not linked into {self.antigravity} — run link)",
+            f"missing   a (not linked into {self.antigravity}; run link)",
             "ok        b",
         ])
 
@@ -73,8 +73,8 @@ class DevLinksTest(unittest.TestCase):
         (self.store / "other").symlink_to("/elsewhere")
         (self.store / "c").symlink_to(self.repo / "skills/deprecated/c")
         self.assertEqual(self.statuses()[2:], [
-            f"dead      c ({self.store / 'c'} -> {self.repo / 'skills/deprecated/c'} — run link)",
-            f"dead      gone ({self.store / 'gone'} -> {self.repo / 'skills/engineering/gone'} — run link)",
+            f"dead      c ({self.store / 'c'} -> {self.repo / 'skills/deprecated/c'}; run link)",
+            f"dead      gone ({self.store / 'gone'} -> {self.repo / 'skills/engineering/gone'}; run link)",
         ])
         link(self.skills, self.home, self.repo, self.log.append)
         self.assertEqual(self.log[-2:], ["pruned c", "pruned gone"])

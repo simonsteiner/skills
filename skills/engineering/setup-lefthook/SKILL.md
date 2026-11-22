@@ -1,7 +1,7 @@
 ---
 name: setup-lefthook
 description: >
-  Sets up lefthook git hooks in a project — installs lefthook the way the stack expects, writes a lefthook.yml whose pre-commit jobs fix and check only what's staged, and adds a per-file token budget that blocks oversized agent-written files with instructions for splitting them. Use when the user wants pre-commit or pre-push hooks, asks to add or set up lefthook, wants lint, format or type checks on commit, or wants to stop agents committing huge files.
+  Sets up lefthook git hooks in a project: installs lefthook the way the stack expects, writes a lefthook.yml whose pre-commit jobs fix and check only what's staged, adds a per-file token budget that blocks oversized agent-written files with instructions for splitting them, and blocks em and en dashes in staged files. Use when the user wants pre-commit or pre-push hooks, asks to add or set up lefthook, wants lint, format or type checks on commit, or wants to stop agents committing huge files or em dashes.
 ---
 
 # Setup Lefthook
@@ -16,7 +16,7 @@ Before writing a line, find out:
 
 - **Stack and package manager**: `uv.lock` / `pyproject.toml`, `package.json` with `package-lock.json` or `pnpm-lock.yaml`, `Cargo.toml`. A second stack in a subfolder (`web/package.json` in a Python repo) gets its own jobs with `root:`.
 - **What CI runs**, in `.github/workflows/`: each lint, format, type and test step, and the version it pins. A hook runs the same command at the same version; say so in its comment ("Same as CI's ruff step; bump the version in both places").
-- **Tool configs already there**: `ruff.toml` / `[tool.ruff]`, `[tool.mypy]` / `mypy.ini`, `biome.json`, `tsconfig.json`, `.rumdl.toml`, `cspell.json`. Hook what the project uses. For a project with nothing yet, the baseline is: Python → ruff, mypy, pytest on push; TypeScript → biome, tsc, tests on push; every project → rumdl for Markdown and the token budget.
+- **Tool configs already there**: `ruff.toml` / `[tool.ruff]`, `[tool.mypy]` / `mypy.ini`, `biome.json`, `tsconfig.json`, `.rumdl.toml`, `cspell.json`. Hook what the project uses. For a project with nothing yet, the baseline is: Python → ruff, mypy, pytest on push; TypeScript → biome, tsc, tests on push; every project → rumdl for Markdown, the token budget and the dash check.
 - **SonarQube**: `sonar-project.properties`, `.sonarlint/connectedMode.json`, a SonarQube or SonarCloud step in CI, or a Sonar check on PRs. A Sonar project gets the catalog's [SonarQube](references/JOBS.md#sonarqube) job. A `sonar integrate git` hook already installed (a global `core.hooksPath` pointing at Sonar's hooks, or a `# sonar:begin` block in `.husky/`) is replaced by that job, the same as any other existing hook.
 - **Existing hooks**: `.husky/`, `.pre-commit-config.yaml`, `core.hooksPath`. Carry their checks over and remove the old setup in the same change, or both run.
 
@@ -45,12 +45,14 @@ Compose it from the jobs in [references/JOBS.md](references/JOBS.md). These rule
 
 ## 4. Add the token budget
 
-Every project gets a pre-commit job that blocks any staged file over 5,000 tokens (bytes / 4), so no file grows past what an agent can read whole. [scripts/check-file-tokens.py](scripts/check-file-tokens.py) does it; it's stdlib Python, so it works in a Node or Rust repo too. Projects don't copy it: lefthook fetches it from this skill's repo as a `remotes:` entry pinned to a `filetokens.v*` tag, so every repo runs the same reviewed version.
+Every project gets a pre-commit job that blocks any staged file over 5,000 tokens (bytes / 4), so no file grows past what an agent can read whole. [scripts/check-file-tokens.py](scripts/check-file-tokens.py) does it; it's stdlib Python, so it works in a Node or Rust repo too. Projects don't copy it: lefthook fetches it from this skill's repo as a `remotes:` entry pinned to a `hooks.v*` tag, so every repo runs the same reviewed version. The same remote ships the dash check (step 5).
 
 1. Add the `remotes:` entry, the `file-tokens` job and `min_version: 2.0.5` from the catalog's [Every project](references/JOBS.md#every-project) section. The job goes in the project's own `lefthook.yml`, never only in the remote: that way a clone that can't fetch the remote fails the commit instead of skipping the check, and the project sets its budget in the job's `args:` (`--max-tokens 5000`). No `glob:`: every file type counts.
 2. Run `lefthook install` once (in a Node project, `npm install` does it through `prepare`). The first hook run clones the tag into `.git/info/lefthook-remotes/`; after that it works offline.
 
-`ref:` takes a tag with no `-` or `/` in it (`filetokens.v1.0.0`), never a commit SHA; the catalog says why. To update, change `ref:` to the new tag; the next commit in each clone fetches it, and one that can't (offline, tag not pushed yet) keeps running the previous version.
+`ref:` takes a tag with no `-` or `/` in it (`hooks.v1.0.0`), never a commit SHA; the catalog says why. To update, change `ref:` to the new tag; the next commit in each clone fetches it, and one that can't (offline, tag not pushed yet) keeps running the previous version.
+
+**A project already on the remote** with a `filetokens.v*` ref: bump `ref:` to the latest `hooks.v*` tag and add the dash job. Its `configs:` entry (`lefthook/file-tokens.yml`) keeps working; new projects load `lefthook/hooks.yml`.
 
 **A project that already has a copy** (`scripts/hooks/check-file-tokens.py`, sometimes `tools/hooks/`): delete it in the same change, and replace its `file-tokens` command with the catalog's job, keeping the `--max-tokens` it passed. Drop the folder if nothing else lives in it, and anything that pointed at the copy (a ruff or cspell exclude, a README line). Add `".git/**"` to the `exclude` list in `.rumdl.toml` (see the catalog), and the remote's words (`filetokens`, `simonsteiner`) to the cspell dictionary when cspell checks `*.yml`.
 
@@ -65,15 +67,25 @@ When it fails, it lists each file with its size and how many files to split it i
 
 ---
 
-## 5. Prove it works
+## 5. Add the dash check
+
+Every project also gets a pre-commit job that blocks em and en dashes in staged files. They are the punctuation that most marks prose, comments and docs as machine-written, and agents reach for them by habit; the hook makes the agent rewrite each one with the punctuation the sentence needs. [scripts/check-dashes.py](scripts/check-dashes.py) does it, from the same remote and tag as the token budget, with the same exemptions (lockfiles, data, vendored, binary and generated files). It prints `path:line:col` for each dash and how to rewrite it.
+
+Add the `dashes` job from the catalog's [Every project](references/JOBS.md#every-project) section, in the same `jobs:` list as `file-tokens`. A file that must hold dashes (translations, typography tests, quoted third-party text) goes in the job's `exclude:`; code that must produce one uses an escape (`\u2014`).
+
+**Files that already have dashes** fail the next commit that touches them. Run the job over every tracked file (`lefthook run pre-commit --job dashes --all-files`) and report the count per file. Mark tool-written files (a generated `CHANGELOG.md`) `linguist-generated` in this change, as for the token budget. Rewriting the rest is separate work: offer it, as one punctuation-only commit that keeps each sentence's meaning.
+
+---
+
+## 6. Prove it works
 
 ```bash
 uv run lefthook validate          # or: npm exec -- lefthook validate
 uv run lefthook run pre-commit --all-files
 ```
 
-The first run clones the token-budget remote, so it needs network once. Every job should pass or fail for a real reason; fix the config until a clean tree passes. Then stage a file over the budget, run `lefthook run pre-commit`, confirm it fails with the split instructions, and unstage it.
+The first run clones the token-budget remote, so it needs network once. Every job should pass or fail for a real reason; fix the config until a clean tree passes. Then stage a file over the budget, run `lefthook run pre-commit`, confirm it fails with the split instructions, and unstage it; do the same with a file holding an em dash.
 
 Mention the hooks in the README's development section: what runs on commit, what on push, and how to skip once (`LEFTHOOK=0 git commit …`, for emergencies).
 
-Report the jobs added and which run whole versus on staged files, any old hook setup removed, and the files already over the budget.
+Report the jobs added and which run whole versus on staged files, any old hook setup removed, the files already over the budget, and the files that already have dashes.

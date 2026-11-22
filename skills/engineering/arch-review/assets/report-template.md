@@ -40,7 +40,7 @@ The backlog, in rank order. After the scan only three parts of the report change
 | ID | Candidate | Strength | Door | Lens | Status | Branch | PR | Breaking | Notes |
 |---|---|---|---|---|---|---|---|---|---|
 | [C1](C1-<card-slug>.md) | <names the fix> | 🟢 Strong · 🔴 live defect | ↔ two-way | deepening | todo | `refactor/<slug>` | | | |
-| [S1](#s1--title) | <smaller finding> | — | ↔ two-way | maintainability | todo | rides with C1 | | | |
+| [S1](#s1--title) | <smaller finding> | - | ↔ two-way | maintainability | todo | rides with C1 | | | |
 
 Strength: 🟢 Strong · 🟡 Worth exploring · ⚪ Speculative · 🔴 live defect (a bug reproduced during the scan).
 Door: ↔ two-way (a revert undoes it) · 🚪 one-way (a data migration, a published wire or file format, deleted user data; stops at Step 6 for the user).
@@ -62,7 +62,7 @@ flowchart LR
 
 ## Since the last review
 
-- `<YYYY-MM-DD> C3` — <merged in #41 | still open | dropped because …>
+- `<YYYY-MM-DD> C3`: <merged in #41 | still open | dropped because …>
 
 ## Smaller findings
 
@@ -75,7 +75,7 @@ flowchart LR
 ## Recommendation
 
 > [!IMPORTANT]
-> **Start with [C1 · <title>](C1-<card-slug>.md)** — <one sentence on why this one first>.
+> **Start with [C1 · <title>](C1-<card-slug>.md)**: <one sentence on why this one first>.
 >
 > **Proposed batch** (every 🟢 Strong, in order): C1 → C3 → C2
 

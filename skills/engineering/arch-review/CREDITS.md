@@ -2,9 +2,9 @@
 
 Adapted from three MIT-licensed skills:
 
-- `improve-codebase-architecture` from <https://github.com/mattpocock/skills> — the scan questions, YAGNI scoping, candidate format, strength scale, the HTML report's layout, diagram patterns and tone rules, carried over into the Markdown template (`assets/report-template.md`, `assets/card-template.md`, `REPORT.md`), and the vocabulary rules.
-- `thermo-nuclear-code-quality-review` from <https://github.com/cursor/plugins> (`cursor-team-kit`) — the maintainability lens and the approval bar.
-- `untangle-codebase` from <https://github.com/caldoai/skills> — the coupling lens (the "should these pieces change together?" question and its hidden links, needless links and surplus), special cases as evidence of a missing design grouped under the one fix behind them (the card's **Removes** list), git co-change as evidence (`scripts/co-change.py`, written here), comments that restate the code, and the approval-bar line on changes that land in one place.
+- `improve-codebase-architecture` from <https://github.com/mattpocock/skills>: the scan questions, YAGNI scoping, candidate format, strength scale, the HTML report's layout, diagram patterns and tone rules, carried over into the Markdown template (`assets/report-template.md`, `assets/card-template.md`, `REPORT.md`), and the vocabulary rules.
+- `thermo-nuclear-code-quality-review` from <https://github.com/cursor/plugins> (`cursor-team-kit`): the maintainability lens and the approval bar.
+- `untangle-codebase` from <https://github.com/caldoai/skills>: the coupling lens (the "should these pieces change together?" question and its hidden links, needless links and surplus), special cases as evidence of a missing design grouped under the one fix behind them (the card's **Removes** list), git co-change as evidence (`scripts/co-change.py`, written here), comments that restate the code, and the approval-bar line on changes that land in one place.
 
 The one-way / two-way door label on each candidate is an idea from the `review-and-recommend` skill in <https://github.com/kentcdodds/kcd-skills>, reworded; no text is carried over.
 

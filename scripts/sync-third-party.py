@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Install and upgrade the third-party skills curated in third-party/skills.json.
 
-These skills are NOT part of this repo — nothing is forked, copied, or vendored. The
+These skills are NOT part of this repo; nothing is forked, copied, or vendored. The
 manifest records which upstream skills are worth having and why; this script hands that
 list to the skills.sh CLI, which fetches them from their own repos into the global store
 (~/.agents/skills) and wires them into each agent's skill dir.
@@ -12,7 +12,7 @@ list to the skills.sh CLI, which fetches them from their own repos into the glob
     scripts/sync-third-party.py --list      print the curated list and the reason for each
 
 `skills add` re-fetches a skill that's already installed, so a plain sync IS the upgrade
-path — there is no separate update step to remember. What that also means: **there is no
+path, so there is no separate update step to remember. What that also means: **there is no
 version pinning.** Every sync moves each skill to whatever is on its upstream default
 branch today. If you ever need a reproducible pinned version, curation is the wrong tool
 and you'd have to vendor the skill instead. --outdated says whether a sync would change
@@ -24,7 +24,7 @@ the agent it's running under and installs non-interactively to that agent alone,
 sync started inside Claude Code updates the store and Claude Code and silently leaves
 every other agent in the manifest on its old copy.
 
-Skills this repo owns (skills/**) are installed a different way — linked from a clone
+Skills this repo owns (skills/**) are installed a different way: linked from a clone
 by scripts/link-skills.py (scripts/sync-skills.py runs both), or with
 `npx skills add simonsteiner/skills`. The two
 sets must never overlap; scripts/tooling/skill_inventory.py enforces that.
@@ -74,7 +74,7 @@ def main(argv):
     # With no --agent the CLI would pick agents itself, and no universal links get made.
     agentless = [s.repo for s in manifest.sources if s.skills and not s.agents]
     if agentless and mode != "list":
-        print(f"error: no agents for {', '.join(agentless)} — set `agents` on the source or at the top level "
+        print(f"error: no agents for {', '.join(agentless)}; set `agents` on the source or at the top level "
               "of third-party/skills.json", file=sys.stderr)
         return 1
 
@@ -92,7 +92,7 @@ def main(argv):
 def check(manifest, home, owned):
     """Report how the installed skills differ from the manifest; 1 when any finding fails."""
     if not home.lock.exists():
-        print(f"error: no skills.sh lock file at {home.lock} — nothing installed yet. Run without --check.",
+        print(f"error: no skills.sh lock file at {home.lock}; nothing installed yet. Run without --check.",
               file=sys.stderr)
         return 1
     findings = third_party.check(manifest, home, owned)
@@ -104,7 +104,7 @@ def check(manifest, home, owned):
 def outdated(manifest, home):
     """Report the curated skills a sync would change; 1 when any would, or couldn't be checked."""
     if not home.lock.exists():
-        print(f"error: no skills.sh lock file at {home.lock} — nothing installed yet. Run without --outdated.",
+        print(f"error: no skills.sh lock file at {home.lock}; nothing installed yet. Run without --outdated.",
               file=sys.stderr)
         return 1
     findings = third_party.outdated(manifest, home)

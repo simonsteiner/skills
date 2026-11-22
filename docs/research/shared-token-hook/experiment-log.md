@@ -40,7 +40,7 @@ File token limit: 1 staged file is over 5,000 tokens (bytes / 4).
 …split instructions…
 ```
 
-## A–C. Merge precedence (`lefthook dump`)
+## A-C. Merge precedence (`lefthook dump`)
 
 The remote's job sets `args: --max-tokens 5000 {staged_files}`.
 
@@ -85,7 +85,7 @@ $ lefthook run pre-commit
 ✓ file-tokens (0.04 seconds)
 ```
 
-## F–J. Remote unreachable (`mv remote.git remote.git.off`)
+## F-J. Remote unreachable (`mv remote.git remote.git.off`)
 
 ```text
 # F: clone already present, ref pinned → no fetch, commit passes
@@ -154,7 +154,7 @@ size-pack: 408.34 KiB
 $ time git clone -q --depth 1 https://github.com/simonsteiner/skills.git   # 0.56 s
 $ du -sh skills skills/.git; git -C skills ls-files | wc -l
 1.1M skills   103
-$ gh api repos/simonsteiner/skills/tags     # [] — no tags yet
+$ gh api repos/simonsteiner/skills/tags     # [], no tags yet
 ```
 
 ## uv, npm and Python runs
@@ -162,7 +162,7 @@ $ gh api repos/simonsteiner/skills/tags     # [] — no tags yet
 `UV_CACHE_DIR` and `npm_config_cache` were pointed at fresh dirs under `/tmp/lhx`. The local package `file-tokens` wraps the script with a `check-file-tokens` entry point and is tagged `v1.0.0`.
 
 ```text
-uvx --from git+file:///tmp/lhx/uvexp/pkg@v1.0.0 check-file-tokens c.md     cold 0.36 s, warm 0.06–0.07 s
+uvx --from git+file:///tmp/lhx/uvexp/pkg@v1.0.0 check-file-tokens c.md     cold 0.36 s, warm 0.06-0.07 s
 uvx -v … @v1.0.0                       DEBUG Performing a Git fetch for: file:///tmp/lhx/uvexp/pkg   (every run)
 source dir moved away, @v1.0.0 (UV_OFFLINE=1 or not)   error: … failed to fetch branch or tag `v1.0.0`
 source dir moved away, @<SHA> (UV_OFFLINE=1 or not)    rc=0 (served from cache)
@@ -176,7 +176,7 @@ UV_OFFLINE=1 uvx --from git+$R@v1.1.1  cause: Remote Git fetches are not allowed
 
 uvx cowsay@6.1 -t hi                   warm 0.04 s ×3; UV_OFFLINE=1 0.04 s; -v: "Found fresh response for: https://pypi.org/simple/cowsay/"
 
-npx --yes git+file:///tmp/lhx/npmexp/pkg#v1.0.0 a.md   cold 0.65 s, warm 0.39–0.40 s;  #<SHA> warm 0.36 s
+npx --yes git+file:///tmp/lhx/npmexp/pkg#v1.0.0 a.md   cold 0.65 s, warm 0.39-0.40 s;  #<SHA> warm 0.36 s
 source moved away: npx --yes --offline …#<SHA> → exit 128, no output;  npx --yes …#v1.0.0 → exit 128
 
 python3.9 -I check-file-tokens.py --max-tokens 100 c.md mid.txt   → works on 3.9 (rc=1, mid.txt listed)

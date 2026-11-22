@@ -5,39 +5,22 @@
 
 import os
 import subprocess
-import tempfile
 import unittest
 from pathlib import Path
 
+from tests.skill_scripts.staged_repo import ENV, StagedRepoTest
+
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "skills/engineering/setup-lefthook/scripts/check-file-tokens.py"
-# What the lefthook remote (lefthook/file-tokens.yml) ships to other repos.
+# What the lefthook remote (lefthook/hooks.yml) ships to other repos.
 REMOTE_COPY = ROOT / ".lefthook/pre-commit/check-file-tokens.py"
-
-# A git hook running the suite exports GIT_DIR, GIT_INDEX_FILE, …; they'd point every call at the outer repo.
-ENV = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
 
 LIMIT = 100  # tokens, so 400 bytes
 BIG = "x = 1\n" * 100  # 600 bytes, 150 tokens
 SMALL = "x = 1\n" * 10
 
 
-class CheckFileTokensTest(unittest.TestCase):
-    def setUp(self):
-        tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(tmp.cleanup)
-        self.repo = Path(tmp.name)
-        self.git("init", "-q")
-
-    def git(self, *args):
-        subprocess.run(["git", *args], cwd=self.repo, env=ENV, capture_output=True, check=True)
-
-    def stage(self, path, content):
-        f = self.repo / path
-        f.parent.mkdir(parents=True, exist_ok=True)
-        f.write_bytes(content.encode() if isinstance(content, str) else content)
-        self.git("add", path)
-
+class CheckFileTokensTest(StagedRepoTest):
     def run_script(self, *paths, limit=LIMIT):
         return subprocess.run([str(SCRIPT), "--max-tokens", str(limit), *paths], cwd=self.repo, env=ENV,
                               capture_output=True, text=True, check=False)

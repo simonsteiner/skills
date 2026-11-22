@@ -20,7 +20,7 @@ with a code extension (not fixtures or snapshots) whose name, minus the test aff
 lib: its name or its folder's name). The pairing is a heuristic, by name across the whole
 repo: check it before you cite it.
 
-drift — the most-changed source files at HEAD, one per line:
+drift: the most-changed source files at HEAD, one per line:
 
     <commits>  <own>%  <any>%  <source>  <own tests, comma-separated, or ->
 
@@ -33,14 +33,14 @@ and hotfix are fixes, refactor is a refactor, any other type (feat, chore, docs,
 neither. A subject without one, including a component prefix such as `parser: fix crash`,
 falls back to its words. Reverts are neither.
 
-fixes — fix commits (typed, or untyped containing fix, fixes, fixed, bug, bugfix or
+fixes: fix commits (typed, or untyped containing fix, fixes, fixed, bug, bugfix or
 hotfix) that changed a source file and no test, newest first:
 
     <sha>  <date>  <subject>  <source files, comma-separated>
 
 then `# <n> of <m> fix commits changed no test`.
 
-refactors — test files at HEAD changed by refactor commits (typed, or untyped containing
+refactors: test files at HEAD changed by refactor commits (typed, or untyped containing
 refactor, rename, restructure or extract), which should leave behaviour and so tests
 alone, most often first:
 

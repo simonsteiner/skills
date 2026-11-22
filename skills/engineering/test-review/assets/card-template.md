@@ -9,7 +9,7 @@
 
 [← Report](README.md)
 
-<🕳️ blind spot | 🗑️ waste | 🔧 infra> · 🟢 **Strong** · 🔴 **live defect** · <↔ `two-way` | 🚪 `one-way`> · fix: <`tdd` | `prune-tests` | `direct`> · builds on: <— | C3>
+<🕳️ blind spot | 🗑️ waste | 🔧 infra> · 🟢 **Strong** · 🔴 **live defect** · <↔ `two-way` | 🚪 `one-way`> · fix: <`tdd` | `prune-tests` | `direct`> · builds on: <none | C3>
 
 `<src/billing/invoice.py:40-118>` · `<tests/test_billing.py:12>`
 
@@ -40,7 +40,7 @@
 | Test | Why | Still guarded by | Cost | Action |
 |---|---|---|---|---|
 | `<tests/test_orders.py:88>` | <the implementation: asserts repo.save call order> | `<tests/test_checkout.py:20>` | <changed in 4 refactor commits> | delete |
-| `<tests/test_orders.py:140>` | <the implementation: private `_items`> | nothing — only guard of the item total | <—> | rewrite |
+| `<tests/test_orders.py:140>` | <the implementation: private `_items`> | nothing: only guard of the item total | <none> | rewrite |
 
 <!-- ===== Infra ===== -->
 
@@ -48,7 +48,7 @@
 
 **Change:** <the one change>
 
-**Measure:** <number it should move> — now <value>, from `<command>`
+**Measure:** <number it should move>, now <value>, from `<command>`
 
 <!-- ===== all kinds ===== -->
 
@@ -65,6 +65,6 @@
 <summary>Decisions</summary>
 
 <!-- one line each -->
-Q1 — <question> → <answer>, because <fact>.
+Q1: <question> → <answer>, because <fact>.
 
 </details>

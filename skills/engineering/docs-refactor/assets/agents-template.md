@@ -31,6 +31,6 @@ Domain terms are in `GLOSSARY.md`; decisions and their trade-offs are in `docs/a
 
 ## Docs
 
-- `README.md` — what the project is and the quickstart.
-- `docs/setup.md` — local setup and troubleshooting.
-- `.env.example` — every env var, annotated.
+- `README.md`: what the project is and the quickstart.
+- `docs/setup.md`: local setup and troubleshooting.
+- `.env.example`: every env var, annotated.

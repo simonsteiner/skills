@@ -99,7 +99,7 @@ class UnresolvedThreadsTest(unittest.TestCase):
                 review("Looks fine.", author="copilot-pull-request-reviewer[bot]", bot=True),
                 review("1 issue.", author="some-scanner", bot=True)]
         result, threads = self.run_with(bots, [thread("A", "coderabbitai")])
-        self.assertIn("has no real review — only bot reviews (coderabbitai[bot], "
+        self.assertIn("has no real review; only bot reviews (coderabbitai[bot], "
                       "copilot-pull-request-reviewer[bot], some-scanner)", result.stderr)
         self.assertEqual([t["id"] for t in threads], ["A"])
 

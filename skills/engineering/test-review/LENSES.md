@@ -2,13 +2,13 @@
 
 ## Contents
 
-- [Lens 1 — Blind spots](#lens-1--blind-spots-produces-blind-spot-candidates)
-- [Lens 2 — Waste](#lens-2--waste-produces-waste-candidates)
-- [Lens 3 — Infrastructure](#lens-3--infrastructure-produces-infra-candidates)
+- [Lens 1: Blind spots](#lens-1-blind-spots-produces-blind-spot-candidates)
+- [Lens 2: Waste](#lens-2-waste-produces-waste-candidates)
+- [Lens 3: Infrastructure](#lens-3-infrastructure-produces-infra-candidates)
 
-Three lenses, one vocabulary: codebase-design's module, interface, seam, adapter, depth, locality. A "unit" is a module, a "boundary" is a seam or a system boundary, a "public API" is an interface. Each lens returns findings with evidence — `path:line`, a count, a timing, a commit — never an impression.
+Three lenses, one vocabulary: codebase-design's module, interface, seam, adapter, depth, locality. A "unit" is a module, a "boundary" is a seam or a system boundary, a "public API" is an interface. Each lens returns findings with evidence: `path:line`, a count, a timing, a commit, never an impression.
 
-## Lens 1 — Blind spots (produces `blind spot` candidates)
+## Lens 1: Blind spots (produces `blind spot` candidates)
 
 Behaviour that can break with nothing to say so. Weight everything by churn: a blind spot in a file nobody touches is a smaller finding at most.
 
@@ -19,11 +19,11 @@ Behaviour that can break with nothing to say so. Weight everything by churn: a b
 - **Run but not checked.** Tests that execute a path and assert nothing about its result: `assert result`, `toBeDefined()`, "doesn't throw", a snapshot of output too large to read. Coverage counts these lines as covered.
 - **Switched off.** Skipped, `xfail`, focused (`.only`) and retried tests from Step 1. Each skip is a blind spot someone noticed; `git blame` says how long ago.
 
-**Group by seam.** One candidate is one seam (or one module's interface) and the behaviours to pin there, each with `path:line` and its evidence line. For each seam, one line on what a test there catches and what it misses — `tdd` needs exactly that to agree the seam.
+**Group by seam.** One candidate is one seam (or one module's interface) and the behaviours to pin there, each with `path:line` and its evidence line. For each seam, one line on what a test there catches and what it misses; `tdd` needs exactly that to agree the seam.
 
-**No seam to test at** — the behaviour is reachable only by mocking the module's own collaborators or reading its private state — is a hand-off to `/arch-review`, not a candidate.
+**No seam to test at**: the behaviour is reachable only by mocking the module's own collaborators or reading its private state, which is a hand-off to `/arch-review`, not a candidate.
 
-## Lens 2 — Waste (produces `waste` candidates)
+## Lens 2: Waste (produces `waste` candidates)
 
 Tests that cost time or edits and guard no behaviour, or guard it twice. Weight by cost: seconds per run × runs per week, and edits per refactor.
 
@@ -36,7 +36,7 @@ Tests that cost time or edits and guard no behaviour, or guard it twice. Weight 
 - **Slow.** The slowest tests from Step 1, and why: a real `sleep`, real network, a container started per test, a large fixture parsed per test.
 - **Flaky.** CI reruns that then passed, retry markers. One flaky test is a smaller finding (rewrite it against controlled time, randomness, or order); several sharing a cause is an `infra` candidate.
 
-## Lens 3 — Infrastructure (produces `infra` candidates)
+## Lens 3: Infrastructure (produces `infra` candidates)
 
 How the tests run, and whether that supports the `tdd` loop: one test, red or green, in seconds, at a seam, with fakes only at system boundaries.
 

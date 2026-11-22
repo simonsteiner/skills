@@ -25,7 +25,7 @@ The file opens with the reference and the one command that installs the hooks in
 # Install the git hooks with: uv run lefthook install
 ```
 
-Then the hooks. Every job in this catalog but one is an entry under `commands:`, a map keyed by job name. The exception is the token budget in [Every project](#every-project): it runs a script lefthook fetches from a remote, so it's a `jobs:` entry with a `name:`. A hook can hold both, and lefthook runs both:
+Then the hooks. Every job in this catalog but two is an entry under `commands:`, a map keyed by job name. The exceptions are the token budget and the dash check in [Every project](#every-project): they run scripts lefthook fetches from a remote, so they're `jobs:` entries with a `name:`. A hook can hold both, and lefthook runs both:
 
 ```yaml
 pre-commit:
@@ -64,18 +64,18 @@ The header for a Node project names both ways in:
 
 ## Every project
 
-The token budget's script comes from [simonsteiner/skills](https://github.com/simonsteiner/skills) as a remote, pinned to a tag; the job that runs it, and the budget, stay in the project's file. `min_version` and `remotes:` are top-level keys, beside the hooks:
+The token budget's and the dash check's scripts come from [simonsteiner/skills](https://github.com/simonsteiner/skills) as one remote, pinned to a tag; the jobs that run them, and the budget, stay in the project's file. `min_version` and `remotes:` are top-level keys, beside the hooks:
 
 ```yaml
 min_version: 2.0.5 # `args:` on script jobs
 
 remotes:
-  # The shared token-budget script. A tag, never a commit SHA. Bump `ref` to
-  # update; the next commit fetches it.
+  # The shared token-budget and dash scripts. A tag, never a commit SHA. Bump
+  # `ref` to update; the next commit fetches it.
   - git_url: https://github.com/simonsteiner/skills
-    ref: filetokens.v1.0.0
+    ref: hooks.v1.0.0
     configs:
-      - lefthook/file-tokens.yml
+      - lefthook/hooks.yml
 
 pre-commit:
   parallel: true
@@ -89,16 +89,22 @@ pre-commit:
       script: check-file-tokens.py
       runner: python3
       args: --max-tokens 5000 {staged_files}
+    # No em or en dashes in the staged files: they read as machine-written. Same
+    # exemptions as file-tokens; a file that must hold them goes in `exclude:`.
+    - name: dashes
+      script: check-dashes.py
+      runner: python3
+      args: "{staged_files}"
   commands:
     …
 ```
 
-No `glob`: every file type counts. Lefthook skips a job whose `{staged_files}` comes out empty, so a commit that only deletes files doesn't run it.
+No `glob` on either: every file type counts. Lefthook skips a job whose `{staged_files}` comes out empty, so a commit that only deletes files doesn't run it.
 
-- **Look up the latest `filetokens.v*` tag** (`git ls-remote --tags https://github.com/simonsteiner/skills 'filetokens.v*'`) rather than copying the one above.
-- **The job stays here, not in the remote.** A clone that can't fetch the remote then fails the commit with `script does not exist` instead of committing unchecked, and `args:` here decides the budget; a job defined in the remote can't be overridden from `lefthook.yml`.
+- **Look up the latest `hooks.v*` tag** (`git ls-remote --tags https://github.com/simonsteiner/skills 'hooks.v*'`) rather than copying the one above. Older `filetokens.v*` tags ship only the token budget.
+- **The jobs stay here, not in the remote.** A clone that can't fetch the remote then fails the commit with `script does not exist` instead of committing unchecked, and `args:` here decides the budget; a job defined in the remote can't be overridden from `lefthook.yml`.
 - **`ref:` takes a tag with no `-` or `/` in it.** lefthook clones with `--branch`, so a commit SHA fails. When a fetch fails, lefthook falls back to the cached clone, but for a ref with `-` or `/` it can't find it and deletes it instead, and every commit fails with `script does not exist` until the new `ref:` can be fetched.
-- **Keep the default `source_dir`** (`.lefthook/`): lefthook looks for a remote's scripts under the project's `source_dir`, so a project that changes it won't find the script. A project's own `.lefthook/pre-commit/` must not hold a script of the same name, or both run.
+- **Keep the default `source_dir`** (`.lefthook/`): lefthook looks for a remote's scripts under the project's `source_dir`, so a project that changes it won't find the script. A project's own `.lefthook/pre-commit/` must not hold a script of the same name, or both run; for the same reason, one remote entry for this repo, never one per script.
 - **Tools that lint the whole repo must skip `.git/`**: lefthook clones the remote into `.git/info/lefthook-remotes/`. rumdl walks `.git` unless told not to, so `rumdl check .` lints the remote's Markdown and fails, locally and in CI once `npm ci` has run `lefthook install`. Add `".git/**"` to `exclude` in `.rumdl.toml`. ruff, cspell and prettier skip `.git` already.
 
 For a repo carrying vendored or reference code, a diff check that ignores it:

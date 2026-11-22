@@ -26,7 +26,7 @@ while :; do
   out="$(curl -fsS --get "https://sonarcloud.io/api/issues/search" \
     --data-urlencode "componentKeys=$key" --data-urlencode "pullRequest=$pr" \
     --data "resolved=false" --data "ps=500" --data "p=$page")" \
-    || { echo "error: SonarCloud request failed (page $page) — a private project needs the MCP tool or the sonar CLI" >&2; exit 1; }
+    || { echo "error: SonarCloud request failed (page $page); a private project needs the MCP tool or the sonar CLI" >&2; exit 1; }
   # A component is "<project-key>:<path>", and a key can hold colons (Maven's groupId:artifactId).
   jq -c --arg k "$key" '.issues[] | {rule, severity, type, path: (.component | ltrimstr($k + ":")), line, message}' <<<"$out"
   count="$(jq '.issues | length' <<<"$out")" total="$(jq '.paging.total // .total // 0' <<<"$out")"

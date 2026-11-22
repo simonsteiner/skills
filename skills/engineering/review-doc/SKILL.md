@@ -1,6 +1,6 @@
 ---
 name: review-doc
-description: Reviews a design doc, plan, RFC or spec with fresh sub-agents that never saw the conversation behind it — a paraphrase test, a simplicity-and-reuse check against the code, and an implementation-readiness check — then settles the findings with you, edits the doc, and repeats until two rounds in a row come back clean.
+description: Reviews a design doc, plan, RFC or spec with fresh sub-agents that never saw the conversation behind it (a paraphrase test, a simplicity-and-reuse check against the code, and an implementation-readiness check), then settles the findings with you, edits the doc, and repeats until two rounds in a row come back clean.
 disable-model-invocation: true
 ---
 
@@ -14,7 +14,7 @@ Each round costs one sub-agent per lens, and a doc with findings takes at least 
 
 ---
 
-## Step 1 — Pin the doc
+## Step 1: Pin the doc
 
 - **Target.** A path the user gave → that file. None → the doc this thread just wrote or edited, if there's exactly one; otherwise ask for the path. A plan that exists only in chat is saved first, to the path the user names or else `.scratch/<slug>.md`, since a reviewer reads only files.
 - **Reading list.** Every relative link in the doc that resolves to an existing file inside the repo. Links that leave the repo, and URLs: list them and ask which to include. Save each included URL's page to `.scratch/` (Step 6 deletes it) and list the saved file, so every reviewer can read it. Add any files the user names.
@@ -23,19 +23,19 @@ Each round costs one sub-agent per lens, and a doc with findings takes at least 
 
 ---
 
-## Step 2 — Pick the lenses
+## Step 2: Pick the lenses
 
 Read the doc once to pick. From [LENSES.md](LENSES.md):
 
-- **Paraphrase** — always.
-- **Simplicity** — when the doc proposes something to build or change in a codebase.
-- **Readiness** — when the doc has an implementation plan (a section like *Implementation plan*, *Steps*, *Work breakdown*, *Tasks*), or the user says it's about to be built.
+- **Paraphrase**: always.
+- **Simplicity**: when the doc proposes something to build or change in a codebase.
+- **Readiness**: when the doc has an implementation plan (a section like *Implementation plan*, *Steps*, *Work breakdown*, *Tasks*), or the user says it's about to be built.
 
 Say which lenses run and why the others don't; don't ask. The user can add or drop lenses, or give a standard a lens should apply (a team's RFC template), and that wins.
 
 ---
 
-## Step 3 — Run a round
+## Step 3: Run a round
 
 Spawn one fresh sub-agent per lens, in parallel. Start each one empty, never as a fork or with inherited context, and give it only:
 
@@ -48,7 +48,7 @@ Use the session's model: a doc review is judgment, not lookup. A sub-agent that 
 
 ---
 
-## Step 4 — Verify and settle
+## Step 4: Verify and settle
 
 **Verify.** Open the doc at each finding's line and, for a claim about code, the code. A finding you can't ground is dropped: put it on the settled list (Step 5) with why, so a later reviewer raising the same claim doesn't keep rounds from coming back clean. Merge duplicates across lenses, keeping the higher severity.
 
@@ -78,7 +78,7 @@ The doc is the only file this skill edits, apart from what it saves to `.scratch
 
 ---
 
-## Step 5 — Loop until clean
+## Step 5: Loop until clean
 
 Keep a **settled list** across rounds: each finding dropped as ungrounded, disagreed with, declined or decided against, with its scope and reason. A later round that raises a settled finding again (same scope, same issue) doesn't reopen it. A finding that comes back after a *fix* does: the fix didn't work.
 
@@ -91,7 +91,7 @@ A round is **clean** when every lens ran and none raised a verified Blocker or M
 
 ---
 
-## Step 6 — Report
+## Step 6: Report
 
 - **Doc:** its path, the rounds run, and how it ended: converged, accepted at the cap or on churn, or stopped by the user.
 - **Lenses:** per round, which ran and which were not run.

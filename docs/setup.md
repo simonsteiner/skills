@@ -22,7 +22,7 @@ npm install               # changesets, rumdl, and the lefthook git hooks
 ./scripts/link-skills.py --check  # report owned skills that aren't linked, and dead links
 ```
 
-This is the clone's equivalent of `npx skills add`: it links each skill into `~/.agents/skills` (and mirrors it for Claude Code under `~/.claude/skills` and Antigravity under `~/.gemini/config/skills`), so edits here take effect immediately. Pick one path per skill — link it from a clone, or install it with skills.sh — not both.
+This is the clone's equivalent of `npx skills add`: it links each skill into `~/.agents/skills` (and mirrors it for Claude Code under `~/.claude/skills` and Antigravity under `~/.gemini/config/skills`), so edits here take effect immediately. Pick one path per skill (link it from a clone, or install it with skills.sh), not both.
 
 The links point at this checkout's working tree, so whatever branch is checked out is what your agents run. That decides when a sync is needed:
 
@@ -43,14 +43,16 @@ The skill lists in `README.md`, each `skills/<bucket>/README.md` and `.claude-pl
 
 | Command | What it checks |
 |---|---|
-| `./scripts/lint-skills.py` | every skill against Anthropic's [skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices), the [Agent Skills spec and best practices](https://agentskills.io/skill-creation/best-practices), and the listing rules in `AGENTS.md` (rules in `scripts/tooling/authoring_rules.py` and `published_rules.py`) |
+| `./scripts/lint-skills.py` | every skill against Anthropic's [skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices), the [Agent Skills spec and best practices](https://agentskills.io/skill-creation/best-practices), and the listing rules in `AGENTS.md` (rules in `scripts/tooling/authoring_rules.py`, `script_rules.py` and `published_rules.py`) |
 | `uv run --locked --no-build python3 -m unittest discover -s tests -t .` | every test: `tests/tooling/` for the `scripts/tooling/` package, `tests/skill_scripts/` for the scripts bundled in skills (against a fake `gh`, so no test touches GitHub), `tests/skills/` for checks on the skills' prose |
 | `uvx ruff@0.17.0 check scripts tests` | the Python tooling ([ruff](https://docs.astral.sh/ruff/), config in `ruff.toml`) |
 | `npx rumdl check .` | Markdown ([rumdl](https://rumdl.dev/), config in `.rumdl.toml`) |
 | `shellcheck skills/*/*/scripts/*.sh` | the shell scripts bundled in skills |
+| `git ls-files -z \| xargs -0 skills/engineering/setup-lefthook/scripts/check-file-tokens.py --max-tokens 5000` | every file an agent writes stays under 5,000 tokens, so an agent can read it whole; tool-written files are marked `linguist-generated` in `.gitattributes`. The setup-lefthook skill's script |
+| `git ls-files -z \| xargs -0 skills/engineering/setup-lefthook/scripts/check-dashes.py` | no em or en dash in any tracked file (they read as machine-written); the setup-lefthook skill's script |
 
 CI (`.github/workflows/lint.yml`) runs all of them on every PR. The lefthook pre-commit hooks (`lefthook.yml`) run the same checks on the staged files, rebuild the skill catalog, and let rumdl fix what it can. With the [SonarQube CLI](https://sonarsource.com/sonarqube/cli) installed and logged in, they also scan the staged files for secrets and new dependency risks; without it that job is skipped, and SonarCloud's PR analysis still runs.
 
-What counts as an owned skill — its bucket, its name, no duplicates and no clash with a curated skill — is decided once, in `scripts/tooling/skill_inventory.py`, and everything about `third-party/skills.json` in `scripts/tooling/third_party.py`; the commands at the top of `scripts/` read them.
+What counts as an owned skill (its bucket, its name, no duplicates and no clash with a curated skill) is decided once, in `scripts/tooling/skill_inventory.py`, and everything about `third-party/skills.json` in `scripts/tooling/third_party.py`; the commands at the top of `scripts/` read them.
 
 A skill's evals run with `./scripts/eval-skill.py`; see [evals.md](evals.md).

@@ -20,6 +20,18 @@ pre-commit:
       glob: "{scripts/*.py,scripts/**/*.py,tests/*.py,tests/**/*.py,skills/**,.lefthook/**,pyproject.toml,uv.lock}"
       run: uv run --locked --no-build python3 -m unittest discover -s tests -t .
 
+    # Same as CI: every staged file an agent writes stays under 5,000 tokens (bytes / 4),
+    # so an agent can read it whole. The setup-lefthook skill's script, run from here
+    # rather than through the remote other repos use; tool-written files are marked
+    # linguist-generated in .gitattributes.
+    file-tokens:
+      run: python3 skills/engineering/setup-lefthook/scripts/check-file-tokens.py --max-tokens 5000 {staged_files}
+
+    # Same as CI: no em or en dashes in the staged files. The setup-lefthook skill's
+    # script, run from here rather than through the remote other repos use.
+    dashes:
+      run: python3 skills/engineering/setup-lefthook/scripts/check-dashes.py {staged_files}
+
     # Same as CI's Ruff step; bump the version in both places.
     ruff:
       glob: "*.py"
