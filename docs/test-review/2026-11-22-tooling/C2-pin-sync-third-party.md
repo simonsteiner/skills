@@ -31,7 +31,7 @@
 |---|---|---|
 | The command `sync-skills.py` runs for every curated install, and the token logic behind `--outdated`, change with nothing to catch a regression. | Pin the command's guards with a temp `HOME`, and `github_folders` with the network faked. | broken `--check` exit fails CI<br>token regression fails CI |
 
-**After:** <!-- filled at Ship -->
+**After:** 13 tests added in `tests/tooling/test_sync_third_party.py` (5 at the command, 8 at `github_folders`), 0.4 s, all green against unchanged code (no live defect). Each was proved red by a mutation, listed in `a111ecd`'s message; `test_returns_the_root_and_every_folder_sha` was mutated at Ship: dropping the `{"": data["sha"]}` root entry, and separately dropping the `type == "tree"` filter, each turned it red; both reverted, source diff empty. Suite 356 -> 369 tests. No Departures.
 
 <details>
 <summary>Decisions</summary>
