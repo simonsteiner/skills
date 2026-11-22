@@ -15,6 +15,22 @@ git clone https://github.com/simonsteiner/skills && cd skills
 
 Needs git, Python 3.10+ and Node (`npx`). Restart your agents afterwards. To take only this repo's skills, without a clone, use the [skills.sh](https://skills.sh) installer instead: `npx skills@latest add simonsteiner/skills`.
 
+### skills.sh commands
+
+For reference: the [skills.sh](https://skills.sh) CLI that the sync drives. `-g` works on the global store (`~/.agents/skills`) that the sync installs into.
+
+```bash
+npx skills@latest add simonsteiner/skills --list                     # list this repo's skills without installing
+npx skills@latest add simonsteiner/skills -g --skill pr-body         # install one skill, without a clone
+npx skills@latest use mattpocock/skills@tdd                          # try a skill without installing it
+npx skills@latest find tdd                                           # search skills.sh
+npx skills@latest list -g                                            # what's installed, its source and agents
+npx skills@latest remove -g <name>                                   # uninstall, e.g. an archived curated skill
+npx skills@latest update -g                                          # update every global skill to latest
+```
+
+For the curated skills, prefer `./scripts/sync-skills.py` over `update`: it installs exactly what `third-party/skills.json` lists, into the agents each source names, and links the agents skills.sh leaves out.
+
 ## Skill catalog
 
 Skills live in buckets under [`skills/`](./skills/) and split on one axis — who can invoke them. **User-invoked** skills run only when you type them; **model-invoked** skills can also be reached automatically when the task fits ([docs/invocation.md](./docs/invocation.md)). The list below is generated from each skill's `description` by `scripts/build-catalog.py`.
