@@ -3,6 +3,7 @@
     uv run --locked --no-build python3 -m unittest discover -s tests -t .
 """
 
+import json
 import tempfile
 import time
 import unittest
@@ -381,6 +382,38 @@ class AuthoringRulesTest(unittest.TestCase):
         self.skill("b", 'name: b\ndescription: Use when the user says "Ship it".')
         self.assertProblem('trigger "Ship it" is in both a and b')
 
+
+    def test_a_skill_tool_call_cannot_name_a_user_invoked_skill(self):
+        self.skill("typed", "name: typed\ndescription: Does it.\ndisable-model-invocation: true")
+        self.skill("other", body='Call the Skill tool with "typed".\nTell the user to run `/typed`.\n')
+        self.assertEqual(self.problems(), [
+            ("skills/engineering/other/SKILL.md:5: calls the user-invoked typed through the Skill tool, "
+             "which can't reach it; tell the user to run `/typed` instead")])
+
+    def test_a_skill_tool_call_cannot_name_a_user_invoked_curated_skill(self):
+        (self.repo / "third-party").mkdir()
+        (self.repo / "third-party/skills.json").write_text(json.dumps({"agents": ["x"], "sources": [
+            {"repo": "o/r", "why": "w", "skills": [{"name": "theirs", "why": "w", "invocation": "user"},
+                                                   {"name": "grilling", "why": "w", "invocation": "model"}]}]}))
+        self.skill("other", body='Call the Skill tool with "theirs", then with "grilling".\n')
+        self.assertEqual(self.problems(), [
+            ("skills/engineering/other/SKILL.md:5: calls the user-invoked theirs through the Skill tool, "
+             "which can't reach it; tell the user to run `/theirs` instead")])
+
+    def test_a_skill_tool_call_may_name_a_model_invoked_skill(self):
+        self.skill("reached")
+        self.skill("other", body='Call the Skill tool twice, for "reached" and "grilling".\n')
+        self.assertEqual(self.problems(), [])
+
+    def test_tests_beside_the_code_fail(self):
+        self.skill(files={"scripts/test_x.py": "", "scripts/y.test.ts": ""})
+        (self.repo / "scripts/tooling").mkdir(parents=True)
+        (self.repo / "scripts/tooling/z_test.py").write_text("")
+        self.assertEqual([p for p in self.problems() if "tests live" in p], [
+            "skills/engineering/a/scripts/test_x.py: tests live in tests/, never beside the code",
+            "skills/engineering/a/scripts/y.test.ts: tests live in tests/, never beside the code",
+            "scripts/tooling/z_test.py: tests live in tests/, never beside the code",
+        ])
 
 if __name__ == "__main__":
     unittest.main()

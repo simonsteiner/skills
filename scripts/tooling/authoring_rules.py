@@ -59,6 +59,10 @@ Repo convention:
 - a command in a code block runs a bundled script as `<skill-dir>/scripts/…` (not `scripts/…`
   or `./scripts/…`): agents run it from the user's repo, where a bare path names that repo's
   scripts, not the skill's.
+- no Skill tool call names a user-invoked skill, owned or curated: its description never reaches the model,
+  so the call can't fire (docs/invocation.md); the step tells the user to run `/<name>`
+- tests live in tests/, never beside the code: no test_*.py, *_test.py, *.test.* or *.spec.*
+  file in skills/ or scripts/
 
 lint-skills.py runs check(); tests/tooling/test_authoring_rules.py tests it.
 """
@@ -69,7 +73,7 @@ import re
 import sys
 from pathlib import Path
 
-from . import evals, triggers
+from . import evals, third_party, triggers
 
 MAX_BODY_LINES = 500
 MAX_BODY_TOKENS = 5000
@@ -99,6 +103,8 @@ PEP723_BLOCK = re.compile(r"(?m)^# /// script[ \t]*\r?\n((?:^#[^\n]*\n)*?)^# ///
 PEP723_DEPS = re.compile(r"""(?m)^dependencies\s*=\s*\[[^\]]*['"]""")
 UV_SCRIPT_SHEBANG = re.compile(r"#!.*\buv\s+run\b.*\s--script\b")
 IMPORT_ERRORS = frozenset({"ImportError", "ModuleNotFoundError"})
+CREDITS = "CREDITS.md"  # upstream notices, exempt from the prose and reference checks
+STRAY_TEST = re.compile(r"test_.*\.py|.*_test\.py|.*\.(?:test|spec)\.\w+")
 
 
 def check(repo, skills):
@@ -120,7 +126,37 @@ def check(repo, skills):
             if key in seen and seen[key] != s.name:
                 problems.append(f'trigger "{phrase}" is in both {seen[key]} and {s.name}')
             seen.setdefault(key, s.name)
-    return problems
+    return problems + _user_invoked_calls(repo, skills) + _stray_tests(repo)
+
+
+def _user_invoked_calls(repo, skills):
+    """A line that mentions the Skill tool and quotes a user-invoked skill's name, owned or curated."""
+    user_invoked = {s.name for s in skills if s.fields and not s.model_invoked}
+    manifest = third_party.load(repo)
+    user_invoked |= {k.name for k in (manifest.curated if manifest else []) if k.invocation == "user"}
+    return [
+        f"{md.relative_to(repo).as_posix()}:{n}: calls the user-invoked {name} through the Skill tool, "
+        f"which can't reach it; tell the user to run `/{name}` instead"
+        for s in skills for md in sorted(s.folder.rglob("*.md"))
+        if md.name != CREDITS and "evals" not in md.relative_to(s.folder).parts
+        for n, name in _skill_tool_names(md) if name in user_invoked
+    ]
+
+
+def _skill_tool_names(md):
+    """(line number, name) for every quoted name on a line of `md` that mentions the Skill tool."""
+    for n, line in enumerate(md.read_text().splitlines(), 1):
+        if "Skill tool" in line:
+            yield from ((n, name) for name in re.findall(r'"([a-z0-9-]+)"', line))
+
+
+def _stray_tests(repo):
+    """Test files under skills/ or scripts/, which belong in tests/."""
+    return [
+        f"{path.relative_to(repo).as_posix()}: tests live in tests/, never beside the code"
+        for top in ("skills", "scripts") for path in sorted((repo / top).rglob("*"))
+        if path.is_file() and STRAY_TEST.fullmatch(path.name)
+    ]
 
 
 def check_skill(s):
@@ -142,7 +178,7 @@ def check_skill(s):
     markdown = [f for f in files if f.suffix == ".md"]
     out += _reference_problems(s.skill_md, markdown)
     for md in markdown:
-        if md.name != "CREDITS.md":
+        if md.name != CREDITS:
             text = md.read_text()
             out += [(md, msg) for msg in _prose_problems(text) + _command_problems(s.folder, text)]
     return out
@@ -241,7 +277,7 @@ def _bundled_file_problems(s, f):
         out.extend(check_script(f))
     if rel.parts[0] == "evals":
         return out  # test cases for the author, never read by the agent
-    if f != s.skill_md and f.name != "CREDITS.md" and f.name not in s.body and rel.as_posix() not in s.body:
+    if f != s.skill_md and f.name != CREDITS and f.name not in s.body and rel.as_posix() not in s.body:
         out.append((f, "bundled file is never mentioned in SKILL.md"))
     return out
 

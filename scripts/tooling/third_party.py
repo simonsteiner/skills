@@ -11,8 +11,11 @@ scripts/sync-third-party.py is the command line; see its docstring for the modes
 
 import json
 import os
+import posixpath
+import re
 import subprocess
 import sys
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -49,7 +52,14 @@ UNIVERSAL = ("codex", "github-copilot", "gemini-cli", "antigravity")
 
 # Findings that mean the home directory disagrees with the manifest. The rest report
 # installs from other channels, which may be deliberate.
-FAILING = {"missing", "conflict", "archived", "drift"}
+FAILING = {"missing", "conflict", "archived", "drift", "invocation"}
+
+# A curated skill's `invocation` in skills.json: who can start it (GLOSSARY.md).
+INVOCATIONS = ("model", "user")
+# `disable-model-invocation: true` in a SKILL.md's frontmatter, read without a YAML parser
+# so the sync scripts stay stdlib-only. YAML 1.2 spells the boolean true, True or TRUE.
+FRONTMATTER = re.compile(r"\A---[ \t]*\r?\n(.*?)\r?\n---", re.DOTALL)
+USER_INVOKED = re.compile(r"^disable-model-invocation:[ \t]*(?:true|True|TRUE)[ \t]*(?:#.*)?$", re.MULTILINE)
 
 
 @dataclass(frozen=True)
@@ -58,6 +68,8 @@ class Curated:
     repo: str
     agents: tuple
     why: str
+    path: str = ""  # the skill's folder in its repo
+    invocation: str = ""  # "model" or "user", as skills.json records it; "" when it doesn't
 
 
 @dataclass(frozen=True)
@@ -99,7 +111,8 @@ def load(repo=REPO):
         agents = tuple(s.get("agents", data.get("agents", ())))
 
         def entries(kind, s=s, agents=agents):
-            return tuple(Curated(k["name"], s["repo"], agents, text(k.get("why"))) for k in s.get(kind, []))
+            return tuple(Curated(k["name"], s["repo"], agents, text(k.get("why")), text(k.get("path")),
+                                 text(k.get("invocation"))) for k in s.get(kind, []))
 
         sources.append(Source(s["repo"], text(s.get("why")), agents, entries("skills"), entries("archived")))
     return Manifest(tuple(sources))
@@ -229,7 +242,7 @@ def check(manifest, home, owned):
     lock = json.loads(home.lock.read_text())["skills"]
     return (_install_findings(manifest, lock) + _lock_findings(manifest, lock)
             + _unmanaged_findings(manifest, home, lock, owned) + _copy_findings(manifest, home)
-            + _link_findings(manifest, home))
+            + _link_findings(manifest, home) + _invocation_findings(manifest, home))
 
 
 def _install_findings(manifest, lock):
@@ -315,6 +328,100 @@ def _link_findings(manifest, home):
         else:
             detail = f"({destination} is a stale copy, not a link into the store — move it aside, then run the sync)"
         found.append(Finding("drift", want.name, detail))
+    return found
+
+
+def _gh_token():
+    """The gh CLI's token for github.com, or None when gh is missing or logged out."""
+    try:
+        done = subprocess.run(["gh", "auth", "token", "--hostname", "github.com"],
+                              capture_output=True, text=True, timeout=10, check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return done.stdout.strip() if done.returncode == 0 else None
+
+
+def invocation(skill_md):
+    """"user" when a SKILL.md's frontmatter sets disable-model-invocation: true, else "model"."""
+    m = FRONTMATTER.match(skill_md.read_text())
+    return "user" if m and USER_INVOKED.search(m.group(1)) else "model"
+
+
+def _invocation_findings(manifest, home):
+    """A curated skill whose installed copy is invoked differently from what skills.json says.
+
+    Upstream can flip a skill between model- and user-invoked; the manifest's record, the
+    third-party catalog's grouping and the lint's Skill-tool check would then be wrong.
+    Reads the store's copy, else the first agent directory that has one.
+    """
+    found = []
+    for k in manifest.curated:
+        if not k.invocation:
+            continue  # lint reports the missing field
+        copies = [d / k.name / SKILL_FILE for d in [home.store] + [home.agent_dir(a) for a in AGENT_DIRS]]
+        installed = next((c for c in copies if c.is_file()), None)
+        if installed is None:
+            continue  # missing is _install_findings' to report
+        actual = invocation(installed)
+        if actual != k.invocation:
+            found.append(Finding("invocation", k.name,
+                                 f"(skills.json says {k.invocation}-invoked; the installed copy is {actual}-invoked "
+                                 "— update skills.json and run scripts/build-catalog.py)"))
+    return found
+
+
+def github_folders(repo):
+    """{folder path: git tree SHA} for every folder on `repo`'s default branch ("" is the root).
+
+    One GitHub API call; a token lifts the anonymous rate limit of 60 calls an hour:
+    GH_TOKEN or GITHUB_TOKEN when set, else the gh CLI's login when there is one. Raises OSError when GitHub can't be reached, ValueError when the
+    answer isn't a complete tree.
+    """
+    request = urllib.request.Request(
+        f"https://api.github.com/repos/{repo}/git/trees/HEAD?recursive=1",
+        headers={"Accept": "application/vnd.github+json", "User-Agent": "skills-sync-third-party"},
+    )
+    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or _gh_token()
+    if token:
+        request.add_header("Authorization", f"Bearer {token}")
+    with urllib.request.urlopen(request, timeout=30) as response:
+        data = json.load(response)
+    if data.get("truncated") or "tree" not in data:
+        raise ValueError("GitHub returned an incomplete tree")
+    return {"": data["sha"]} | {e["path"]: e["sha"] for e in data["tree"] if e.get("type") == "tree"}
+
+
+def outdated(manifest, home, folders=github_folders):
+    """Curated skills whose folder upstream has changed since they were installed.
+
+    The skills.sh lock file records each install's `skillFolderHash`, the git tree SHA of
+    the skill's folder at the commit it installed, so comparing it with the folder's SHA on
+    the default branch today says whether a sync would change anything. Skills that aren't
+    installed from their curated source are left to check(). Findings: `outdated` (changed
+    or gone upstream) and `unknown` (the source couldn't be read).
+    """
+    lock = json.loads(home.lock.read_text())["skills"]
+    found, trees = [], {}
+    for k in manifest.curated:
+        entry = lock.get(k.name, {})
+        if entry.get("source") != k.repo:
+            continue
+        if k.repo not in trees:
+            try:
+                trees[k.repo] = folders(k.repo)
+            except (OSError, ValueError) as e:
+                trees[k.repo] = e
+        tree = trees[k.repo]
+        if isinstance(tree, Exception):
+            found.append(Finding("unknown", k.name, f"(couldn't read {k.repo}: {tree})"))
+            continue
+        folder = posixpath.dirname(entry.get("skillPath", ""))
+        upstream = tree.get(folder)
+        if upstream is None:
+            found.append(Finding("outdated", k.name, f"({k.repo} no longer has {folder or 'a root skill'}/)"))
+        elif upstream != entry.get("skillFolderHash"):
+            since = (entry.get("updatedAt") or entry.get("installedAt") or "?")[:10]
+            found.append(Finding("outdated", k.name, f"({k.repo} changed it since the install of {since} — run the sync)"))
     return found
 
 

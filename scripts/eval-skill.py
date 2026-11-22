@@ -7,7 +7,8 @@ loop; tooling/evals.py and tooling/triggers.py have the workspace layouts.
 
     scripts/eval-skill.py prepare <skill> [--baseline <git-ref>]
         lay out .eval-workspace/<skill>/iteration-<N>/ and print one JSON line per run:
-        {"eval", "config", "task", "grade"}. Without --baseline the baseline is no skill;
+        {"eval", "config", "task", "grade", "timing"}, "timing" being where to record the
+        run's tokens and time. Without --baseline the baseline is no skill;
         with it, the skill as it was at that ref (old_skill).
     scripts/eval-skill.py benchmark <iteration-dir>
         write benchmark.json from every run's grading.json and timing.json and print it
@@ -96,7 +97,7 @@ def prepare(skill, baseline):
     iteration, runs = evals.prepare(REPO, skills[skill], baseline=baseline)
     for name, config, task in runs:
         print(json.dumps({"eval": name, "config": config, "task": str(task),
-                          "grade": str(task.with_name("grade.md"))}))
+                          "grade": str(task.with_name("grade.md")), "timing": str(task.with_name("timing.json"))}))
     print(f"prepared {iteration}", file=sys.stderr)
     return 0
 

@@ -13,7 +13,7 @@ aggregating — so the runs and the grading are all that's left for agents to do
           task.md                     what the executor runs, in a fresh context
           grade.md                    what the grader checks, in another fresh context
           outputs/                    what the executor writes
-          timing.json                 {"total_tokens", "duration_ms"}, from the executor
+          timing.json                 {"total_tokens", "duration_ms"}, from the executor's completion
           grading.json                {"assertion_results": [...], "summary": {...}}
       benchmark.json                  written by benchmark()
 
@@ -106,7 +106,6 @@ Execute this task in a fresh context, as a user's agent would.
 - Setup to build first, in a throwaway directory you create: {setup}
 - Input files: {files}
 - Save to {outputs}/: your final reply to the user as reply.md, plus any files the task produced.
-- When done, write {timing} as {{"total_tokens": <int>, "duration_ms": <int>}}.
 
 Write nothing in the skills repo except the output paths above, and never touch other sessions' files or any real GitHub repo.
 """
@@ -155,7 +154,7 @@ def prepare(repo, skill, baseline=None, root=None):
             files = ", ".join(str(skill.folder / f) for f in e.get("files", [])) or "none"
             (run / TASK_FILE).write_text(TASK.format(
                 skill=skill_path, query=e["query"], setup=e.get("setup", "none"), files=files,
-                outputs=run / "outputs", timing=run / "timing.json"))
+                outputs=run / "outputs"))
             (run / "grade.md").write_text(GRADE.format(
                 outputs=run / "outputs", grading=run / GRADING_FILE,
                 assertions="\n".join(f"- {b}" for b in e["expected_behavior"])))

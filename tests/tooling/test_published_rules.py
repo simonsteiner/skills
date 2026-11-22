@@ -8,35 +8,18 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from tooling import catalog
 from tooling.published_rules import check
 from tooling.skill_inventory import inventory
 
-README = """# Skills
+README = f"""# Skills
 
-### Engineering
-
-#### User-invoked
-
-- **[u](./skills/engineering/u/SKILL.md)** — typed.
-
-#### Model-invoked
-
-- **[m](./skills/engineering/m/SKILL.md)** — reached for.
+{catalog.START}
+{catalog.END}
 
 ## Third-party skills
 
 - **[elsewhere](./third-party/README.md)** — not an owned skill.
-"""
-
-BUCKET = """# Engineering
-
-## User-invoked
-
-- **[u](./u/SKILL.md)** — typed.
-
-## Model-invoked
-
-- **[m](./m/SKILL.md)** — reached for.
 """
 
 
@@ -48,12 +31,12 @@ class PublishedRulesTest(unittest.TestCase):
         self.skill("engineering", "u", "disable-model-invocation: true")
         self.skill("engineering", "m")
         self.write("README.md", README)
-        self.write("skills/engineering/README.md", BUCKET)
-        self.write(".claude-plugin/plugin.json", json.dumps(
-            {"skills": ["./skills/engineering/u", "./skills/engineering/m"]}))
+        self.write(".claude-plugin/plugin.json", json.dumps({"skills": []}))
         self.write("third-party/skills.json", json.dumps({"agents": ["claude-code"], "sources": [
-            {"repo": "o/r", "why": "w", "skills": [{"name": "c", "why": "w"}],
+            {"repo": "o/r", "why": "w", "skills": [{"name": "c", "why": "w", "invocation": "model"}],
              "archived": [{"name": "a", "why": "w"}]}]}))
+        self.write("third-party/README.md", f"# Third-party skills\n\n{catalog.START}\n{catalog.END}\n")
+        self.build()
 
     def write(self, rel, text):
         path = self.repo / rel
@@ -61,7 +44,11 @@ class PublishedRulesTest(unittest.TestCase):
         path.write_text(text)
 
     def skill(self, bucket, name, extra=""):
-        self.write(f"skills/{bucket}/{name}/SKILL.md", f"---\nname: {name}\ndescription: x\n{extra}\n---\nBody.\n")
+        self.write(f"skills/{bucket}/{name}/SKILL.md",
+                   f"---\nname: {name}\ndescription: Does x. Use when x.\n{extra}\n---\nBody.\n")
+
+    def build(self):
+        catalog.write(inventory(self.repo).skills, self.repo)
 
     def edit(self, rel, old, new):
         path = self.repo / rel
@@ -75,78 +62,81 @@ class PublishedRulesTest(unittest.TestCase):
     def test_the_fixture_passes(self):
         self.assertEqual(self.problems(), [])
 
-    def test_skill_missing_from_its_bucket_readme(self):
-        # Reproduced in docs/arch-review/2026-10-08-tooling.md (C2): `zz` passed lint.
+    def test_a_new_skill_leaves_the_catalog_stale_until_rebuilt(self):
+        # The C2 case from docs/arch-review/2026-10-08-tooling.md: `zz` missing from its bucket README.
         self.skill("engineering", "zz")
-        self.edit("README.md", "## Third", "- **[zz](./skills/engineering/zz/SKILL.md)** — new.\n\n## Third")
-        self.edit(".claude-plugin/plugin.json", '"]}', '", "./skills/engineering/zz"]}')
-        self.assertEqual(self.problems(), ["skills/engineering/README.md: no entry linking zz to ./zz/SKILL.md"])
-
-    def test_link_inside_an_html_comment_is_no_entry(self):
-        self.edit("README.md", "- **[m](./skills/engineering/m/SKILL.md)** — reached for.",
-                  "<!-- - **[m](./skills/engineering/m/SKILL.md)** -->")
-        self.assertEqual(self.problems(), ["README.md: no entry linking m to ./skills/engineering/m/SKILL.md"])
-
-    def test_skill_under_the_wrong_group(self):
-        self.edit("skills/engineering/README.md", "- **[u](./u/SKILL.md)** — typed.\n", "")
-        self.edit("skills/engineering/README.md", "reached for.", "reached for.\n- **[u](./u/SKILL.md)** — typed.")
-        self.assertEqual(self.problems(),
-                         ["skills/engineering/README.md:9: u is User-invoked but listed under Model-invoked"])
-
-    def test_link_text_must_be_the_name(self):
-        self.edit("README.md", "**[u](", "**[You](")
-        self.assertEqual(self.problems(), ["README.md:7: link text 'You' isn't the skill's name 'u'"])
-
-    def test_unpublished_skill_in_the_readme_and_plugin(self):
-        self.skill("personal", "p")
-        self.write("skills/personal/README.md", "## Model-invoked\n\n- **[p](./p/SKILL.md)** — mine.\n")
-        self.edit("README.md", "## Third", "- **[p](./skills/personal/p/SKILL.md)** — mine.\n\n## Third")
-        self.edit(".claude-plugin/plugin.json", '"]}', '", "./skills/personal/p"]}')
         self.assertEqual(self.problems(), [
-            "README.md:13: p is in personal/ but README.md links it",
-            ".claude-plugin/plugin.json lists ./skills/personal/p, which is no published skill",
+            "README.md: the skill catalog is out of date; run scripts/build-catalog.py",
+            "skills/engineering/README.md: the skill catalog is out of date; run scripts/build-catalog.py",
+            ".claude-plugin/plugin.json: the skill catalog is out of date; run scripts/build-catalog.py",
         ])
+        self.build()
+        self.assertEqual(self.problems(), [])
 
-    def test_archived_entry_without_a_reason(self):
-        self.edit("third-party/skills.json", '{"name": "a", "why": "w"}', '{"name": "a", "why": " "}')
-        self.assertEqual(self.problems(), ["third-party/skills.json: archived entry a from o/r doesn't say why"])
+    def test_a_hand_edit_inside_the_catalog_is_stale(self):
+        self.edit("skills/engineering/README.md", "Does x.", "Does y.")
+        self.assertEqual(self.problems(),
+                         ["skills/engineering/README.md: the skill catalog is out of date; run scripts/build-catalog.py"])
 
-    def test_missing_bucket_readme(self):
-        self.skill("misc", "x")
-        self.edit("README.md", "## Third", "#### Model-invoked\n\n- **[x](./skills/misc/x/SKILL.md)** — x.\n\n## Third")
-        self.edit(".claude-plugin/plugin.json", '"]}', '", "./skills/misc/x"]}')
-        self.assertEqual(self.problems(), ["skills/misc/README.md is missing"])
+    def test_a_model_invoked_description_without_a_use_sentence(self):
+        self.write("skills/engineering/m/SKILL.md", "---\nname: m\ndescription: Does x when asked.\n---\nBody.\n")
+        self.assertEqual(self.problems()[0],
+                         "skills/engineering/m/SKILL.md: model-invoked description needs a summary before "
+                         'a sentence starting "Use" ("Use when…"); the catalog lists that summary')
+
+    def test_unpublished_skill_stays_out_of_the_readme_and_plugin(self):
+        self.skill("personal", "p")
+        self.build()
+        self.assertEqual(self.problems(), [])
+        self.assertNotIn("personal", (self.repo / "README.md").read_text())
+        self.assertNotIn("personal", (self.repo / ".claude-plugin/plugin.json").read_text())
+        self.assertIn("[p](./p/SKILL.md)", (self.repo / "skills/personal/README.md").read_text())
 
     def test_any_link_to_an_unpublished_skill_fails(self):
         self.skill("personal", "p")
-        self.write("skills/personal/README.md", "## Model-invoked\n\n- **[p](./p/SKILL.md)** — mine.\n")
+        self.build()
         self.edit("README.md", "## Third", "See [p](./skills/personal/p/SKILL.md), [it](skills/personal/p/).\n\n## Third")
-        self.assertEqual(self.problems(), ["README.md:13: p is in personal/ but README.md links it"] * 2)
+        n = (self.repo / "README.md").read_text().split("\n").index(
+            "See [p](./skills/personal/p/SKILL.md), [it](skills/personal/p/).") + 1
+        self.assertEqual(self.problems(), [f"README.md:{n}: p is in personal/ but README.md links it"] * 2)
 
-    def test_an_emptied_bucket_readme_is_still_checked(self):
-        self.write("skills/misc/README.md", "## Model-invoked\n\n- **[gone](./gone/SKILL.md)** — moved.\n")
-        self.assertEqual(self.problems(),
-                         ["skills/misc/README.md:3: gone links ./gone/SKILL.md, which is no skill this file lists"])
+    def test_links_in_comments_and_code_fences_dont_count(self):
+        self.skill("personal", "p")
+        for wrap in ("<!-- {} -->", "```md\n{}\n```", "~~~\n{}\n~~~"):
+            link = wrap.format("[p](./skills/personal/p/SKILL.md)")
+            self.write("README.md", README.replace("## Third", f"{link}\n\n## Third"))
+            self.build()
+            self.assertEqual(self.problems(), [], wrap)
 
-    def test_entries_in_code_fences_dont_count(self):
-        for fence in ("```", "~~~", "````"):
-            self.edit("README.md", "## Third", f"{fence}md\n- **[zz](./skills/engineering/zz/SKILL.md)** — x.\n{fence}\n\n## Third")
-            self.assertEqual(self.problems(), [], fence)
-            self.write("README.md", README)
+    def test_readme_without_a_catalog_block(self):
+        self.write("README.md", "# Skills\n")
+        self.assertEqual(self.problems(), [
+            f"README.md has no generated skill catalog: add the {catalog.START!r} and {catalog.END!r} lines"])
 
-    def test_a_skill_listed_twice(self):
-        self.edit("skills/engineering/README.md", "reached for.", "reached for.\n- **[m](./m/SKILL.md)** — again.")
-        self.assertEqual(self.problems(), ["skills/engineering/README.md:10: m is listed twice"])
+    def test_archived_entry_without_a_reason(self):
+        self.edit("third-party/skills.json", '{"name": "a", "why": "w"}', '{"name": "a", "why": " "}')
+        self.build()
+        self.assertEqual(self.problems(), ["third-party/skills.json: archived entry a from o/r doesn't say why"])
 
     def test_every_reason_must_be_text(self):
-        manifest = {"agents": ["x"], "sources": [{"repo": "o/r", "why": None, "skills": [{"name": "c", "why": ""}],
+        manifest = {"agents": ["x"], "sources": [{"repo": "o/r", "why": None,
+                                               "skills": [{"name": "c", "why": "", "invocation": "user"}],
                                                "archived": [{"name": "a"}]}]}
         self.write("third-party/skills.json", json.dumps(manifest))
+        self.build()
         self.assertEqual(self.problems(), [
             "third-party/skills.json: source o/r doesn't say why",
             "third-party/skills.json: skills entry c from o/r doesn't say why",
             "third-party/skills.json: archived entry a from o/r doesn't say why",
         ])
+
+    def test_a_curated_skill_records_its_invocation(self):
+        for bad in ('"invocation": "auto"', '"invocation": null', '"note": "none"'):
+            self.write("third-party/skills.json", json.dumps({"agents": ["x"], "sources": [
+                {"repo": "o/r", "why": "w", "skills": [{"name": "c", "why": "w"}]}]}).replace('"why": "w"}]', f'"why": "w", {bad}}}]'))
+            self.build()
+            self.assertEqual(self.problems(), [
+                'third-party/skills.json: skills entry c from o/r needs "invocation": "model" or "user"'], bad)
 
     def test_a_source_needs_agents(self):
         self.edit("third-party/skills.json", '"agents": ["claude-code"]', '"agents": []')

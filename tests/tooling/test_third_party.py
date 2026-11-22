@@ -11,18 +11,28 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from tooling import third_party
-from tooling.third_party import Home, check, install_commands, link, load, sync
+from tooling.third_party import (
+    Home,
+    check,
+    install_commands,
+    link,
+    load,
+    outdated,
+    sync,
+)
 
 MANIFEST = {
     "agents": ["claude-code"],
     "sources": [
         {"repo": "a/one", "why": "w", "agents": ["claude-code", "codex"],
-         "skills": [{"name": "alpha", "why": "w"}],
+         "skills": [{"name": "alpha", "why": "w", "invocation": "model"}],
          "archived": [{"name": "old", "why": "w"}]},
-        {"repo": "b/two", "why": "w", "skills": [{"name": "beta", "why": "w"}]},
+        {"repo": "b/two", "why": "w", "skills": [{"name": "beta", "why": "w", "invocation": "user"}]},
         {"repo": "c/none", "why": "w", "skills": [], "archived": [{"name": "gone", "why": "w"}]},
     ],
 }
+
+USER_INVOKED = "---\nname: beta\ndisable-model-invocation: true\n---\nBody.\n"
 
 
 class ThirdPartyTest(unittest.TestCase):
@@ -54,7 +64,7 @@ class ThirdPartyTest(unittest.TestCase):
 
     def good_install(self):
         for name, repo in (("alpha", "a/one"), ("beta", "b/two")):
-            self.installed(name)
+            self.installed(name, text=USER_INVOKED if name == "beta" else "same")
             self.locked(name, repo)
         codex = self.home.agent_dir("codex")
         codex.mkdir(parents=True)
@@ -76,6 +86,31 @@ class ThirdPartyTest(unittest.TestCase):
     def test_a_good_install_is_all_ok(self):
         self.good_install()
         self.assertEqual(self.findings(), [("ok        alpha", False), ("ok        beta", False)])
+
+    def test_an_installed_copy_invoked_differently_from_the_manifest_fails(self):
+        self.good_install()
+        self.installed("alpha", text=USER_INVOKED.replace("beta", "alpha"))
+        self.installed("beta", text="---\nname: beta\n---\nBody.\n")
+        self.assertEqual([f for f in self.findings() if f[0].startswith("invocation")], [
+            (("invocation alpha (skills.json says model-invoked; the installed copy is user-invoked "
+             "— update skills.json and run scripts/build-catalog.py)"), True),
+            (("invocation beta (skills.json says user-invoked; the installed copy is model-invoked "
+             "— update skills.json and run scripts/build-catalog.py)"), True),
+        ])
+
+    def test_invocation_reads_the_frontmatter_boolean(self):
+        cases = {
+            "disable-model-invocation: true": "user",
+            "disable-model-invocation: True  # typed only": "user",
+            'disable-model-invocation: "true"': "model",  # a string, not the boolean
+            "disable-model-invocation: false": "model",
+            "description: disable-model-invocation: true": "model",
+        }
+        for line, expected in cases.items():
+            self.installed("x", text=f"---\nname: x\n{line}\n---\nBody.\n")
+            self.assertEqual(third_party.invocation(self.home.store / "x/SKILL.md"), expected, line)
+        self.installed("x", text="Body.\ndisable-model-invocation: true\n")
+        self.assertEqual(third_party.invocation(self.home.store / "x/SKILL.md"), "model")
 
     def test_missing_and_conflict_fail(self):
         self.locked("alpha", "someone/else")
@@ -170,6 +205,44 @@ class ThirdPartyTest(unittest.TestCase):
             {"sources": [{"repo": "a/b", "why": None, "skills": [{"name": "x"}]}]}))
         [source] = load(repo).sources
         self.assertEqual((source.agents, source.why, source.skills[0].why), ((), "", ""))
+
+    def outdated(self, trees):
+        """`outdated` findings against `trees`: {repo: {folder: sha}}, or an exception to raise."""
+        self.home.lock.parent.mkdir(parents=True, exist_ok=True)
+        self.home.lock.write_text(json.dumps({"skills": self.lock}))
+        asked = []
+
+        def folders(repo):
+            asked.append(repo)
+            if isinstance(trees[repo], Exception):
+                raise trees[repo]
+            return trees[repo]
+
+        found = [str(f) for f in outdated(self.manifest, self.home, folders)]
+        return found, asked
+
+    def test_outdated_compares_the_installed_folder_hash_with_upstream(self):
+        self.lock = {
+            "alpha": {"source": "a/one", "skillPath": "skills/alpha/SKILL.md", "skillFolderHash": "old",
+                      "updatedAt": "2026-11-01T10:00:00Z"},
+            "beta": {"source": "b/two", "skillPath": "SKILL.md", "skillFolderHash": "root"},
+        }
+        found, asked = self.outdated({"a/one": {"": "x", "skills/alpha": "new"}, "b/two": {"": "root"}})
+        self.assertEqual(found, ["outdated  alpha (a/one changed it since the install of 2026-11-01 — run the sync)"])
+        self.assertEqual(asked, ["a/one", "b/two"])
+
+    def test_outdated_reports_a_skill_gone_upstream_and_an_unreadable_source(self):
+        self.lock = {
+            "alpha": {"source": "a/one", "skillPath": "skills/alpha/SKILL.md", "skillFolderHash": "h"},
+            "beta": {"source": "b/two", "skillPath": "SKILL.md", "skillFolderHash": "h"},
+        }
+        found, _ = self.outdated({"a/one": {"": "x"}, "b/two": OSError("rate limited")})
+        self.assertEqual(found, ["outdated  alpha (a/one no longer has skills/alpha/)",
+                                 "unknown   beta (couldn't read b/two: rate limited)"])
+
+    def test_outdated_leaves_a_skill_from_another_source_to_check(self):
+        self.lock = {"alpha": {"source": "x/elsewhere", "skillPath": "SKILL.md", "skillFolderHash": "h"}}
+        self.assertEqual(self.outdated({}), ([], []))
 
     def test_listing(self):
         lines = third_party.listing(self.manifest)

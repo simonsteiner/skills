@@ -62,7 +62,7 @@ The run covered 1,075 Claude Code sessions (about 2,160 subagent and eval paths 
 | sync-and-branch | 20 (0 / 20) | 16 | 0 | 0 |
 | frontend-craft | 15 (6 / 9) | 12 | 2 | 0 |
 
-Every other skill had no corrections. Codex added 103 loads, mostly codebase-design, conventional-commit and diagnosing-bugs, with no corrections; its user-invoked loads were sync-and-branch (4), address-review-findings (2) and one archived curated skill.
+Every other skill had no corrections. Codex added 103 loads, mostly codebase-design, conventional-commit and diagnosing-bugs, with no corrections; its slash-command loads were sync-and-branch (4), address-review-findings (2) and one archived curated skill.
 
 Themes, and what has happened to each since:
 
