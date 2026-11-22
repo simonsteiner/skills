@@ -1,5 +1,15 @@
 # simonsteiner-skills
 
+## 1.19.0
+
+### Minor Changes
+
+- [#97](https://github.com/simonsteiner/skills/pull/97) [`60f3c4f`](https://github.com/simonsteiner/skills/commit/60f3c4f747468956f5e444cbadf2fd67df3d335c) Thanks [@simonsteiner](https://github.com/simonsteiner)! - setup-lefthook adds a second shared check to every project: a pre-commit job that blocks em and en dashes in staged files, with the token budget's exemptions, and prints how to rewrite each one. Both scripts now ship from one `hooks.v*` tag through `lefthook/hooks.yml`; a project on a `filetokens.v*` ref bumps `ref:` and adds the `dashes` job.
+
+### Patch Changes
+
+- [#97](https://github.com/simonsteiner/skills/pull/97) [`eb59afe`](https://github.com/simonsteiner/skills/commit/eb59afe8268b2c797a6df0ae73c23c408fcb0c6b) Thanks [@simonsteiner](https://github.com/simonsteiner)! - Skills, docs and script messages no longer use em or en dashes, and the examples in pr-body and conventional-commit no longer model them. Catalog entries now read `**name**: summary`.
+
 ## 1.18.0
 
 ### Minor Changes
