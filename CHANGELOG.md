@@ -1,5 +1,13 @@
 # simonsteiner-skills
 
+## 1.17.2
+
+### Patch Changes
+
+- [#90](https://github.com/simonsteiner/skills/pull/90) [`698317d`](https://github.com/simonsteiner/skills/commit/698317d6613276b9b34b884c65397cc503ede92a) Thanks [@simonsteiner](https://github.com/simonsteiner)! - review-prs no longer claims T3 removes the worktree a `delegate_task` review creates. T3 leaves it, and the branch it made, on disk, so the skill now removes both once the review is posted and checks for them before reporting.
+
+- [#90](https://github.com/simonsteiner/skills/pull/90) [`4cd0352`](https://github.com/simonsteiner/skills/commit/4cd035208efbefe3872af7bd5b7e4e072fbc84df) Thanks [@simonsteiner](https://github.com/simonsteiner)! - test-review's report template marks the Hand-offs link in "Jump to" as present only when the report has a Hand-offs section, so a report without hand-offs no longer carries a dead link. The coverage step hands off to a sonar-coverage skill through the Skill tool, like the skill's other hand-offs.
+
 ## 1.17.1
 
 ### Patch Changes
