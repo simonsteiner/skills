@@ -26,8 +26,9 @@ sessions (cwd or project contains eval-workspace, or the first message is a
 1. Write a Python script in your scratchpad and run it with `python3 -I`:
    - loads: assistant Skill tool calls ("name":"Skill", input.skill, strip a
      plugin: prefix) and "Base directory for this skill: <path>/<name>" lines;
-     a load preceded by a <command-name> message is a slash load. Dedupe by
-     session plus position.
+     a load preceded by a <command-name> message is a slash load. A "Base
+     directory" line right after a "Launching skill:" tool result is a model
+     load, however far back its Skill call was. Dedupe by session plus position.
    - pair each load with the next real human message, skipping tool results,
      system reminders, command output, hook output, compaction summaries, task
      notifications and agent-relayed messages. Keep ~400 chars of it.
@@ -49,19 +50,19 @@ Compare the result with the previous run below. A theme that comes back after th
 
 ## Run of 2026-11-22
 
-The run covered 1,075 Claude Code sessions (about 2,160 subagent and eval paths skipped) and 40 Codex sessions. About 1,100 loads were followed by a human message, and about 14 of those messages were clear corrections.
+The run covered 1,075 Claude Code sessions (about 2,160 subagent and eval paths skipped) and 40 Codex sessions. About 1,100 loads were followed by a human message, and about 14 of those messages were clear corrections. The table counts Claude Code loads only.
 
 | Skill | Loads (slash / model) | With a next message | Clear | Borderline |
 |---|---|---|---|---|
-| conventional-commit | 473 (0 / 472) | 301 | 1 | 2 |
+| conventional-commit | 473 (0 / 473) | 301 | 1 | 2 |
 | address-review-findings | 428 (19 / 409) | 201 | 2 | 6 |
 | review-prs | 424 (411 / 13) | 190 | 3 | 4 |
-| pr-body | 292 (0 / 286) | 205 | 3 | 4 |
+| pr-body | 292 (0 / 292) | 205 | 3 | 4 |
 | domain-modeling (curated) | 27 (3 / 24) | 27 | 3 | 0 |
-| sync-and-branch | 25 (4 / 21) | 17 | 0 | 0 |
+| sync-and-branch | 20 (0 / 20) | 16 | 0 | 0 |
 | frontend-craft | 15 (6 / 9) | 12 | 2 | 0 |
 
-Every other skill had no corrections. Codex had none either.
+Every other skill had no corrections. Codex added 103 loads, mostly codebase-design, conventional-commit and diagnosing-bugs, with no corrections; its user-invoked loads were sync-and-branch (4), address-review-findings (2) and one archived curated skill.
 
 Themes, and what has happened to each since:
 
