@@ -51,7 +51,7 @@ The repo this one forked from ([ADR 0001](../docs/adr/0001-fork-and-pare-down-to
 
 ## cloudflare/skills
 
-Cloudflare's own skills for the developer platform, all retrieval-first over live Cloudflare docs. These arrived through a plugin marketplace and sat outside the manifest as frozen copies until [ADR 0003](../docs/adr/0003-move-the-cloudflare-skills-onto-the-curated-channel.md) moved them onto this channel; the repo's `commands/` and `rules/` are deliberately not curated, since only its Claude Code plugin installs those. They load per project, in Cloudflare Pages projects, so a month without loads isn't a reason to archive them.
+Cloudflare's own skills for the developer platform, all retrieval-first over live Cloudflare docs. These arrived through a plugin marketplace and sat outside the manifest as frozen copies until [ADR 0003](../docs/adr/0003-move-the-cloudflare-skills-onto-the-curated-channel.md) moved them onto this channel; the repo's `commands/` and `rules/` are deliberately not curated, since only its Claude Code plugin installs those. cloudflare and wrangler load only in Cloudflare Pages projects, so a month without loads isn't a reason to archive them.
 
 ### Model-invoked
 
