@@ -1,5 +1,11 @@
 # simonsteiner-skills
 
+## 1.17.1
+
+### Patch Changes
+
+- [#91](https://github.com/simonsteiner/skills/pull/91) [`cbcf013`](https://github.com/simonsteiner/skills/commit/cbcf0133ab62d708238dda4e8ed4faa769c78b9a) Thanks [@simonsteiner](https://github.com/simonsteiner)! - The curated list drops two third-party skills that were never used in Claude Code: `handoff` (mattpocock/skills) and `writing-guidelines` (vercel-labs/agent-skills). They move to their sources' archived lists, so `scripts/sync-third-party.py` stops installing them and `--check` reports any copy still installed.
+
 ## 1.17.0
 
 ### Minor Changes
