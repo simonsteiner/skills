@@ -10,13 +10,13 @@ The backlog, in rank order. After the scan only this table (including `S` rows B
 
 | ID | Candidate | Kind | Strength | Door | Fix | Status | Branch | PR | Notes |
 |---|---|---|---|---|---|---|---|---|---|
-| [C1](C1-suite-to-pre-push.md) | Take the 19 s suite off pre-commit | 🔧 infra | 🟢 Strong | ↔ two-way | `direct` | in-progress | `ci/suite-off-pre-commit` | | first: every later commit in the batch pays it |
+| [C1](C1-suite-to-pre-push.md) | Take the 19 s suite off pre-commit | 🔧 infra | 🟢 Strong | ↔ two-way | `direct` | pr-open | `ci/suite-off-pre-commit` | #101 | first: every later commit in the batch pays it |
 | [C2](C2-pin-sync-third-party.md) | Pin `sync-third-party.py` and its GitHub adapter | 🕳️ blind spot | 🟢 Strong | ↔ two-way | `tdd` | in-progress | `test/sync-third-party` | | |
 | [C3](C3-pin-reply-resolve.md) | Pin `reply-resolve.sh` at its command | 🕳️ blind spot | 🟢 Strong | ↔ two-way | `tdd` | in-progress | `test/reply-resolve` | | |
 | [C4](C4-pin-eval-skill.md) | Pin `eval-skill.py`'s command | 🕳️ blind spot | 🟡 Worth exploring | ↔ two-way | `tdd` | todo | `test/eval-skill` | | not in the 2026-11-22 batch |
-| [S1](#s1--cis-ruff-skips-the-bundled-python-scripts) | CI's ruff skips the bundled Python scripts | 🔧 infra | - | ↔ two-way | `direct` | in-progress | rides with C1 | | |
-| [S2](#s2--no-documented-single-test-command) | No documented single-test command | 🔧 infra | - | ↔ two-way | `direct` | in-progress | rides with C1 | | |
-| [S3](#s3--a-skip-the-documented-command-can-never-take) | A skip the documented command can never take | 🗑️ waste | - | ↔ two-way | `prune-tests` | in-progress | rides with C1 | | |
+| [S1](#s1--cis-ruff-skips-the-bundled-python-scripts) | CI's ruff skips the bundled Python scripts | 🔧 infra | - | ↔ two-way | `direct` | pr-open | rides with C1 | #101 | |
+| [S2](#s2--no-documented-single-test-command) | No documented single-test command | 🔧 infra | - | ↔ two-way | `direct` | pr-open | rides with C1 | #101 | |
+| [S3](#s3--a-skip-the-documented-command-can-never-take) | A skip the documented command can never take | 🗑️ waste | - | ↔ two-way | `prune-tests` | pr-open | rides with C1 | #101 | |
 
 Kind: 🕳️ blind spot (fixed with tdd) · 🗑️ waste (fixed with prune-tests) · 🔧 infra (a direct change).
 Strength: 🟢 Strong · 🟡 Worth exploring · ⚪ Speculative · 🔴 live defect (a bug reproduced during the scan).
