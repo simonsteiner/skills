@@ -39,7 +39,7 @@ npx changeset  # add a changeset for a user-visible change
 ### Authoring
 
 - **Skills follow the [Agent Skills specification](https://agentskills.io/specification), its [best practices](https://agentskills.io/skill-creation/best-practices) and Anthropic's [skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices).** Run `scripts/lint-skills.py` after changing a skill.
-- **Every rule the lint checks is listed in the module that checks it.** Authoring rules in `scripts/tooling/authoring_rules.py`, catalog and listing rules in `published_rules.py` and `catalog.py`, bucket and name rules in `skill_inventory.py`. When a guide adds a rule a script can check, add it there with a test rather than as prose here.
+- **Every rule the lint checks is listed in the module that checks it.** Authoring rules in `scripts/tooling/authoring_rules.py` (bundled-script rules in `script_rules.py`), catalog and listing rules in `published_rules.py` and `catalog.py`, bucket and name rules in `skill_inventory.py`. When a guide adds a rule a script can check, add it there with a test rather than as prose here.
 - **Fragile, exact operations go in the skill's `scripts/` folder**, not inline in `SKILL.md`: API calls, multi-step shell sequences. Each bundled script is tested from `tests/skill_scripts/` against the fake `gh` in `tests/skill_scripts/fake_gh.py`.
 
 ### Tooling and tests
