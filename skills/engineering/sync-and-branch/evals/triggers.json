@@ -1,0 +1,53 @@
+{
+  "skills": ["sync-and-branch"],
+  "triggers": [
+    {
+      "query": "commit this to a new branch",
+      "should_trigger": true
+    },
+    {
+      "query": "move this to a feature branch",
+      "should_trigger": true
+    },
+    {
+      "query": "branch off fresh main and implement the retry fix",
+      "should_trigger": true
+    },
+    {
+      "query": "sync my fork with upstream",
+      "should_trigger": true
+    },
+    {
+      "query": "new branch on top of feat/auth",
+      "should_trigger": true
+    },
+    {
+      "query": "switch to the existing feat/auth branch",
+      "should_trigger": false
+    },
+    {
+      "query": "commit and push",
+      "should_trigger": false
+    },
+    {
+      "query": "open a PR",
+      "should_trigger": false
+    },
+    {
+      "query": "start the CSV export feature, it'll need its own PR",
+      "should_trigger": true
+    },
+    {
+      "query": "I'm on main with changes, these belong on a branch",
+      "should_trigger": true
+    },
+    {
+      "query": "delete the merged local branches",
+      "should_trigger": false
+    },
+    {
+      "query": "amend the last commit's message to mention issue 12",
+      "should_trigger": false
+    }
+  ]
+}

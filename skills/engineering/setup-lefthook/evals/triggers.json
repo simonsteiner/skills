@@ -1,0 +1,41 @@
+{
+  "skills": ["setup-lefthook"],
+  "triggers": [
+    {
+      "query": "add pre-commit hooks to this repo",
+      "should_trigger": true
+    },
+    {
+      "query": "set up lefthook",
+      "should_trigger": true
+    },
+    {
+      "query": "run eslint and prettier on every commit",
+      "should_trigger": true
+    },
+    {
+      "query": "stop agents from committing 3000-line files",
+      "should_trigger": true
+    },
+    {
+      "query": "the lint step fails in CI, fix it",
+      "should_trigger": false
+    },
+    {
+      "query": "commit this",
+      "should_trigger": false
+    },
+    {
+      "query": "harden the GitHub Actions workflow in .github/workflows/ci.yml",
+      "should_trigger": false
+    },
+    {
+      "query": "make sure nobody can commit code that fails the typecheck",
+      "should_trigger": true
+    },
+    {
+      "query": "release 2.4.0: bump the version and tag it",
+      "should_trigger": false
+    }
+  ]
+}

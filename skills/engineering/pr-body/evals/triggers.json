@@ -1,0 +1,65 @@
+{
+  "skills": ["pr-body"],
+  "triggers": [
+    {
+      "query": "open a PR",
+      "should_trigger": true
+    },
+    {
+      "query": "push and open a PR",
+      "should_trigger": true
+    },
+    {
+      "query": "write the PR description for this branch",
+      "should_trigger": true
+    },
+    {
+      "query": "the PR body is out of date after the last fixes, update it",
+      "should_trigger": true
+    },
+    {
+      "query": "ok looks good, commit it and open a PR",
+      "should_trigger": true
+    },
+    {
+      "query": "open it as a stacked PR on top of #41",
+      "should_trigger": true
+    },
+    {
+      "query": "review PR 41",
+      "should_trigger": false
+    },
+    {
+      "query": "merge PR 41 once checks pass",
+      "should_trigger": false
+    },
+    {
+      "query": "what's left on PR 41?",
+      "should_trigger": false
+    },
+    {
+      "query": "commit and push",
+      "should_trigger": false
+    },
+    {
+      "query": "rename the config key to retry_limit everywhere and put it up for review",
+      "should_trigger": true
+    },
+    {
+      "query": "get this reviewed",
+      "should_trigger": true
+    },
+    {
+      "query": "the PR title is wrong, retitle it",
+      "should_trigger": true
+    },
+    {
+      "query": "hours parse wrong for 1h30m. fix it and push",
+      "should_trigger": false
+    },
+    {
+      "query": "close PR 41, it's superseded",
+      "should_trigger": false
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "skills": ["download-media"],
+  "triggers": [
+    {
+      "query": "look at the screenshot in issue 33",
+      "should_trigger": true
+    },
+    {
+      "query": "see the recording on PR 12, the bug is in there",
+      "should_trigger": true
+    },
+    {
+      "query": "what does this show? https://github.com/user-attachments/assets/3f2a9c1e-7b4d-4e8a-9f0c-2d6b1a5e8c47",
+      "should_trigger": true
+    },
+    {
+      "query": "the bug report in issue 58 has a screenshot of the error, fix it",
+      "should_trigger": true
+    },
+    {
+      "query": "add the before/after screenshots in ./shots to the PR body",
+      "should_trigger": false
+    },
+    {
+      "query": "download the latest release binary of ripgrep from GitHub",
+      "should_trigger": false
+    },
+    {
+      "query": "issue 90 says 'see attached', what's wrong?",
+      "should_trigger": true
+    },
+    {
+      "query": "put chart.png from ./out in PR 15's description",
+      "should_trigger": false
+    }
+  ]
+}

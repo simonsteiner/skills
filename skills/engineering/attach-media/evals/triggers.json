@@ -1,0 +1,37 @@
+{
+  "skills": ["attach-media"],
+  "triggers": [
+    {
+      "query": "add the before/after screenshots in ./shots to the PR body",
+      "should_trigger": true
+    },
+    {
+      "query": "embed demo.mp4 in issue 33",
+      "should_trigger": true
+    },
+    {
+      "query": "attach screenshot.png to my comment on PR 12",
+      "should_trigger": true
+    },
+    {
+      "query": "look at the screenshot in issue 33",
+      "should_trigger": false
+    },
+    {
+      "query": "take a screenshot of the login page",
+      "should_trigger": false
+    },
+    {
+      "query": "open a PR",
+      "should_trigger": false
+    },
+    {
+      "query": "put chart.png from ./out in PR 15's description",
+      "should_trigger": true
+    },
+    {
+      "query": "issue 90 says 'see attached', what's wrong?",
+      "should_trigger": false
+    }
+  ]
+}

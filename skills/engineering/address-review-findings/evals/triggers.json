@@ -1,0 +1,45 @@
+{
+  "skills": ["address-review-findings"],
+  "triggers": [
+    {
+      "query": "the reviewer left comments on PR 41, address them",
+      "should_trigger": true
+    },
+    {
+      "query": "what's left on PR 41?",
+      "should_trigger": true
+    },
+    {
+      "query": "the review came back on my PR, can you deal with it",
+      "should_trigger": true
+    },
+    {
+      "query": "resolve the open review threads on #12 and #13",
+      "should_trigger": true
+    },
+    {
+      "query": "reply to the reviewer on PR 9, I think their second point is wrong",
+      "should_trigger": true
+    },
+    {
+      "query": "review PR 41",
+      "should_trigger": false
+    },
+    {
+      "query": "merge PR 41 once checks pass",
+      "should_trigger": false
+    },
+    {
+      "query": "none of my open PRs have had a human review yet, can you go through them",
+      "should_trigger": false
+    },
+    {
+      "query": "CodeRabbit flagged a bunch of stuff on #77, go through it",
+      "should_trigger": true
+    },
+    {
+      "query": "anything in the open PRs I should worry about before I merge them?",
+      "should_trigger": false
+    }
+  ]
+}
