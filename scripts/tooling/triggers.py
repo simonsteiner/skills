@@ -41,6 +41,7 @@ WORKSPACE = ".eval-workspace"
 FOLDER = "_triggers"  # not a valid skill name, so it can't collide with a skill's own folder
 FILE = "evals/triggers.json"
 BATCH = 15
+CATALOGUE = "catalogue.json"
 SEED = 0  # a fixed shuffle: reruns and both configs see the same order
 
 
@@ -63,7 +64,16 @@ def problems(skill):
     cases = data.get("triggers")
     if not isinstance(cases, list) or not cases:
         return out + ['"triggers" must be a non-empty list']
-    seen = set()
+    out += _case_problems(cases)
+    labels = {c.get("should_trigger") for c in cases if isinstance(c, dict)}
+    if not out and labels != {True, False}:
+        out.append("triggers.json needs both should_trigger true and false cases: a skill that fires on everything passes the first kind alone")
+    return out
+
+
+def _case_problems(cases):
+    """What's wrong with the entries of "triggers": a missing query or label, or a repeated query."""
+    out, seen = [], set()
     for i, case in enumerate(cases, 1):
         if not isinstance(case, dict) or not isinstance(case.get("query"), str) or not case["query"].strip():
             out.append(f'trigger {i} needs a non-empty "query"')
@@ -73,9 +83,6 @@ def problems(skill):
         if case["query"] in seen:
             out.append(f"trigger {i} repeats an earlier query")
         seen.add(case["query"])
-    labels = {c.get("should_trigger") for c in cases if isinstance(c, dict)}
-    if not out and labels != {True, False}:
-        out.append("triggers.json needs both should_trigger true and false cases: a skill that fires on everything passes the first kind alone")
     return out
 
 
@@ -178,7 +185,7 @@ def prepare(repo, skills, baseline=None, also=(), root=None):
     tasks = []
     for config, entries in configs.items():
         (iteration / config).mkdir()
-        (iteration / config / "catalogue.json").write_text(json.dumps(entries, indent=2) + "\n")
+        (iteration / config / CATALOGUE).write_text(json.dumps(entries, indent=2) + "\n")
         listing = "\n".join(f"- **{e['name']}**: {e['description']}" for e in entries)
         for k in range(0, len(all_cases), BATCH):
             batch = iteration / config / f"batch-{k // BATCH + 1}"
@@ -211,6 +218,32 @@ def _answers(config_dir, iteration):
     return merged
 
 
+def _score_config(config_dir, iteration, all_cases):
+    """One config's pass rate, per-skill counts, absent skills and misses."""
+    answers = _answers(config_dir, iteration)
+    listed = {e["name"] for e in json.loads((config_dir / CATALOGUE).read_text())}
+    per_skill, misses = {}, []
+    for case in all_cases:
+        picked = answers.get(case["id"], set())
+        for skill, should in sorted(case["labels"].items()):
+            row = per_skill.setdefault(skill, {"should_trigger": [0, 0], "should_not_trigger": [0, 0]})
+            cell = row["should_trigger" if should else "should_not_trigger"]
+            ok = (skill in picked) == should
+            cell[0] += ok
+            cell[1] += 1
+            if not ok:
+                misses.append({"query": case["query"], "skill": skill, "should_trigger": should, "loaded": sorted(picked)})
+    passed = sum(c[0] for r in per_skill.values() for c in r.values())
+    total = sum(c[1] for r in per_skill.values() for c in r.values())
+    return {
+        "pass_rate": round(passed / total, 4) if total else 0.0,
+        "passed": passed, "total": total,
+        "per_skill": {s: {k: f"{c[0]}/{c[1]}" for k, c in r.items()} for s, r in per_skill.items()},
+        "absent": sorted(s for s in per_skill if s not in listed),
+        "misses": misses,
+    }
+
+
 def score(iteration):
     """Score every config's answers against cases.json; write and return trigger-benchmark.json.
 
@@ -219,34 +252,10 @@ def score(iteration):
     "absent" so its misses read as such.
     """
     all_cases = json.loads((iteration / "cases.json").read_text())
-    configs = sorted(p for p in iteration.iterdir() if (p / "catalogue.json").exists())
+    configs = sorted(p for p in iteration.iterdir() if (p / CATALOGUE).exists())
     if not configs:
         raise ValueError(f"no configs in {iteration}")
-    result = {}
-    for config_dir in configs:
-        answers = _answers(config_dir, iteration)
-        listed = {e["name"] for e in json.loads((config_dir / "catalogue.json").read_text())}
-        per_skill, misses = {}, []
-        for case in all_cases:
-            picked = answers.get(case["id"], set())
-            for skill, should in sorted(case["labels"].items()):
-                row = per_skill.setdefault(skill, {"should_trigger": [0, 0], "should_not_trigger": [0, 0]})
-                cell = row["should_trigger" if should else "should_not_trigger"]
-                ok = (skill in picked) == should
-                cell[0] += ok
-                cell[1] += 1
-                if not ok:
-                    misses.append({"query": case["query"], "skill": skill, "should_trigger": should,
-                                   "loaded": sorted(picked)})
-        passed = sum(c[0] for r in per_skill.values() for c in r.values())
-        total = sum(c[1] for r in per_skill.values() for c in r.values())
-        result[config_dir.name] = {
-            "pass_rate": round(passed / total, 4) if total else 0.0,
-            "passed": passed, "total": total,
-            "per_skill": {s: {k: f"{c[0]}/{c[1]}" for k, c in r.items()} for s, r in per_skill.items()},
-            "absent": sorted(s for s in per_skill if s not in listed),
-            "misses": misses,
-        }
+    result = {c.name: _score_config(c, iteration, all_cases) for c in configs}
     if "with_skill" in result and "old_skill" in result:
         result["delta"] = {"pass_rate": round(result["with_skill"]["pass_rate"] - result["old_skill"]["pass_rate"], 4)}
     (iteration / "trigger-benchmark.json").write_text(json.dumps(result, indent=2) + "\n")

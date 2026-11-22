@@ -43,23 +43,28 @@ def main(argv):
     if argv in ([], ["-h"], ["--help"]):
         print(__doc__.strip() if argv else USAGE, file=sys.stdout if argv else sys.stderr)
         return 0 if argv else 2
-    cmd, args = argv[0], argv[1:]
     try:
-        if cmd == "prepare" and len(args) in (1, 3) and (len(args) == 1 or args[1] == "--baseline"):
-            return prepare(args[0], args[2] if len(args) == 3 else None)
-        if cmd == "benchmark" and len(args) == 1:
-            print(json.dumps(evals.benchmark(Path(args[0])), indent=2))
-            return 0
-        if cmd == "triggers" and (opts := _options(args, {"--baseline", "--also"})) is not None:
-            return prepare_triggers(opts.get("--baseline", [None])[-1], opts.get("--also", []))
-        if cmd == "triggers-score" and len(args) == 1:
-            print(json.dumps(triggers.score(Path(args[0])), indent=2))
-            return 0
+        code = _run(argv[0], argv[1:])
     except (ValueError, RuntimeError) as e:  # RuntimeError: ruamel.yaml missing outside uv
         print(f"error: {e}", file=sys.stderr)
         return 1
-    print(USAGE, file=sys.stderr)
-    return 2
+    if code is None:
+        print(USAGE, file=sys.stderr)
+        return 2
+    return code
+
+
+def _run(cmd, args):
+    """Run one subcommand; None when `cmd` and `args` aren't a valid call."""
+    if cmd == "prepare" and len(args) in (1, 3) and (len(args) == 1 or args[1] == "--baseline"):
+        return prepare(args[0], args[2] if len(args) == 3 else None)
+    if cmd == "triggers" and (opts := _options(args, {"--baseline", "--also"})) is not None:
+        return prepare_triggers(opts.get("--baseline", [None])[-1], opts.get("--also", []))
+    scorers = {"benchmark": evals.benchmark, "triggers-score": triggers.score}
+    if cmd in scorers and len(args) == 1:
+        print(json.dumps(scorers[cmd](Path(args[0])), indent=2))
+        return 0
+    return None
 
 
 def _options(args, names):

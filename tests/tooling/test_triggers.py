@@ -87,7 +87,8 @@ class TriggersTest(unittest.TestCase):
             "open a PR": {"commit": False, "pr": True},
             "review PR 7": {"pr": False},
         })
-        self.assertEqual(triggers.cases(self.skills()), triggers.cases(self.skills()), "the shuffle is fixed")
+        first, again = triggers.cases(self.skills()), triggers.cases(self.skills())
+        self.assertEqual([c["query"] for c in first], [c["query"] for c in again], "the shuffle is fixed")
 
     def test_catalogue_lists_model_invoked_published_skills_and_extras(self):
         self.skill("draft", "Unpublished. Use when drafting.", bucket="in-progress")
@@ -147,8 +148,9 @@ class TriggersTest(unittest.TestCase):
 
     def test_prepare_refuses_invalid_triggers(self):
         (self.by_name("commit").folder / "evals/triggers.json").write_text("{")
+        skills = self.skills()
         with self.assertRaisesRegex(ValueError, "commit: triggers.json isn't valid JSON"):
-            triggers.prepare(self.repo, self.skills())
+            triggers.prepare(self.repo, skills)
 
     def answer(self, iteration, config, picks):
         ids = {c["query"]: c["id"] for c in json.loads((iteration / "cases.json").read_text())}
