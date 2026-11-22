@@ -1,8 +1,8 @@
 {
   "name": "simonsteiner-skills",
   "skills": [
-    "./skills/engineering/arch-review",
     "./skills/engineering/address-review-findings",
+    "./skills/engineering/arch-review",
     "./skills/engineering/attach-media",
     "./skills/engineering/conventional-commit",
     "./skills/engineering/docs-refactor",

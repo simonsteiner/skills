@@ -4,11 +4,16 @@
 pre-commit:
   parallel: true
   commands:
-    # Whole repo, not just the staged files: the rules cross files (README and
-    # plugin.json entries, links, shared trigger phrases). Same check as CI.
+    # Rebuilds the skill catalog (README.md, bucket READMEs, plugin.json) from the
+    # skills and stages the files it rewrote, then lints the whole repo, not just
+    # the staged files: the rules cross files (links, shared trigger phrases). One
+    # job, so the lint never reads a catalog the build is still writing. Same lint as CI.
     lint-skills:
       glob: "{skills/**,third-party/**,README.md,.claude-plugin/**,scripts/*.py,scripts/**/*.py,pyproject.toml,uv.lock}"
-      run: uv run --locked --no-build python3 scripts/lint-skills.py
+      run: >-
+        out=$(uv run --locked --no-build python3 scripts/build-catalog.py) &&
+        printf '%s\n' "$out" | sed -n 's/^wrote //p' | xargs -r git add &&
+        uv run --locked --no-build python3 scripts/lint-skills.py
 
     # Same as CI: the tooling, the scripts bundled in skills against a fake gh, and the skills' prose.
     tests:

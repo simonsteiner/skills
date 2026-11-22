@@ -1,31 +1,17 @@
 """The AGENTS.md listing rules for owned skills, checked against the files that list them.
 
-- every published skill (engineering/, productivity/, misc/) has one entry in the
-  top-level README.md and one in .claude-plugin/plugin.json; nothing else does
-- every skill has one entry in its bucket's README.md
-- an entry is a list item `- **[name](path/to/SKILL.md)** — …` linking the skill's name
-  to its SKILL.md, under the `User-invoked` or `Model-invoked` heading its frontmatter
-  calls for
+- the skill catalog (README.md, every bucket README, .claude-plugin/plugin.json) is what
+  scripts/build-catalog.py renders from the skills (tooling/catalog.py), and every
+  model-invoked description has the summary the catalog lists
+- README.md links no unpublished skill (personal/, in-progress/, deprecated/), anywhere
 - every curated and archived skill in third-party/skills.json, and every source, says why
 
 lint-skills.py runs check(); tests/tooling/test_published_rules.py tests it.
 """
 
-import json
 import re
-from dataclasses import dataclass
 
-from . import third_party
-
-GROUPS = ("User-invoked", "Model-invoked")
-
-
-@dataclass(frozen=True)
-class Entry:
-    name: str
-    target: str
-    group: str | None  # the User-/Model-invoked heading it sits under, if any
-    line: int
+from . import catalog, third_party
 
 
 def prose(text):
@@ -41,85 +27,20 @@ def prose(text):
             yield n, line
 
 
-def entries(text):
-    """The skill entries in a Markdown list: `- **[name](target)**` items.
-
-    Text inside HTML comments and fenced code blocks is not an entry.
-    """
-    found, group = [], None
-    for n, line in prose(text):
-        heading = re.match(r"#+\s+(.*)", line)
-        if heading:
-            title = heading.group(1).strip()
-            group = title if title in GROUPS else None
-            continue
-        item = re.match(r"[-*]\s+\*\*\[([^\]]+)\]\(([^)\s]+)\)\*\*", line)
-        if item:
-            found.append(Entry(item.group(1), item.group(2), group, n))
-    return found
-
-
 def links(text):
     """(line number, target) for every Markdown link outside comments and code fences."""
     return [(n, target) for n, line in prose(text) for target in re.findall(r"\]\(([^)\s]+)", line)]
 
 
-def check_list(path, listed, expected, repo):
-    """`listed`: the entries in one file. `expected`: {target: skill} it must hold, exactly."""
-    problems, seen = [], set()
-    where = path.relative_to(repo).as_posix()
-    for e in listed:
-        skill = expected.get(e.target)
-        if skill is None:
-            problems.append(f"{where}:{e.line}: {e.name} links {e.target}, which is no skill this file lists")
-            continue
-        if e.target in seen:
-            problems.append(f"{where}:{e.line}: {skill.name} is listed twice")
-        seen.add(e.target)
-        if e.name != skill.name:
-            problems.append(f"{where}:{e.line}: link text {e.name!r} isn't the skill's name {skill.name!r}")
-        group = GROUPS[skill.model_invoked]
-        if e.group != group:
-            problems.append(f"{where}:{e.line}: {skill.name} is {group} but listed under {e.group or 'no group heading'}")
-    for target, skill in expected.items():
-        if target not in seen:
-            problems.append(f"{where}: no entry linking {skill.name} to {target}")
-    return problems
-
-
 def check(repo, skills):
     """Every listing-rule problem for `skills` (an inventory) under `repo`, as messages."""
-    problems = []
+    problems = catalog.problems(skills, repo) + catalog.stale(skills, repo)
 
     readme = repo / "README.md"
-    published = {f"./{s.skill_md.relative_to(repo).as_posix()}": s for s in skills if s.published}
-    # Any link, not only a list entry, puts an unpublished skill in the README.
     unpublished = {s.folder.relative_to(repo).as_posix(): s for s in skills if not s.published}
-
-    def unpublished_skill(target):
-        return unpublished.get(re.sub(r"^\./|/SKILL\.md$|/$", "", target))
-
-    for n, target in links(readme.read_text()):
-        if skill := unpublished_skill(target):
+    for n, target in links(readme.read_text()) if readme.exists() else []:
+        if skill := unpublished.get(re.sub(r"^\./|/SKILL\.md$|/$", "", target)):
             problems.append(f"README.md:{n}: {skill.name} is in {skill.bucket}/ but README.md links it")
-    listed = [e for e in entries(readme.read_text())
-              if e.target.startswith("./skills/") and not unpublished_skill(e.target)]
-    problems += check_list(readme, listed, published, repo)
-
-    # Every bucket with skills, and every bucket README left behind by an emptied bucket.
-    buckets = {s.bucket for s in skills} | {p.parent.name for p in repo.glob("skills/*/README.md")}
-    for bucket in sorted(buckets):
-        bucket_readme = repo / "skills" / bucket / "README.md"
-        if not bucket_readme.exists():
-            problems.append(f"skills/{bucket}/README.md is missing")
-            continue
-        expected = {f"./{s.name}/SKILL.md": s for s in skills if s.bucket == bucket}
-        problems += check_list(bucket_readme, entries(bucket_readme.read_text()), expected, repo)
-
-    plugin = set(json.loads((repo / ".claude-plugin/plugin.json").read_text())["skills"])
-    folders = {f"./{s.folder.relative_to(repo).as_posix()}" for s in skills if s.published}
-    problems += [f".claude-plugin/plugin.json doesn't list {f}" for f in sorted(folders - plugin)]
-    problems += [f".claude-plugin/plugin.json lists {f}, which is no published skill" for f in sorted(plugin - folders)]
 
     return problems + check_manifest(repo)
 

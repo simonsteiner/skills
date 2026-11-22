@@ -2,8 +2,9 @@
 """Check every owned skill against the rules this repo follows; CI and lefthook run it.
 
 - tooling/authoring_rules.py: the Agent Skills spec and best-practice guides, per skill
-- tooling/published_rules.py: the AGENTS.md listing rules (README.md, bucket READMEs,
-  plugin.json, a reason for every curated and archived skill)
+- tooling/published_rules.py: the AGENTS.md listing rules (the skill catalog that
+  build-catalog.py renders is up to date, no unpublished skill in README.md, a reason
+  for every curated and archived skill)
 - tooling/skill_inventory.py: known buckets, unique names, and no curated skill sharing
   a name with an owned one
 
