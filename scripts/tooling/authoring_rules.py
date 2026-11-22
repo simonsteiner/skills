@@ -93,9 +93,7 @@ VAGUE_DESCRIPTION = ("helps with", "various", "general purpose", "general-purpos
 DESCRIPTION_LABEL = re.compile(r"\b(?:triggers on|use cases|when to use)\s*:", re.IGNORECASE)
 MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
 UNPINNED = re.compile(r"\b(?:npx|bunx|uvx|pipx run)\s+(?:-\S*\s+)*(@?[a-z][\w./-]*(?:[@=]=?\S+)?)")
-# a fenced block: ``` or ~~~, three or more, indented or not (list items), closed by a line of
-# nothing but at least the same run; a fence line with an info string inside is content (CommonMark)
-FENCED = re.compile(r"^[ \t]*(`{3,}|~{3,})[^\n]*\n(.*?)^[ \t]*\1(?:(?<=`)`*|(?<=~)~*)[ \t]*$", re.DOTALL | re.MULTILINE)
+FENCE_OPEN = re.compile(r"[ \t]*(`{3,}|~{3,})")
 BARE_SCRIPT = re.compile(r"(?<![\w/.>-])(?:\./)?(scripts/[\w.-]+)")
 CODE = re.compile(r"```.*?```|`[^`\n]+`", re.DOTALL)  # fenced blocks and inline code spans
 PROMPTS = re.compile(r"\bread\s+(?:-\w+\s+)*-p\b|/dev/tty|\binput\(|\bgetpass\b")
@@ -315,11 +313,29 @@ def _prose_problems(text):
     return out
 
 
+def _fenced_blocks(text):
+    """The contents of each fenced block: ``` or ~~~, three or more, indented or not (list items),
+    closed by a line of nothing but at least the same run; a fence line with an info string inside
+    is content (CommonMark). An opener that never closes is skipped."""
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        opener = FENCE_OPEN.match(lines[i])
+        if opener:
+            run = opener[1]
+            closer = re.compile(rf"[ \t]*{re.escape(run[0])}{{{len(run)},}}[ \t]*")
+            end = next((j for j in range(i + 1, len(lines)) if closer.fullmatch(lines[j])), None)
+            if end is not None:
+                yield "\n".join(lines[i + 1:end]) + "\n"
+                i = end
+        i += 1
+
+
 def _command_problems(folder, text):
     """Commands in one Markdown file: bundled scripts run by a bare path, unpinned one-off packages."""
     out = []
-    for block in FENCED.finditer(text):
-        for path in sorted(set(BARE_SCRIPT.findall(block[2]))):
+    for block in _fenced_blocks(text):
+        for path in sorted(set(BARE_SCRIPT.findall(block))):
             if (folder / path).is_file():
                 out.append(f"code block runs {path!r}; write <skill-dir>/{path}, agents run it from the user's repo")
     for pkg in UNPINNED.findall("\n".join(CODE.findall(text))):
