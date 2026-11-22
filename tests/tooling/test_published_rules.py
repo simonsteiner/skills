@@ -35,6 +35,7 @@ class PublishedRulesTest(unittest.TestCase):
         self.write("third-party/skills.json", json.dumps({"agents": ["claude-code"], "sources": [
             {"repo": "o/r", "why": "w", "skills": [{"name": "c", "why": "w"}],
              "archived": [{"name": "a", "why": "w"}]}]}))
+        self.write("third-party/README.md", f"# Third-party skills\n\n{catalog.START}\n{catalog.END}\n")
         self.build()
 
     def write(self, rel, text):
@@ -114,12 +115,14 @@ class PublishedRulesTest(unittest.TestCase):
 
     def test_archived_entry_without_a_reason(self):
         self.edit("third-party/skills.json", '{"name": "a", "why": "w"}', '{"name": "a", "why": " "}')
+        self.build()
         self.assertEqual(self.problems(), ["third-party/skills.json: archived entry a from o/r doesn't say why"])
 
     def test_every_reason_must_be_text(self):
         manifest = {"agents": ["x"], "sources": [{"repo": "o/r", "why": None, "skills": [{"name": "c", "why": ""}],
                                                "archived": [{"name": "a"}]}]}
         self.write("third-party/skills.json", json.dumps(manifest))
+        self.build()
         self.assertEqual(self.problems(), [
             "third-party/skills.json: source o/r doesn't say why",
             "third-party/skills.json: skills entry c from o/r doesn't say why",

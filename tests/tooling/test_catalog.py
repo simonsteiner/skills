@@ -111,5 +111,42 @@ class CatalogTest(unittest.TestCase):
         self.assertEqual(self.read("skills/misc/README.md"), f"# Misc\n\n{catalog.START}\n{catalog.END}\n")
 
 
+    def test_third_party_readme_lists_each_source_from_the_manifest(self):
+        self.write("third-party/skills.json", json.dumps({"agents": ["claude-code"], "sources": [
+            {"repo": "o/r", "why": "Their skills.\n  Kept.",
+             "skills": [{"name": "c", "path": "skills/c", "why": "Does c. Worth it because x."}],
+             "archived": [{"name": "a", "path": ".", "why": "Retired. Replaced."}]},
+            {"repo": "p/q", "why": "", "archived": [{"name": "b", "path": "b", "why": "Declined."}]}]}))
+        self.write("third-party/README.md", f"# Third\n\n{catalog.START}\n{catalog.END}\n")
+        catalog.write(self.skills(), self.repo)
+        self.assertEqual(self.read("third-party/README.md"), f"""# Third
+
+{catalog.START}
+
+### [o/r](https://github.com/o/r)
+
+Their skills. Kept.
+
+- **[c](https://github.com/o/r/blob/HEAD/skills/c/SKILL.md)** — Does c.
+
+<details>
+<summary>Archived (1)</summary>
+
+- **[a](https://github.com/o/r/blob/HEAD/SKILL.md)** — Retired. Replaced.
+
+</details>
+
+### [p/q](https://github.com/p/q)
+
+<details>
+<summary>Archived (1)</summary>
+
+- **[b](https://github.com/p/q/blob/HEAD/b/SKILL.md)** — Declined.
+
+</details>
+
+{catalog.END}
+""")
+
 if __name__ == "__main__":
     unittest.main()

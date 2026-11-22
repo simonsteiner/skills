@@ -58,6 +58,7 @@ class Curated:
     repo: str
     agents: tuple
     why: str
+    path: str = ""  # the skill's folder in its repo
 
 
 @dataclass(frozen=True)
@@ -99,7 +100,7 @@ def load(repo=REPO):
         agents = tuple(s.get("agents", data.get("agents", ())))
 
         def entries(kind, s=s, agents=agents):
-            return tuple(Curated(k["name"], s["repo"], agents, text(k.get("why"))) for k in s.get(kind, []))
+            return tuple(Curated(k["name"], s["repo"], agents, text(k.get("why")), text(k.get("path"))) for k in s.get(kind, []))
 
         sources.append(Source(s["repo"], text(s.get("why")), agents, entries("skills"), entries("archived")))
     return Manifest(tuple(sources))

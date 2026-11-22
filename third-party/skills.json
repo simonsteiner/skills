@@ -4,7 +4,7 @@
     {
       "repo": "cloudflare/skills",
       "agents": ["claude-code", "github-copilot", "gemini-cli", "antigravity", "codex"],
-      "why": "Cloudflare's own skills for the developer platform. Curated across every agent that already had them — see docs/adr/0003. The repo also ships commands/ and rules/, which only its Claude Code plugin installs; skipped deliberately. Pared to the four in use as of October 2026; the rest are archived.",
+      "why": "Cloudflare's own skills for the developer platform. Curated across every agent that already had them — see docs/adr/0003. The repo also ships commands/ and rules/, which only its Claude Code plugin installs; skipped deliberately. Pared to the four in use as of October 2026; the rest are archived. cloudflare and wrangler load only in Cloudflare Pages projects, so a month without loads isn't a reason to archive them.",
       "skills": [
         {
           "name": "cloudflare",
@@ -137,7 +137,7 @@
     },
     {
       "repo": "mattpocock/skills",
-      "why": "The repo this one forked from. These are the skills worth tracking upstream rather than owning — see docs/adr/0001.",
+      "why": "The repo this one forked from. These are the skills worth tracking upstream rather than owning — see docs/adr/0009.",
       "skills": [
         {
           "name": "codebase-design",
