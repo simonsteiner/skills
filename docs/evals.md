@@ -29,6 +29,16 @@ Give it prompts that should load the skill, including ones that only imply it ("
 
 A router reads every description side by side at the start of a turn, with nothing else on its mind. That measures whether the descriptions tell skills apart. It doesn't measure how often a busy agent mid-task skips a skill it should have loaded, which takes running the real harness and watching its Skill tool calls.
 
+## Cost
+
+Subagents run on the session's model and effort unless told otherwise. Spawn each one on the `model` its task line names, and leave out `--baseline` when no description changed.
+
+| Role | Model | Why |
+|---|---|---|
+| Router | `haiku` | it matched Opus on the trigger prompts, missing only ones Sonnet or Opus missed too |
+| Executor | the session's model | it should behave like real sessions |
+| Grader | not measured yet | |
+
 ## Setups that need GitHub
 
 The executor builds its setup locally and never touches a real GitHub repo. A setup that needs open PRs, reviews or threads (most of `review-prs`' evals) can't be built that way yet, so those runs grade as failures in both configurations. Read them as untested, not as regressions, until there's a sandbox repo to run them against.

@@ -13,7 +13,8 @@ loop; tooling/evals.py and tooling/triggers.py have the workspace layouts.
         write benchmark.json from every run's grading.json and timing.json and print it
     scripts/eval-skill.py triggers [--baseline <git-ref>] [--also <skills-dir>]...
         lay out .eval-workspace/_triggers/iteration-<N>/ from every skill's
-        evals/triggers.json and print one JSON line per router task: {"config", "task"}.
+        evals/triggers.json and print one JSON line per router task: {"config", "task",
+        "model"}, where "model" is the model to spawn that router on.
         with_skill routes against the descriptions in the working tree; --baseline adds
         old_skill, the descriptions at that ref. --also adds the model-invoked skills in
         another directory (e.g. ~/.agents/skills) to both catalogues as neighbours.
@@ -81,7 +82,7 @@ def prepare_triggers(baseline, also):
     """Lay out the next trigger iteration and print one JSON line per router task."""
     iteration, tasks = triggers.prepare(REPO, inventory().skills, baseline=baseline, also=also)
     for config, task in tasks:
-        print(json.dumps({"config": config, "task": str(task)}))
+        print(json.dumps(triggers.task_line(config, task)))
     print(f"prepared {iteration}", file=sys.stderr)
     return 0
 
