@@ -1,0 +1,2 @@
+# Exempt from the dash check (lefthook's dashes job): files a tool writes.
+CHANGELOG.md linguist-generated
