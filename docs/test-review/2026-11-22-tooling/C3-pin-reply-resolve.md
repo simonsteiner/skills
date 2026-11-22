@@ -29,7 +29,7 @@ The only one of 17 bundled scripts with no test module of its own (AGENTS.md: "E
 |---|---|---|
 | The script that writes to reviewers' threads, and refuses a silent resolve, has none of its own rules under test. | A `test_reply_resolve.py` against the fake `gh`, like every other bundled script. | silent resolve fails CI<br>convention holds for all scripts |
 
-**After:** <!-- filled at Ship -->
+**After:** 6 tests added in `tests/skill_scripts/test_reply_resolve.py` (0.15 s), one per Pin row, at the card's seam. All six went red under a named mutation (listed in `25eee59`): empty-body guard deleted, `PRRT_` check loosened, option check deleted, `--resolve` condition forced true, condition compared to `--nope`, `error(...)` replaced with `"resolved"`. No live defect; script untouched. Suite 369 -> 375 tests, 19.0 s. Departure: the unresolved-thread test asserts the failure, not the message (see the overview's Departures).
 
 <details>
 <summary>Decisions</summary>

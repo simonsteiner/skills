@@ -12,7 +12,7 @@ The backlog, in rank order. After the scan only this table (including `S` rows B
 |---|---|---|---|---|---|---|---|---|---|
 | [C1](C1-suite-to-pre-push.md) | Take the 19 s suite off pre-commit | 🔧 infra | 🟢 Strong | ↔ two-way | `direct` | pr-open | `ci/suite-off-pre-commit` | #101 | first: every later commit in the batch pays it |
 | [C2](C2-pin-sync-third-party.md) | Pin `sync-third-party.py` and its GitHub adapter | 🕳️ blind spot | 🟢 Strong | ↔ two-way | `tdd` | pr-open | `test/sync-third-party` | #102 | |
-| [C3](C3-pin-reply-resolve.md) | Pin `reply-resolve.sh` at its command | 🕳️ blind spot | 🟢 Strong | ↔ two-way | `tdd` | in-progress | `test/reply-resolve` | | |
+| [C3](C3-pin-reply-resolve.md) | Pin `reply-resolve.sh` at its command | 🕳️ blind spot | 🟢 Strong | ↔ two-way | `tdd` | pr-open | `test/reply-resolve` | #103 | |
 | [C4](C4-pin-eval-skill.md) | Pin `eval-skill.py`'s command | 🕳️ blind spot | 🟡 Worth exploring | ↔ two-way | `tdd` | todo | `test/eval-skill` | | not in the 2026-11-22 batch |
 | [S1](#s1--cis-ruff-skips-the-bundled-python-scripts) | CI's ruff skips the bundled Python scripts | 🔧 infra | - | ↔ two-way | `direct` | pr-open | rides with C1 | #101 | |
 | [S2](#s2--no-documented-single-test-command) | No documented single-test command | 🔧 infra | - | ↔ two-way | `direct` | pr-open | rides with C1 | #101 | |
@@ -108,3 +108,5 @@ AGENTS.md shows one module (`tests.tooling.test_catalog`) but not one test, whic
 ## Departures
 
 <!-- filled during implementation: where a PR deliberately differs from this report, and why -->
+
+- **C3**: the Pin row says an unresolved thread "fails with 'thread did not resolve'"; `test_thread_that_stays_unresolved_fails` asserts a non-zero exit and that `resolved` is not printed, not the message. The shared fake `gh` runs `--jq` through jq with `check=True`, so jq's `error(...)` surfaces as a non-zero exit with no message; changing the shared fake was out of scope.
