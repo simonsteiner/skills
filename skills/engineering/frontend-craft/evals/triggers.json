@@ -1,0 +1,41 @@
+{
+  "skills": ["frontend-craft"],
+  "triggers": [
+    {
+      "query": "build a landing page for our app",
+      "should_trigger": true
+    },
+    {
+      "query": "this dashboard looks generic, make it feel designed",
+      "should_trigger": true
+    },
+    {
+      "query": "critique the settings page UI",
+      "should_trigger": true
+    },
+    {
+      "query": "build a signup form component in React",
+      "should_trigger": true
+    },
+    {
+      "query": "add a REST endpoint that the signup form posts to",
+      "should_trigger": false
+    },
+    {
+      "query": "take a screenshot of the login page",
+      "should_trigger": false
+    },
+    {
+      "query": "add the before/after screenshots in ./shots to the PR body",
+      "should_trigger": false
+    },
+    {
+      "query": "the buttons look off on mobile, polish them",
+      "should_trigger": true
+    },
+    {
+      "query": "make the CLI output prettier with colors",
+      "should_trigger": false
+    }
+  ]
+}

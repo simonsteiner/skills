@@ -1,0 +1,53 @@
+{
+  "skills": ["review-prs"],
+  "triggers": [
+    {
+      "query": "review PR 41",
+      "should_trigger": true
+    },
+    {
+      "query": "none of my open PRs have had a human review yet, can you go through them",
+      "should_trigger": true
+    },
+    {
+      "query": "review everything since v2.3.0",
+      "should_trigger": true
+    },
+    {
+      "query": "Copilot reviewed my PR but nobody else did, review it properly and fix what you find",
+      "should_trigger": true
+    },
+    {
+      "query": "review this stack: 51, 52, 53",
+      "should_trigger": true
+    },
+    {
+      "query": "the reviewer left comments on PR 41, address them",
+      "should_trigger": false
+    },
+    {
+      "query": "write the PR description for this branch",
+      "should_trigger": false
+    },
+    {
+      "query": "review my README for tone and voice",
+      "should_trigger": false
+    },
+    {
+      "query": "anything in the open PRs I should worry about before I merge them?",
+      "should_trigger": true
+    },
+    {
+      "query": "check my last two commits for bugs before I push",
+      "should_trigger": true
+    },
+    {
+      "query": "CodeRabbit flagged a bunch of stuff on #77, go through it",
+      "should_trigger": false
+    },
+    {
+      "query": "get this reviewed",
+      "should_trigger": false
+    }
+  ]
+}

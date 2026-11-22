@@ -1,0 +1,73 @@
+{
+  "skills": ["conventional-commit"],
+  "triggers": [
+    {
+      "query": "commit this",
+      "should_trigger": true
+    },
+    {
+      "query": "commit and push",
+      "should_trigger": true
+    },
+    {
+      "query": "commit in logical chunks",
+      "should_trigger": true
+    },
+    {
+      "query": "ok looks good, commit it and open a PR",
+      "should_trigger": true
+    },
+    {
+      "query": "fix the typo in the README and commit directly to main",
+      "should_trigger": true
+    },
+    {
+      "query": "commit this to a new branch",
+      "should_trigger": true
+    },
+    {
+      "query": "can you improve this commit message: 'fixed stuff'",
+      "should_trigger": true
+    },
+    {
+      "query": "what changed in the last three commits?",
+      "should_trigger": false
+    },
+    {
+      "query": "write the PR description for this branch",
+      "should_trigger": false
+    },
+    {
+      "query": "move this to a feature branch",
+      "should_trigger": false
+    },
+    {
+      "query": "just push the branch, it's already committed",
+      "should_trigger": false
+    },
+    {
+      "query": "hours parse wrong for 1h30m. fix it and push",
+      "should_trigger": true
+    },
+    {
+      "query": "rename the config key to retry_limit everywhere and put it up for review",
+      "should_trigger": true
+    },
+    {
+      "query": "release 2.4.0: bump the version and tag it",
+      "should_trigger": true
+    },
+    {
+      "query": "amend the last commit's message to mention issue 12",
+      "should_trigger": true
+    },
+    {
+      "query": "stage only the parser changes, I'll commit myself",
+      "should_trigger": false
+    },
+    {
+      "query": "delete the merged local branches",
+      "should_trigger": false
+    }
+  ]
+}
