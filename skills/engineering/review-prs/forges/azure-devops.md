@@ -113,7 +113,7 @@ az devops invoke <thread-route> threadId=<summary-thread-id> commentId=1 --resou
 
 address-review-findings works only on GitHub, so do its loop here yourself, with the steps below. Per PR, stacks bottom-up:
 
-1. Keep the review worktree from *Read a PR* after posting and fix in it — or, if the review ran in a delegate-owned worktree, create a fresh worktree at `<head-oid>` as in *Read a PR* and fix there. Each posted finding and each bot thread you confirmed gets a fix, after the weighing in LENSES.md (*Weigh and disagree*), except a finding you posted as the user's call, which waits for their answer; run the repo's checks again.
+1. Keep the review worktree from *Read a PR* after posting and fix in it — or, if the review ran in a delegate's worktree, create a fresh worktree at `<head-oid>` as in *Read a PR* and fix there, and remove the delegate's worktree and branch now: T3 doesn't (THREADS.md, *Worktree*). Each posted finding and each bot thread you confirmed gets a fix, after the weighing in LENSES.md (*Weigh and disagree*), except a finding you posted as the user's call, which waits for their answer; run the repo's checks again.
 2. Call the Skill tool with "conventional-commit" to commit. Then push once with `git push origin HEAD:<source branch>`, after the PR's last commit: each push starts another bot review. A PR from a fork (`forkSource` set) pushes to `forkSource.repository.remoteUrl` instead; when that isn't writable, say so, leave its threads open, and stop fixing that PR.
 3. Per thread — yours and the bots' you confirmed, deferred or disagree with — reply, and resolve only when a fix landed or for a bot's deferred thread, with the reason in the reply:
 

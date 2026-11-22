@@ -280,6 +280,55 @@ class AuthoringRulesTest(unittest.TestCase):
         for clean in ("helper.py", "ok.py", "pep.py"):
             self.assertFalse([p for p in problems if clean in p], problems)
 
+    def test_an_import_error_fallback_is_optional_not_a_dependency(self):
+        folder = self.skill(
+            body="Run scripts/toml.py, scripts/tuple.py, scripts/wrong.py.\n",
+            files={
+                "scripts/toml.py": ("#!/usr/bin/env python3\n# --help\ntry:\n    import tomllib\n"
+                                    "except ImportError:\n    import tomli as tomllib\n"),
+                "scripts/tuple.py": ("#!/usr/bin/env python3\n# --help\ntry:\n    import tomllib\n"
+                                     "except (OSError, ModuleNotFoundError):\n    from tomli import loads\n"),
+                # only the fallback is optional: a third-party first choice is still a dependency,
+                # and a handler that doesn't catch ImportError isn't a fallback
+                "scripts/wrong.py": ("#!/usr/bin/env python3\n# --help\ntry:\n    import yaml\n"
+                                     "except ImportError:\n    import json\ntry:\n    pass\n"
+                                     "except ValueError:\n    import tomli\n"),
+            },
+        )
+        for name in ("toml.py", "tuple.py", "wrong.py"):
+            (folder / "scripts" / name).chmod(0o755)
+        problems = self.problems()
+        self.assertEqual(
+            [p.split(": ", 1)[1] for p in problems if "wrong.py" in p],
+            [
+                "bundled Python script imports non-stdlib module 'tomli' without PEP 723 dependencies",
+                "bundled Python script imports non-stdlib module 'yaml' without PEP 723 dependencies",
+            ],
+        )
+        self.assertFalse([p for p in problems if "toml.py" in p or "tuple.py" in p], problems)
+
+    def test_a_pep723_script_needs_a_uv_run_script_shebang(self):
+        block = "# /// script\n# dependencies = [\"requests\"]\n# ///\n# --help\nimport requests\n"
+        folder = self.skill(
+            body="Run scripts/uv.py, scripts/uv_flags.py, scripts/python.py, scripts/uv_no_script.py.\n",
+            files={
+                "scripts/uv.py": "#!/usr/bin/env -S uv run --script\n" + block,
+                "scripts/uv_flags.py": "#!/usr/bin/env -S uv run --quiet --script\n" + block,
+                "scripts/python.py": "#!/usr/bin/env python3\n" + block,
+                "scripts/uv_no_script.py": "#!/usr/bin/env -S uv run python3\n" + block,
+            },
+        )
+        for name in ("uv.py", "uv_flags.py", "python.py", "uv_no_script.py"):
+            (folder / "scripts" / name).chmod(0o755)
+        problems = self.problems()
+        for bad in ("python.py", "uv_no_script.py"):
+            self.assertEqual(
+                [p.split(": ", 1)[1] for p in problems if f"/{bad}" in p],
+                ["bundled Python script has a PEP 723 block but no `uv run --script` shebang"],
+                bad,
+            )
+        self.assertFalse([p for p in problems if "/uv.py" in p or "uv_flags.py" in p], problems)
+
     def test_frontmatter_rules(self):
         cases = {
             "no YAML frontmatter": None,
