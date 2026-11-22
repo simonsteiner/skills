@@ -33,10 +33,16 @@ if importlib.util.find_spec("ruamel") is None and not os.environ.get("LINT_SKILL
 from tooling import authoring_rules, published_rules
 from tooling.skill_inventory import REPO, inventory
 
-inv = inventory()
-problems = inv.problems + authoring_rules.check(REPO, inv.skills) + published_rules.check(REPO, inv.skills)
 
-if problems:
-    print("\n".join(problems))
-    sys.exit(1)
-print("ok")
+def main(repo=REPO):
+    inv = inventory(repo)
+    problems = inv.problems + authoring_rules.check(repo, inv.skills) + published_rules.check(repo, inv.skills)
+    if problems:
+        print("\n".join(problems))
+        return 1
+    print("ok")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
