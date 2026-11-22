@@ -2,6 +2,8 @@
 
 Exploration of whether [microsoft/apm](https://github.com/microsoft/apm) (Agent Package Manager) and [microsoft/agentrc](https://github.com/microsoft/agentrc) are candidates for curation in simonsteiner/skills.
 
+> **Research notes, 2026-08-14. Not acted on:** nothing from apm or agentrc is curated, and the `docs/integrations/apm-agentrc-workflow.md` it proposes was never written. Two of its recommendations contradict later decisions: pinning APM releases (curated skills are unpinned, [ADR 0002](../adr/0002-curate-third-party-skills-instead-of-vendoring.md)) and not tracking `mattpocock/skills` (seven of its skills are curated, [ADR 0009](../adr/0009-grow-owned-skills-and-track-upstream-through-curation.md)). The sync installs a skill by name, so the "multi-level paths" it says the sync would need to handle are no obstacle.
+
 ## Quick Summary
 
 Both are **complementary tooling**, not skills repositories. Neither natively ships skills in SKILL.md format, but:
