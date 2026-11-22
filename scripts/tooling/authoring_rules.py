@@ -59,7 +59,7 @@ Repo convention:
 - a command in a code block runs a bundled script as `<skill-dir>/scripts/…` (not `scripts/…`
   or `./scripts/…`): agents run it from the user's repo, where a bare path names that repo's
   scripts, not the skill's.
-- no Skill tool call names a user-invoked skill: its description never reaches the model,
+- no Skill tool call names a user-invoked skill, owned or curated: its description never reaches the model,
   so the call can't fire (docs/invocation.md); the step tells the user to run `/<name>`
 - tests live in tests/, never beside the code: no test_*.py, *_test.py, *.test.* or *.spec.*
   file in skills/ or scripts/
@@ -73,7 +73,7 @@ import re
 import sys
 from pathlib import Path
 
-from . import evals, triggers
+from . import evals, third_party, triggers
 
 MAX_BODY_LINES = 500
 MAX_BODY_TOKENS = 5000
@@ -129,8 +129,10 @@ def check(repo, skills):
 
 
 def _user_invoked_calls(repo, skills):
-    """A line that mentions the Skill tool and quotes an owned user-invoked skill's name."""
+    """A line that mentions the Skill tool and quotes a user-invoked skill's name, owned or curated."""
     user_invoked = {s.name for s in skills if s.fields and not s.model_invoked}
+    manifest = third_party.load(repo)
+    user_invoked |= {k.name for k in (manifest.curated if manifest else []) if k.invocation == "user"}
     problems = []
     for s in skills:
         for md in sorted(s.folder.rglob("*.md")):

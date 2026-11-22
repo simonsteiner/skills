@@ -25,12 +25,14 @@ MANIFEST = {
     "agents": ["claude-code"],
     "sources": [
         {"repo": "a/one", "why": "w", "agents": ["claude-code", "codex"],
-         "skills": [{"name": "alpha", "why": "w"}],
+         "skills": [{"name": "alpha", "why": "w", "invocation": "model"}],
          "archived": [{"name": "old", "why": "w"}]},
-        {"repo": "b/two", "why": "w", "skills": [{"name": "beta", "why": "w"}]},
+        {"repo": "b/two", "why": "w", "skills": [{"name": "beta", "why": "w", "invocation": "user"}]},
         {"repo": "c/none", "why": "w", "skills": [], "archived": [{"name": "gone", "why": "w"}]},
     ],
 }
+
+USER_INVOKED = "---\nname: beta\ndisable-model-invocation: true\n---\nBody.\n"
 
 
 class ThirdPartyTest(unittest.TestCase):
@@ -62,7 +64,7 @@ class ThirdPartyTest(unittest.TestCase):
 
     def good_install(self):
         for name, repo in (("alpha", "a/one"), ("beta", "b/two")):
-            self.installed(name)
+            self.installed(name, text=USER_INVOKED if name == "beta" else "same")
             self.locked(name, repo)
         codex = self.home.agent_dir("codex")
         codex.mkdir(parents=True)
@@ -84,6 +86,31 @@ class ThirdPartyTest(unittest.TestCase):
     def test_a_good_install_is_all_ok(self):
         self.good_install()
         self.assertEqual(self.findings(), [("ok        alpha", False), ("ok        beta", False)])
+
+    def test_an_installed_copy_invoked_differently_from_the_manifest_fails(self):
+        self.good_install()
+        self.installed("alpha", text=USER_INVOKED.replace("beta", "alpha"))
+        self.installed("beta", text="---\nname: beta\n---\nBody.\n")
+        self.assertEqual([f for f in self.findings() if f[0].startswith("invocation")], [
+            (("invocation alpha (skills.json says model-invoked; the installed copy is user-invoked "
+             "— update skills.json and run scripts/build-catalog.py)"), True),
+            (("invocation beta (skills.json says user-invoked; the installed copy is model-invoked "
+             "— update skills.json and run scripts/build-catalog.py)"), True),
+        ])
+
+    def test_invocation_reads_the_frontmatter_boolean(self):
+        cases = {
+            "disable-model-invocation: true": "user",
+            "disable-model-invocation: True  # typed only": "user",
+            'disable-model-invocation: "true"': "model",  # a string, not the boolean
+            "disable-model-invocation: false": "model",
+            "description: disable-model-invocation: true": "model",
+        }
+        for line, expected in cases.items():
+            self.installed("x", text=f"---\nname: x\n{line}\n---\nBody.\n")
+            self.assertEqual(third_party.invocation(self.home.store / "x/SKILL.md"), expected, line)
+        self.installed("x", text="Body.\ndisable-model-invocation: true\n")
+        self.assertEqual(third_party.invocation(self.home.store / "x/SKILL.md"), "model")
 
     def test_missing_and_conflict_fail(self):
         self.locked("alpha", "someone/else")

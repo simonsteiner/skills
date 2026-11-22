@@ -114,7 +114,8 @@ class CatalogTest(unittest.TestCase):
     def test_third_party_readme_lists_each_source_from_the_manifest(self):
         self.write("third-party/skills.json", json.dumps({"agents": ["claude-code"], "sources": [
             {"repo": "o/r", "why": "Their skills.\n  Kept.",
-             "skills": [{"name": "c", "path": "skills/c", "why": "Does c. Worth it because x."}],
+             "skills": [{"name": "c", "path": "skills/c", "invocation": "model", "why": "Does c. Worth it because x."},
+                        {"name": "t", "path": "t", "invocation": "user", "why": "Typed."}],
              "archived": [{"name": "a", "path": ".", "why": "Retired. Replaced."}]},
             {"repo": "p/q", "why": "", "archived": [{"name": "b", "path": "b", "why": "Declined."}]}]}))
         self.write("third-party/README.md", f"# Third\n\n{catalog.START}\n{catalog.END}\n")
@@ -126,6 +127,12 @@ class CatalogTest(unittest.TestCase):
 ### [o/r](https://github.com/o/r)
 
 Their skills. Kept.
+
+#### User-invoked
+
+- **[t](https://github.com/o/r/blob/HEAD/t/SKILL.md)** — Typed.
+
+#### Model-invoked
 
 - **[c](https://github.com/o/r/blob/HEAD/skills/c/SKILL.md)** — Does c.
 

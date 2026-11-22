@@ -12,6 +12,7 @@ scripts/sync-third-party.py is the command line; see its docstring for the modes
 import json
 import os
 import posixpath
+import re
 import subprocess
 import sys
 import urllib.request
@@ -51,7 +52,14 @@ UNIVERSAL = ("codex", "github-copilot", "gemini-cli", "antigravity")
 
 # Findings that mean the home directory disagrees with the manifest. The rest report
 # installs from other channels, which may be deliberate.
-FAILING = {"missing", "conflict", "archived", "drift"}
+FAILING = {"missing", "conflict", "archived", "drift", "invocation"}
+
+# A curated skill's `invocation` in skills.json: who can start it (GLOSSARY.md).
+INVOCATIONS = ("model", "user")
+# `disable-model-invocation: true` in a SKILL.md's frontmatter, read without a YAML parser
+# so the sync scripts stay stdlib-only. YAML 1.2 spells the boolean true, True or TRUE.
+FRONTMATTER = re.compile(r"\A---[ \t]*\r?\n(.*?)\r?\n---", re.DOTALL)
+USER_INVOKED = re.compile(r"^disable-model-invocation:[ \t]*(?:true|True|TRUE)[ \t]*(?:#.*)?$", re.MULTILINE)
 
 
 @dataclass(frozen=True)
@@ -61,6 +69,7 @@ class Curated:
     agents: tuple
     why: str
     path: str = ""  # the skill's folder in its repo
+    invocation: str = ""  # "model" or "user", as skills.json records it; "" when it doesn't
 
 
 @dataclass(frozen=True)
@@ -102,7 +111,8 @@ def load(repo=REPO):
         agents = tuple(s.get("agents", data.get("agents", ())))
 
         def entries(kind, s=s, agents=agents):
-            return tuple(Curated(k["name"], s["repo"], agents, text(k.get("why")), text(k.get("path"))) for k in s.get(kind, []))
+            return tuple(Curated(k["name"], s["repo"], agents, text(k.get("why")), text(k.get("path")),
+                                 text(k.get("invocation"))) for k in s.get(kind, []))
 
         sources.append(Source(s["repo"], text(s.get("why")), agents, entries("skills"), entries("archived")))
     return Manifest(tuple(sources))
@@ -232,7 +242,7 @@ def check(manifest, home, owned):
     lock = json.loads(home.lock.read_text())["skills"]
     return (_install_findings(manifest, lock) + _lock_findings(manifest, lock)
             + _unmanaged_findings(manifest, home, lock, owned) + _copy_findings(manifest, home)
-            + _link_findings(manifest, home))
+            + _link_findings(manifest, home) + _invocation_findings(manifest, home))
 
 
 def _install_findings(manifest, lock):
@@ -329,6 +339,35 @@ def _gh_token():
     except (OSError, subprocess.TimeoutExpired):
         return None
     return done.stdout.strip() if done.returncode == 0 else None
+
+
+def invocation(skill_md):
+    """"user" when a SKILL.md's frontmatter sets disable-model-invocation: true, else "model"."""
+    m = FRONTMATTER.match(skill_md.read_text())
+    return "user" if m and USER_INVOKED.search(m.group(1)) else "model"
+
+
+def _invocation_findings(manifest, home):
+    """A curated skill whose installed copy is invoked differently from what skills.json says.
+
+    Upstream can flip a skill between model- and user-invoked; the manifest's record, the
+    third-party catalog's grouping and the lint's Skill-tool check would then be wrong.
+    Reads the store's copy, else the first agent directory that has one.
+    """
+    found = []
+    for k in manifest.curated:
+        if not k.invocation:
+            continue  # lint reports the missing field
+        copies = [d / k.name / SKILL_FILE for d in [home.store] + [home.agent_dir(a) for a in AGENT_DIRS]]
+        installed = next((c for c in copies if c.is_file()), None)
+        if installed is None:
+            continue  # missing is _install_findings' to report
+        actual = invocation(installed)
+        if actual != k.invocation:
+            found.append(Finding("invocation", k.name,
+                                 f"(skills.json says {k.invocation}-invoked; the installed copy is {actual}-invoked "
+                                 "— update skills.json and run scripts/build-catalog.py)"))
+    return found
 
 
 def github_folders(repo):

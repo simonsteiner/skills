@@ -4,7 +4,8 @@
   scripts/build-catalog.py renders from the skills (tooling/catalog.py), and every
   model-invoked description has the summary the catalog lists
 - README.md links no unpublished skill (personal/, in-progress/, deprecated/), anywhere
-- every curated and archived skill in third-party/skills.json, and every source, says why
+- every curated and archived skill in third-party/skills.json, and every source, says why,
+  and every curated skill records its invocation: "model" or "user"
 
 lint-skills.py runs check(); tests/tooling/test_published_rules.py tests it.
 """
@@ -59,4 +60,8 @@ def check_manifest(repo):
                 f"third-party/skills.json: {kind} entry {k.name} from {source.repo} doesn't say why"
                 for k in curated if not k.why.strip()
             ]
+        problems += [
+            f'third-party/skills.json: skills entry {k.name} from {source.repo} needs "invocation": "model" or "user"'
+            for k in source.skills if k.invocation not in third_party.INVOCATIONS
+        ]
     return problems

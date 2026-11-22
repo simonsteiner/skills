@@ -11,9 +11,8 @@ third-party/skills.json, so it can't drift:
 - .claude-plugin/plugin.json lists every published skill folder; its other keys are kept.
 - third-party/README.md holds a generated block with one section per source in
   skills.json: the source's `why`, an entry per curated skill linking its upstream SKILL.md
-  with the first sentence of its `why`, and its archived skills with their full reasons,
-  collapsed. skills.json doesn't record a curated skill's invocation, so these aren't
-  grouped by it.
+  with the first sentence of its `why`, grouped under User-invoked and Model-invoked by its
+  `invocation`, and its archived skills with their full reasons, collapsed.
 
 A skill's summary comes from its frontmatter `description`. A user-invoked description
 is already a human-facing summary, so it's used whole; a model-invoked one ends its
@@ -107,10 +106,14 @@ def third_party_block(manifest):
         lines += [f"### [{source.repo}](https://github.com/{source.repo})", ""]
         if source.why.strip():
             lines += [" ".join(source.why.split()), ""]
-        for k in source.skills:
-            first = SENTENCE.split(" ".join(k.why.split()), maxsplit=1)[0]
-            lines.append(f"- **[{k.name}]({upstream(k)})** — {first}".rstrip(" —"))
-        if source.skills:
+        for invocation, group in zip(("user", "model"), GROUPS):
+            members = [k for k in source.skills if (k.invocation or "model") == invocation]
+            if not members:
+                continue
+            lines += [f"#### {group}", ""]
+            for k in members:
+                first = SENTENCE.split(" ".join(k.why.split()), maxsplit=1)[0]
+                lines.append(f"- **[{k.name}]({upstream(k)})** — {first}".rstrip(" —"))
             lines.append("")
         if source.archived:
             lines += ["<details>", f"<summary>Archived ({len(source.archived)})</summary>", ""]

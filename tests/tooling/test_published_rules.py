@@ -33,7 +33,7 @@ class PublishedRulesTest(unittest.TestCase):
         self.write("README.md", README)
         self.write(".claude-plugin/plugin.json", json.dumps({"skills": []}))
         self.write("third-party/skills.json", json.dumps({"agents": ["claude-code"], "sources": [
-            {"repo": "o/r", "why": "w", "skills": [{"name": "c", "why": "w"}],
+            {"repo": "o/r", "why": "w", "skills": [{"name": "c", "why": "w", "invocation": "model"}],
              "archived": [{"name": "a", "why": "w"}]}]}))
         self.write("third-party/README.md", f"# Third-party skills\n\n{catalog.START}\n{catalog.END}\n")
         self.build()
@@ -119,7 +119,8 @@ class PublishedRulesTest(unittest.TestCase):
         self.assertEqual(self.problems(), ["third-party/skills.json: archived entry a from o/r doesn't say why"])
 
     def test_every_reason_must_be_text(self):
-        manifest = {"agents": ["x"], "sources": [{"repo": "o/r", "why": None, "skills": [{"name": "c", "why": ""}],
+        manifest = {"agents": ["x"], "sources": [{"repo": "o/r", "why": None,
+                                               "skills": [{"name": "c", "why": "", "invocation": "user"}],
                                                "archived": [{"name": "a"}]}]}
         self.write("third-party/skills.json", json.dumps(manifest))
         self.build()
@@ -128,6 +129,14 @@ class PublishedRulesTest(unittest.TestCase):
             "third-party/skills.json: skills entry c from o/r doesn't say why",
             "third-party/skills.json: archived entry a from o/r doesn't say why",
         ])
+
+    def test_a_curated_skill_records_its_invocation(self):
+        for bad in ('"invocation": "auto"', '"invocation": null', '"note": "none"'):
+            self.write("third-party/skills.json", json.dumps({"agents": ["x"], "sources": [
+                {"repo": "o/r", "why": "w", "skills": [{"name": "c", "why": "w"}]}]}).replace('"why": "w"}]', f'"why": "w", {bad}}}]'))
+            self.build()
+            self.assertEqual(self.problems(), [
+                'third-party/skills.json: skills entry c from o/r needs "invocation": "model" or "user"'], bad)
 
     def test_a_source_needs_agents(self):
         self.edit("third-party/skills.json", '"agents": ["claude-code"]', '"agents": []')

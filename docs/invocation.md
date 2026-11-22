@@ -9,7 +9,7 @@ Every `SKILL.md` in this repo is a skill. The one axis that splits them is **inv
 
 Because a user-invoked skill's description never reaches the model, nothing but the human can reach it — no other skill can fire it. So a user-invoked skill may invoke model-invoked skills, but it can never reach another user-invoked skill.
 
-The skill catalog in the `README.md`s groups entries into **User-invoked** and **Model-invoked** and takes each entry's text from the `description`: a user-invoked one whole, a model-invoked one up to the sentence starting "Use". `scripts/build-catalog.py` generates it.
+The skill catalog in the `README.md`s groups entries into **User-invoked** and **Model-invoked** and takes each entry's text from the `description`: a user-invoked one whole, a model-invoked one up to the sentence starting "Use". `scripts/build-catalog.py` generates it. A curated skill's invocation is recorded as `"invocation": "model"` or `"user"` on its entry in `third-party/skills.json`, which groups the third-party list and tells the lint which curated skills a Skill tool call can't reach; `sync-third-party.py --check` compares it with the installed copy.
 
 ## Dependencies between them
 

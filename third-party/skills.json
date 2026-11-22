@@ -9,21 +9,25 @@
         {
           "name": "cloudflare",
           "path": "skills/cloudflare",
+          "invocation": "model",
           "why": "Umbrella platform skill — Workers, storage, AI, networking, security. Retrieval-first over live Cloudflare docs rather than pre-trained knowledge."
         },
         {
           "name": "wrangler",
           "path": "skills/wrangler",
+          "invocation": "model",
           "why": "Correct CLI syntax for deploys and resource management. Worth having loaded before any wrangler command."
         },
         {
           "name": "workers-best-practices",
           "path": "skills/workers-best-practices",
+          "invocation": "model",
           "why": "Catches the Workers anti-patterns that bite in production — floating promises, global state, streaming, secrets."
         },
         {
           "name": "web-perf",
           "path": "skills/web-perf",
+          "invocation": "model",
           "why": "Core Web Vitals and load analysis via Chrome DevTools MCP."
         }
       ],
@@ -72,6 +76,7 @@
         {
           "name": "security-audit",
           "path": "skills/security-audit",
+          "invocation": "model",
           "why": "Whole-codebase security audit: recon, parallel hunters, fresh verifiers that try to disprove each candidate, schema-checked findings.json and a report. No owned skill audits a whole repo; review-prs reviews a diff. Trialled on Claude Code in November 2026: loaded for 5 of 5 security prompts and 0 of 10 others (diff reviews, workflow pinning, CORS, wrangler secrets), and started the full audit only on an explicit 'security audit this codebase' — ambiguous asks got one question or guidance mode. Untested: the token cost of a full audit and its behaviour on Codex. Needs Node for its validators and keeps leads as needs_validation without an OS sandbox. Upstream reworked the workflow in September 2026 and syncs are unpinned, so read its diff before syncing."
         }
       ],
@@ -84,6 +89,7 @@
         {
           "name": "secure-github-actions",
           "path": "plugins/security-tools/skills/secure-github-actions",
+          "invocation": "model",
           "why": "Hardening rules for workflow YAML: no `${{ }}` in `run:`, actions pinned by SHA, explicit `permissions:`, `pull_request_target` and `GITHUB_ENV` injection traps, scoping claude-code-action. Self-contained (relative references only) and fires on its own description, so its auto-inject hook isn't needed."
         }
       ],
@@ -142,36 +148,43 @@
         {
           "name": "codebase-design",
           "path": "skills/engineering/codebase-design",
+          "invocation": "model",
           "why": "Deep-module vocabulary. Shared dependency of grilling and the owned arch-review."
         },
         {
           "name": "diagnosing-bugs",
           "path": "skills/engineering/diagnosing-bugs",
+          "invocation": "model",
           "why": "Diagnosis loop for hard bugs and performance regressions."
         },
         {
           "name": "domain-modeling",
           "path": "skills/engineering/domain-modeling",
+          "invocation": "model",
           "why": "Maintains ubiquitous language (GLOSSARY.md) and ADRs. Called by arch-review when a term or a load-bearing decision comes up."
         },
         {
           "name": "grilling",
           "path": "skills/productivity/grilling",
+          "invocation": "model",
           "why": "The interview engine. Model-invoked, so it fires on 'grill me' on its own; used to stress-test plans, often with 'answer with your recommendations'."
         },
         {
           "name": "research",
           "path": "skills/engineering/research",
+          "invocation": "model",
           "why": "Delegates reading legwork to a background agent and lands findings as Markdown in the repo."
         },
         {
           "name": "tdd",
           "path": "skills/engineering/tdd",
+          "invocation": "model",
           "why": "Red → green at agreed seams, with what a test worth keeping looks like. Model-invoked; needs only codebase-design and code-review, both curated."
         },
         {
           "name": "wizard",
           "path": "skills/engineering/wizard",
+          "invocation": "model",
           "why": "Generates a bash wizard for steps only a human can do — dashboard clicks, secrets into .env and gh. Fits the Cloudflare/GitHub setup chores that come up per project. On WSL its pages open in the browser only through wslview, which dev-setup's setup-linux.sh provides (Ubuntu 26.04 dropped wslu); the explorer.exe fallback opens File Explorer for a URL with a query, see mattpocock/skills#963."
         }
       ],
@@ -310,6 +323,7 @@
         {
           "name": "prune-tests",
           "path": "skills/prune-tests",
+          "invocation": "model",
           "why": "Deletes or rewrites tests that guard no behavior: ones asserting removed code, ones that can't fail (testing the browser, the mock, the type system), and ones tied to the implementation; plus duplicates and production code that exists only for tests. Complements tdd, which writes tests at the interface but never prunes. arch-review's Build step calls it on the tests of the internals a candidate replaces, and test-review's waste rows on the tests each row lists. Model-invoked and destructive, with a one-line description, so it may fire rarely or on a loose 'clean up the tests'; untested for triggering."
         }
       ],

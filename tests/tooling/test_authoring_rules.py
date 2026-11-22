@@ -3,6 +3,7 @@
     uv run --locked --no-build python3 -m unittest discover -s tests -t .
 """
 
+import json
 import tempfile
 import time
 import unittest
@@ -388,6 +389,16 @@ class AuthoringRulesTest(unittest.TestCase):
         self.assertEqual(self.problems(), [
             ("skills/engineering/other/SKILL.md:5: calls the user-invoked typed through the Skill tool, "
              "which can't reach it; tell the user to run `/typed` instead")])
+
+    def test_a_skill_tool_call_cannot_name_a_user_invoked_curated_skill(self):
+        (self.repo / "third-party").mkdir()
+        (self.repo / "third-party/skills.json").write_text(json.dumps({"agents": ["x"], "sources": [
+            {"repo": "o/r", "why": "w", "skills": [{"name": "theirs", "why": "w", "invocation": "user"},
+                                                   {"name": "grilling", "why": "w", "invocation": "model"}]}]}))
+        self.skill("other", body='Call the Skill tool with "theirs", then with "grilling".\n')
+        self.assertEqual(self.problems(), [
+            ("skills/engineering/other/SKILL.md:5: calls the user-invoked theirs through the Skill tool, "
+             "which can't reach it; tell the user to run `/theirs` instead")])
 
     def test_a_skill_tool_call_may_name_a_model_invoked_skill(self):
         self.skill("reached")

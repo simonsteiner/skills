@@ -32,6 +32,7 @@ npx changeset  # add a changeset for a user-visible change
 
 ### Third-party skills
 
+- **A curated skill records its `invocation` in `skills.json`.** `"user"` when its frontmatter sets `disable-model-invocation: true`, else `"model"`; lint requires it and `sync-third-party.py --check` compares it with the installed copy.
 - **Curated, never vendored.** A third-party skill is an entry in `third-party/skills.json`, installed by `scripts/sync-third-party.py`; it never goes in `skills/`, the catalog or `plugin.json` ([ADR 0002](docs/adr/0002-curate-third-party-skills-instead-of-vendoring.md)).
 - **A retired or declined curated skill moves to its source's `archived` list with the reason**, never out of `skills.json`.
 

@@ -36,4 +36,4 @@ Half of that critique doesn't land here, because this isn't fully DIY: fetching 
 
 The triggers to move to a registry with real versioning (localskills.sh, or whatever the equivalent is by then) are: more than a couple of people consuming this list, needing to pin or roll back a skill version, or wanting private skills in the same flow.
 
-> **Note (2026-11-22):** `third-party/README.md` is now generated from `skills.json`, and isn't grouped by invocation, which `skills.json` doesn't record ([ADR 0011](./0011-generate-the-skill-catalogs.md)).
+> **Note (2026-11-22):** `third-party/README.md` is now generated from `skills.json`, which records each curated skill's invocation for the grouping ([ADR 0011](./0011-generate-the-skill-catalogs.md)).
