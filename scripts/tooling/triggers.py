@@ -114,11 +114,15 @@ def catalogue(repo, ref=None, also=()):
 
     `also` adds the model-invoked skills in each other directory (<dir>/<name>/SKILL.md, e.g. the
     installed curated skills) that the owned set doesn't already name, so neighbours outside
-    the repo compete too.
+    the repo compete too. At a `ref`, `also` never supplies a skill owned in the working tree: an
+    installed copy carries its working-tree description, not the ref's, so a skill added since
+    the ref stays out of that catalogue.
     """
+    owned_now = set()
     if ref is None:
         found = [(s.name, s.skill_md.read_text()) for s in skill_inventory.inventory(repo).skills if s.published]
     else:
+        owned_now = {s.name for s in skill_inventory.inventory(repo).skills}
         if ref.startswith("-"):  # git would read it as an option
             raise ValueError(f"not a git ref: {ref!r}")
         found = [(rel.split("/")[2], _git(repo, "show", f"{ref}:{rel}"))
@@ -126,7 +130,11 @@ def catalogue(repo, ref=None, also=()):
                  if len(rel.split("/")) == 4 and rel.endswith("/SKILL.md")
                  and rel.split("/")[1] in skill_inventory.PUBLISHED]
     for folder in also:
-        found += [(f.parent.name, f.read_text()) for f in sorted(Path(folder).expanduser().glob("*/SKILL.md"))]
+        path = Path(folder).expanduser()
+        if not path.is_dir():  # a typo would otherwise drop every neighbour without a word
+            raise ValueError(f"--also: not a directory: {folder}")
+        found += [(f.parent.name, f.read_text()) for f in sorted(path.glob("*/SKILL.md"))
+                  if f.parent.name not in owned_now]
     entries, seen = {}, set()
     for name, text in found:  # owned skills first: an installed copy of one, even a user-invoked one, never stands in
         if name not in seen and (entry := _entry(name, text)):

@@ -102,6 +102,8 @@ class TriggersTest(unittest.TestCase):
             {"name": "pr", "description": "Writes PR bodies. Use when opening a PR."},
             {"name": "tdd", "description": "Tests first. Use when testing."},
         ])
+        with self.assertRaisesRegex(ValueError, "--also: not a directory"):
+            triggers.catalogue(self.repo, also=[extra / "no-such-dir"])
 
     def test_catalogue_at_a_ref_reads_the_old_descriptions(self):
         git(self.repo, "init", "-q")
@@ -112,6 +114,13 @@ class TriggersTest(unittest.TestCase):
         self.skill("branch", "New. Use when branching.")
         self.assertEqual([e["description"] for e in triggers.catalogue(self.repo, "HEAD")],
                          ["Writes commits. Use when committing.", "Writes PR bodies. Use when opening a PR."])
+        # an installed copy of a skill added since the ref carries the new description: it stays out
+        installed = Path(tempfile.mkdtemp(dir=self.repo))
+        for name, desc in (("branch", "New. Use when branching."), ("tdd", "Tests first. Use when testing.")):
+            (installed / name).mkdir()
+            (installed / name / "SKILL.md").write_text(f"---\nname: {name}\ndescription: {desc}\n---\n")
+        self.assertEqual([e["name"] for e in triggers.catalogue(self.repo, "HEAD", also=[installed])],
+                         ["commit", "pr", "tdd"])
         with self.assertRaisesRegex(ValueError, "not a git ref"):
             triggers.catalogue(self.repo, "--output=x")
         with self.assertRaisesRegex(ValueError, "git ls-tree"):
