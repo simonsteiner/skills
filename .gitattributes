@@ -1,0 +1,4 @@
+# Exempt from the token budget (lefthook's file-tokens job): files a tool writes or a
+# dated record that is never split.
+CHANGELOG.md linguist-generated
+docs/arch-review/2026-10-08-tooling.md linguist-generated
