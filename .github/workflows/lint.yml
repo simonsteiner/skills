@@ -30,8 +30,9 @@ jobs:
       - name: Test the tooling and the bundled scripts
         run: uv run --locked --no-build python3 -m unittest discover -s tests -t .
 
+      # The setup-lefthook skill's script, which lefthook runs on the staged files.
       - name: No em or en dashes
-        run: python3 scripts/check-dashes.py
+        run: git ls-files -z | xargs -0 python3 skills/engineering/setup-lefthook/scripts/check-dashes.py
 
       # Same version as lefthook; config in ruff.toml.
       - name: Ruff

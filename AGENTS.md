@@ -14,7 +14,7 @@ uv run --locked --no-build python3 -m unittest tests.tooling.test_catalog  # run
 uvx ruff@0.17.0 check scripts tests  # lint the Python
 npx rumdl check .  # lint the Markdown
 shellcheck skills/*/*/scripts/*.sh  # lint the bundled shell scripts
-./scripts/check-dashes.py  # no em or en dashes anywhere (CI and lefthook run it)
+git ls-files -z | xargs -0 skills/engineering/setup-lefthook/scripts/check-dashes.py  # no em or en dashes anywhere
 npx changeset  # add a changeset for a user-visible change
 ```
 

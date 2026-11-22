@@ -20,9 +20,10 @@ pre-commit:
       glob: "{scripts/*.py,scripts/**/*.py,tests/*.py,tests/**/*.py,skills/**,.lefthook/**,pyproject.toml,uv.lock}"
       run: uv run --locked --no-build python3 -m unittest discover -s tests -t .
 
-    # Same as CI: no em or en dashes in any staged text file.
+    # Same as CI: no em or en dashes in the staged files. The setup-lefthook skill's
+    # script, run from here rather than through the remote other repos use.
     dashes:
-      run: python3 scripts/check-dashes.py {staged_files}
+      run: python3 skills/engineering/setup-lefthook/scripts/check-dashes.py {staged_files}
 
     # Same as CI's Ruff step; bump the version in both places.
     ruff:

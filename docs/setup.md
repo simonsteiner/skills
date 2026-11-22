@@ -48,7 +48,7 @@ The skill lists in `README.md`, each `skills/<bucket>/README.md` and `.claude-pl
 | `uvx ruff@0.17.0 check scripts tests` | the Python tooling ([ruff](https://docs.astral.sh/ruff/), config in `ruff.toml`) |
 | `npx rumdl check .` | Markdown ([rumdl](https://rumdl.dev/), config in `.rumdl.toml`) |
 | `shellcheck skills/*/*/scripts/*.sh` | the shell scripts bundled in skills |
-| `./scripts/check-dashes.py` | no em or en dash in any tracked file (they read as machine-written) |
+| `git ls-files -z \| xargs -0 skills/engineering/setup-lefthook/scripts/check-dashes.py` | no em or en dash in any tracked file (they read as machine-written); the setup-lefthook skill's script |
 
 CI (`.github/workflows/lint.yml`) runs all of them on every PR. The lefthook pre-commit hooks (`lefthook.yml`) run the same checks on the staged files, rebuild the skill catalog, and let rumdl fix what it can. With the [SonarQube CLI](https://sonarsource.com/sonarqube/cli) installed and logged in, they also scan the staged files for secrets and new dependency risks; without it that job is skipped, and SonarCloud's PR analysis still runs.
 
