@@ -42,3 +42,7 @@ Subagents run on the session's model and effort unless told otherwise. Spawn eac
 ## Setups that need GitHub
 
 The executor builds its setup locally and never touches a real GitHub repo. A setup that needs open PRs, reviews or threads (most of `review-prs`' evals) can't be built that way yet, so those runs grade as failures in both configurations. Read them as untested, not as regressions, until there's a sandbox repo to run them against.
+
+## Real sessions
+
+Before writing evals or changing a description, check how the skill is actually used: [session-mining.md](session-mining.md) counts loads per skill and the corrections people make right after one.
