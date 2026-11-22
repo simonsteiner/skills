@@ -7,22 +7,26 @@ list to the skills.sh CLI, which fetches them from their own repos into the glob
 (~/.agents/skills) and wires them into each agent's skill dir.
 
     scripts/sync-third-party.py          install everything in the manifest, at latest
-    scripts/sync-third-party.py --check  compare the manifest against what's installed
-    scripts/sync-third-party.py --list   print the curated list and the reason for each
+    scripts/sync-third-party.py --check     compare the manifest against what's installed
+    scripts/sync-third-party.py --outdated  list installed skills that changed upstream since
+    scripts/sync-third-party.py --list      print the curated list and the reason for each
 
 `skills add` re-fetches a skill that's already installed, so a plain sync IS the upgrade
 path — there is no separate update step to remember. What that also means: **there is no
 version pinning.** Every sync moves each skill to whatever is on its upstream default
 branch today. If you ever need a reproducible pinned version, curation is the wrong tool
-and you'd have to vendor the skill instead.
+and you'd have to vendor the skill instead. --outdated says whether a sync would change
+anything: it compares the folder hash the lock file recorded at install with the folder
+on the upstream default branch today (one GitHub API call per source).
 
 Run this from a plain terminal, not from inside a coding-agent session. The CLI detects
 the agent it's running under and installs non-interactively to that agent alone, so a
 sync started inside Claude Code updates the store and Claude Code and silently leaves
 every other agent in the manifest on its old copy.
 
-Skills this repo owns (skills/**) are installed a different way — with
-`npx skills add simonsteiner/skills`, or scripts/link-skills.py while developing. The two
+Skills this repo owns (skills/**) are installed a different way — linked from a clone
+by scripts/link-skills.py (scripts/sync-skills.py runs both), or with
+`npx skills add simonsteiner/skills`. The two
 sets must never overlap; scripts/tooling/skill_inventory.py enforces that.
 """
 
@@ -33,18 +37,21 @@ from tooling import third_party
 from tooling.skill_inventory import inventory
 
 USAGE = """\
-Usage: scripts/sync-third-party.py [--check | --list]
+Usage: scripts/sync-third-party.py [--check | --outdated | --list]
 
   (no args)  install every skill in third-party/skills.json, at latest, then link
              universal agents; a failing source doesn't stop the rest
   --check    compare the manifest against what's actually installed; exits 1 on
              missing, conflict, archived and drift, and only reports uncurated,
              unmanaged and note
+  --outdated list the installed curated skills whose folder changed upstream since
+             they were installed; exits 1 when any did or a source couldn't be read
+             (set GH_TOKEN or GITHUB_TOKEN past GitHub's anonymous rate limit)
   --list     print the curated list and the reason for each skill"""
 
 
 def main(argv):
-    modes = {(): "sync", ("--check",): "check", ("--list",): "list"}
+    modes = {(): "sync", ("--check",): "check", ("--outdated",): "outdated", ("--list",): "list"}
     if tuple(argv) in (("-h",), ("--help",)):
         print(USAGE)
         return 0
@@ -77,6 +84,8 @@ def main(argv):
 
     if mode == "check":
         return check(manifest, home, [s.name for s in inv.skills])
+    if mode == "outdated":
+        return outdated(manifest, home)
     return sync(manifest, home)
 
 
@@ -90,6 +99,20 @@ def check(manifest, home, owned):
     for f in findings:
         print(f)
     return 1 if any(f.fails for f in findings) else 0
+
+
+def outdated(manifest, home):
+    """Report the curated skills a sync would change; 1 when any would, or couldn't be checked."""
+    if not home.lock.exists():
+        print(f"error: no skills.sh lock file at {home.lock} — nothing installed yet. Run without --outdated.",
+              file=sys.stderr)
+        return 1
+    findings = third_party.outdated(manifest, home)
+    for f in findings:
+        print(f)
+    if not findings:
+        print("ok        every installed curated skill matches its upstream default branch")
+    return 1 if findings else 0
 
 
 def sync(manifest, home):

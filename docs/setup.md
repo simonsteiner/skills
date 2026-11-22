@@ -1,26 +1,30 @@
 # Developing the skills
 
-Everything here is for the machine where you edit this repo. The tooling runs through [uv](https://docs.astral.sh/uv/), which installs its one dependency (`ruamel.yaml`, pinned in `uv.lock`) on first run. Everywhere else, install the published skills with `npx skills@latest add simonsteiner/skills`.
+Installing is the same on every machine: clone the repo and run `./scripts/sync-skills.py` ([README](../README.md#install)). Editing the skills adds the checks and git hooks below. The lint and the catalog build run through [uv](https://docs.astral.sh/uv/), which installs their one dependency (`ruamel.yaml`, pinned in `uv.lock`) on first run; the sync scripts need only Python.
 
 ## Set up
 
 ```bash
 npm install               # changesets, rumdl, and the lefthook git hooks
-./scripts/sync-skills.py  # dev-link the owned skills and install the curated ones
+./scripts/sync-skills.py  # link the owned skills and install the curated ones
 ```
 
-## Dev-mode links
+## The one-stop sync
 
-To hack on a skill with live edits, symlink this repo's skills into your local agent directories:
+`./scripts/sync-skills.py` runs three steps: it fetches `origin` and fast-forwards the checkout when the default branch is checked out (on any other branch it only says how far behind it is), runs `link-skills.py`, then runs `sync-third-party.py`. `--check` changes nothing and reports all of it, plus `sync-third-party.py --outdated`: which installed curated skills changed upstream since they were installed. That check compares the folder hash the skills.sh lock file recorded at install with the folder on the upstream default branch, one GitHub API call per source; set `GH_TOKEN` or `GITHUB_TOKEN` if you hit GitHub's anonymous limit of 60 calls an hour. Curated skills aren't pinned, so a sync always moves them to upstream's latest.
+
+## Links
+
+`sync-skills.py` links the owned skills with `link-skills.py`, which you can also run alone:
 
 ```bash
 ./scripts/link-skills.py          # link every owned skill, prune links to removed or deprecated ones
 ./scripts/link-skills.py --check  # report owned skills that aren't linked, and dead links
 ```
 
-This is the dev-mode equivalent of `npx skills add`: it links each skill into `~/.agents/skills` (and mirrors it for Claude Code under `~/.claude/skills` and Antigravity under `~/.gemini/config/skills`), so edits here take effect immediately. Pick one path per skill — dev-link it here, or install it with skills.sh — not both.
+This is the clone's equivalent of `npx skills add`: it links each skill into `~/.agents/skills` (and mirrors it for Claude Code under `~/.claude/skills` and Antigravity under `~/.gemini/config/skills`), so edits here take effect immediately. Pick one path per skill — link it from a clone, or install it with skills.sh — not both.
 
-`./scripts/sync-skills.py` runs `link-skills.py` and then `sync-third-party.py` (pass `--check` to check both). The links point at this checkout's working tree, so whatever branch is checked out is what your agents run. That decides when a sync is needed:
+The links point at this checkout's working tree, so whatever branch is checked out is what your agents run. That decides when a sync is needed:
 
 | What changed | What to do |
 |---|---|

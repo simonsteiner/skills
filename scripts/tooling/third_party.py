@@ -11,8 +11,10 @@ scripts/sync-third-party.py is the command line; see its docstring for the modes
 
 import json
 import os
+import posixpath
 import subprocess
 import sys
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -316,6 +318,61 @@ def _link_findings(manifest, home):
         else:
             detail = f"({destination} is a stale copy, not a link into the store — move it aside, then run the sync)"
         found.append(Finding("drift", want.name, detail))
+    return found
+
+
+def github_folders(repo):
+    """{folder path: git tree SHA} for every folder on `repo`'s default branch ("" is the root).
+
+    One GitHub API call; GH_TOKEN or GITHUB_TOKEN, when set, lifts the anonymous rate limit
+    of 60 calls an hour. Raises OSError when GitHub can't be reached, ValueError when the
+    answer isn't a complete tree.
+    """
+    request = urllib.request.Request(
+        f"https://api.github.com/repos/{repo}/git/trees/HEAD?recursive=1",
+        headers={"Accept": "application/vnd.github+json", "User-Agent": "skills-sync-third-party"},
+    )
+    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    if token:
+        request.add_header("Authorization", f"Bearer {token}")
+    with urllib.request.urlopen(request, timeout=30) as response:
+        data = json.load(response)
+    if data.get("truncated") or "tree" not in data:
+        raise ValueError("GitHub returned an incomplete tree")
+    return {"": data["sha"]} | {e["path"]: e["sha"] for e in data["tree"] if e.get("type") == "tree"}
+
+
+def outdated(manifest, home, folders=github_folders):
+    """Curated skills whose folder upstream has changed since they were installed.
+
+    The skills.sh lock file records each install's `skillFolderHash`, the git tree SHA of
+    the skill's folder at the commit it installed, so comparing it with the folder's SHA on
+    the default branch today says whether a sync would change anything. Skills that aren't
+    installed from their curated source are left to check(). Findings: `outdated` (changed
+    or gone upstream) and `unknown` (the source couldn't be read).
+    """
+    lock = json.loads(home.lock.read_text())["skills"]
+    found, trees = [], {}
+    for k in manifest.curated:
+        entry = lock.get(k.name, {})
+        if entry.get("source") != k.repo:
+            continue
+        if k.repo not in trees:
+            try:
+                trees[k.repo] = folders(k.repo)
+            except (OSError, ValueError) as e:
+                trees[k.repo] = e
+        tree = trees[k.repo]
+        if isinstance(tree, Exception):
+            found.append(Finding("unknown", k.name, f"(couldn't read {k.repo}: {tree})"))
+            continue
+        folder = posixpath.dirname(entry.get("skillPath", ""))
+        upstream = tree.get(folder)
+        if upstream is None:
+            found.append(Finding("outdated", k.name, f"({k.repo} no longer has {folder or 'a root skill'}/)"))
+        elif upstream != entry.get("skillFolderHash"):
+            since = (entry.get("updatedAt") or entry.get("installedAt") or "?")[:10]
+            found.append(Finding("outdated", k.name, f"({k.repo} changed it since the install of {since} — run the sync)"))
     return found
 
 

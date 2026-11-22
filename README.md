@@ -2,15 +2,18 @@
 
 My personal collection of agent skills for real engineering. They're small, easy to adapt, composable, and work with any model — each one is a plain folder with a `SKILL.md`, following the open [Agent Skills](https://github.com/agentskills/agentskills) format, so any agent that speaks it can load them.
 
-> This repository is a fork of Matt Pocock's [`skills`](https://github.com/mattpocock/skills). It keeps the structure of the original but maintains its own pared-down set of skills, and does not sync with upstream.
+> This repository is a fork of Matt Pocock's [`skills`](https://github.com/mattpocock/skills). It keeps the structure of the original but maintains its own skills and never merges upstream; the upstream skills still in use are [curated](./third-party/README.md) and installed from it directly.
 
 ## Install
 
-Use the [skills.sh](https://skills.sh) installer, then pick the skills and coding agents you want:
+Clone the repo and run the sync, from a plain terminal rather than inside an agent session. It links these skills into your agents and installs the curated third-party ones; rerun it to update (it fast-forwards the checkout on `main` first), and `--check` to see what a sync would change, including curated skills that changed upstream.
 
 ```bash
-npx skills@latest add simonsteiner/skills
+git clone https://github.com/simonsteiner/skills && cd skills
+./scripts/sync-skills.py
 ```
+
+Needs git, Python 3.10+ and Node (`npx`). Restart your agents afterwards. To take only this repo's skills, without a clone, use the [skills.sh](https://skills.sh) installer instead: `npx skills@latest add simonsteiner/skills`.
 
 ## Skill catalog
 
@@ -47,7 +50,7 @@ Skills by other people that I use but don't own are **curated, not forked**: [`t
 
 ## Docs
 
-- [`docs/setup.md`](./docs/setup.md) — developing the skills: dev-mode links, when to sync, lint, tests and git hooks.
+- [`docs/setup.md`](./docs/setup.md) — what the sync does, when to rerun it, and the lint, tests and git hooks for editing the skills.
 - [`AGENTS.md`](./AGENTS.md) — the repo's conventions for changing a skill or the tooling.
 - [`docs/invocation.md`](./docs/invocation.md) — user-invoked vs model-invoked, and how one skill calls another.
 - [`docs/evals.md`](./docs/evals.md) — running a skill's evals and trigger evals; [`docs/session-mining.md`](./docs/session-mining.md) — how skills are used in real sessions.
