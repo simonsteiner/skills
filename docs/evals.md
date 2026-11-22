@@ -23,7 +23,7 @@ A skill can carry `evals/evals.json`: realistic prompts, the setup each needs, a
 
 Give it prompts that should load the skill, including ones that only imply it ("fix it and push" implies a commit), and near misses that shouldn't: a neighbour's prompts, or ones that share the skill's words but not its job. Take the wording from real sessions where you can: a prompt nobody types (such as "get this reviewed") scores the router on a phrasing that never reaches it. Copy a neighbour's prompt word for word and the two files share it; the run merges labels by prompt, so each copy is routed once. The lint requires both kinds and refuses the file on a user-invoked skill, whose description never reaches the model.
 
-1. **Prepare.** `uv run --locked --no-build python3 scripts/eval-skill.py triggers --baseline <ref> --also ~/.claude/skills` lays out `.eval-workspace/_triggers/iteration-<N>/` from every skill's `triggers.json` and prints one JSON line per router task. `with_skill` routes against the descriptions in the working tree, `old_skill` against those at the ref. `--also` adds the installed skills that aren't owned here (curated ones, plugins) to both catalogues, so the neighbours a real session has compete too. The prompts are shuffled once and batched the same way for both configs, so the difference is the descriptions'. When only `triggers.json` files changed and no description did, leave out `--baseline`: `old_skill` would route the same descriptions again, so `with_skill` alone shows whether the new prompts route.
+1. **Prepare.** `uv run --locked --no-build python3 scripts/eval-skill.py triggers --baseline <ref> --also ~/.claude/skills` lays out `.eval-workspace/_triggers/iteration-<N>/` from every skill's `triggers.json` and prints one JSON line per router task. `with_skill` routes against the descriptions in the working tree, `old_skill` against those at the ref. `--also` adds the installed skills in that folder that aren't owned here (the curated ones, say) to both catalogues, so the neighbours a real session has compete too. The prompts are shuffled once and batched the same way for both configs, so the difference is the descriptions'. When only `triggers.json` files changed and no description did, leave out `--baseline`: `old_skill` would route the same descriptions again, so `with_skill` alone shows whether the new prompts route.
 2. **Route.** For every line, spawn a fresh sub-agent on the `model` the line names, with its `task` file as the prompt. It sees the catalogue (names and descriptions only) and the batch's prompts, never the labels, and writes `answers.json`: the skills it would load for each prompt.
 3. **Score.** `scripts/eval-skill.py triggers-score .eval-workspace/_triggers/iteration-<N>` writes `trigger-benchmark.json`: per config, the pass rate, each skill's should-trigger and should-not-trigger counts, and every miss with what loaded instead; then the delta. A skill missing from a config's catalogue (added since the ref, or user-invoked there) is listed under `absent`, so its misses read as such.
 
@@ -31,7 +31,7 @@ A router reads every description side by side at the start of a turn, with nothi
 
 ## Cost
 
-Subagents run on the session's model and effort unless told otherwise. Spawn each one on the `model` its task line names.
+Subagents run on the session's model and effort unless told otherwise. Spawn each router on the `model` its trigger task line names; `prepare` lines name no model, so executors run on the session's.
 
 | Role | Model | Why |
 |---|---|---|

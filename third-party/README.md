@@ -31,7 +31,7 @@ What `--check` reports. The first three rows mean the installs disagree with the
 | `unmanaged` | sitting in the store or an agent's directory with nothing managing it — another channel's install, or an upstream deletion left behind |
 | `note` | store copies older than what the agents load. The CLI installs new skills straight into the agent directory and never refreshes an old `~/.agents/skills` entry, so these are leftovers, not a failed sync |
 
-Curated skills are installed globally (`~/.agents/skills`), the same store the skills this repo owns land in, so a curated skill's name must never collide with one under [[`skills/`](../skills/)](../skills/). The sync script refuses to run if it does.
+Curated skills are installed globally (`~/.agents/skills`), the same store the skills this repo owns land in, so a curated skill's name must never collide with one under [`skills/`](../skills/). The sync script refuses to run if it does.
 
 To add one: find it (`npx skills find`), try it without installing (`npx skills use <owner/repo>@<skill>`), then add an entry to `skills.json` with a real reason and list it below.
 
@@ -90,6 +90,8 @@ Curated once and then retired, or considered and declined in favour of an owned 
 
 - **[improve-codebase-architecture](https://github.com/mattpocock/skills/blob/main/skills/engineering/improve-codebase-architecture/SKILL.md)** (mattpocock/skills) — and
 - **[thermo-nuclear-code-quality-review](https://github.com/cursor/plugins/blob/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review/SKILL.md)** (cursor/plugins) — both replaced by the owned [`arch-review`](../skills/engineering/arch-review/SKILL.md), which combines the first's deepening scan with the second's maintainability rubric and adds the save-and-implement loop neither had. See [ADR 0004](../docs/adr/0004-own-arch-review-instead-of-curating-two-review-skills.md).
+
+- **[pr](https://github.com/mattpocock/skills/blob/main/skills/engineering/pr/SKILL.md)** (mattpocock/skills) — replaced by the owned [`pr-body`](../skills/engineering/pr-body/SKILL.md): its one template forced a before/after onto features and three sections onto one-line chores; `pr-body` shapes the body by the kind of change.
 
 - **[code-review](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md)** (mattpocock/skills) — replaced by the owned [`review-prs`](../skills/engineering/review-prs/SKILL.md), which keeps its Standards and Spec axes and smell baseline, reviews a local fixed point in its local mode, and adds the GitHub loop. See [ADR 0005](../docs/adr/0005-own-review-prs-instead-of-curating-code-review.md).
 
