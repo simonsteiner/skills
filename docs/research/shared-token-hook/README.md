@@ -27,7 +27,7 @@ lefthook/file-tokens.yml                     # what consumers load: no jobs, so 
 ```
 
 ```yaml
-# lefthook/file-tokens.yml — loaded by repos that use the shared token budget.
+# lefthook/file-tokens.yml: loaded by repos that use the shared token budget.
 # Ships .lefthook/pre-commit/check-file-tokens.py; the job lives in each repo.
 min_version: 2.0.5 # `args:` on script jobs
 ```

@@ -102,7 +102,7 @@ Co-authored-by: Jane Doe <jane@example.com>
 
 ## Splitting unrelated changes
 
-A diff mixing a bug fix and an unrelated dependency bump is two commits, each staged by path — the fix first if the bump doesn't depend on it:
+A diff mixing a bug fix and an unrelated dependency bump is two commits, each staged by path, the fix first if the bump doesn't depend on it:
 
 ```text
 fix(views): correct same-day filter using date(start_date)

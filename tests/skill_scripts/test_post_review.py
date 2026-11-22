@@ -45,7 +45,7 @@ FILES_PAGES = [
 
 
 def comment(path, line, **extra):
-    return {"path": path, "line": line, "body": "**Bug** — x", **extra}
+    return {"path": path, "line": line, "body": "**Bug**: x", **extra}
 
 
 class PostReviewTest(unittest.TestCase):

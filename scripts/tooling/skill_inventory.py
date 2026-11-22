@@ -1,6 +1,6 @@
 """The owned skills: every skills/<bucket>/<name>/SKILL.md in this repo.
 
-The one definition of "owned skill" (GLOSSARY.md) the tooling shares — which buckets
+The one definition of "owned skill" (GLOSSARY.md) the tooling shares: which buckets
 exist and which are published, what a skill's name is, and the rules that make the set
 unusable: an unknown bucket, two skills with one name, an owned skill that a curated
 one (third-party/skills.json) would overwrite in the global store.

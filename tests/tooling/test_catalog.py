@@ -37,8 +37,8 @@ class CatalogTest(unittest.TestCase):
         return (self.repo / rel).read_text()
 
     def test_summary_is_a_model_invoked_description_up_to_its_use_sentence(self):
-        self.skill("engineering", "m", "Does x — and y.  Also z. Use when x. Not for w.")
-        self.assertEqual(catalog.summary(self.skills()[0]), "Does x — and y. Also z.")
+        self.skill("engineering", "m", "Does x, and y.  Also z. Use when x. Not for w.")
+        self.assertEqual(catalog.summary(self.skills()[0]), "Does x, and y. Also z.")
 
     def test_summary_is_a_whole_user_invoked_description(self):
         self.skill("engineering", "u", "Does x. Then y. Use it twice.", user_invoked=True)
@@ -72,18 +72,18 @@ class CatalogTest(unittest.TestCase):
 
 #### User-invoked
 
-- **[typed](./skills/engineering/typed/SKILL.md)** — Does t.
+- **[typed](./skills/engineering/typed/SKILL.md)**: Does t.
 
 #### Model-invoked
 
-- **[a-model](./skills/engineering/a-model/SKILL.md)** — Does a.
-- **[b-model](./skills/engineering/b-model/SKILL.md)** — Does b.
+- **[a-model](./skills/engineering/a-model/SKILL.md)**: Does a.
+- **[b-model](./skills/engineering/b-model/SKILL.md)**: Does b.
 
 ### Misc
 
 #### Model-invoked
 
-- **[rare](./skills/misc/rare/SKILL.md)** — Does r.
+- **[rare](./skills/misc/rare/SKILL.md)**: Does r.
 
 """)
 
@@ -93,7 +93,7 @@ class CatalogTest(unittest.TestCase):
 
 ## Model-invoked
 
-- **[draft](./draft/SKILL.md)** — Does d.
+- **[draft](./draft/SKILL.md)**: Does d.
 
 {catalog.END}
 """)
@@ -106,7 +106,7 @@ class CatalogTest(unittest.TestCase):
         self.assertEqual(catalog.write(self.skills(), self.repo), [])
 
     def test_an_emptied_bucket_readme_keeps_an_empty_block(self):
-        self.write("skills/misc/README.md", f"# Misc\n\n{catalog.START}\n\n- **[gone](./gone/SKILL.md)** — x.\n\n{catalog.END}\n")
+        self.write("skills/misc/README.md", f"# Misc\n\n{catalog.START}\n\n- **[gone](./gone/SKILL.md)**: x.\n\n{catalog.END}\n")
         catalog.write(self.skills(), self.repo)
         self.assertEqual(self.read("skills/misc/README.md"), f"# Misc\n\n{catalog.START}\n{catalog.END}\n")
 
@@ -130,16 +130,16 @@ Their skills. Kept.
 
 #### User-invoked
 
-- **[t](https://github.com/o/r/blob/HEAD/t/SKILL.md)** — Typed.
+- **[t](https://github.com/o/r/blob/HEAD/t/SKILL.md)**: Typed.
 
 #### Model-invoked
 
-- **[c](https://github.com/o/r/blob/HEAD/skills/c/SKILL.md)** — Does c.
+- **[c](https://github.com/o/r/blob/HEAD/skills/c/SKILL.md)**: Does c.
 
 <details>
 <summary>Archived (1)</summary>
 
-- **[a](https://github.com/o/r/blob/HEAD/SKILL.md)** — Retired. Replaced.
+- **[a](https://github.com/o/r/blob/HEAD/SKILL.md)**: Retired. Replaced.
 
 </details>
 
@@ -148,7 +148,7 @@ Their skills. Kept.
 <details>
 <summary>Archived (1)</summary>
 
-- **[b](https://github.com/p/q/blob/HEAD/b/SKILL.md)** — Declined.
+- **[b](https://github.com/p/q/blob/HEAD/b/SKILL.md)**: Declined.
 
 </details>
 

@@ -17,7 +17,7 @@ The commands review-prs runs when `forge.sh` prints `github <owner>/<repo>`: `or
 
 `gh` must be authenticated (`gh auth status`). The bundled scripts are [scripts/post-review.sh](../scripts/post-review.sh), [scripts/outside-findings.sh](../scripts/outside-findings.sh), [scripts/review-threads.sh](../scripts/review-threads.sh) and [scripts/note-fixes.sh](../scripts/note-fixes.sh).
 
-In a fork checkout with an `upstream` remote, bare `gh pr …` and `repos/{owner}/{repo}` resolve to the upstream repo, so `gh pr view <n>` fails or reads someone else's PR. If `gh repo view --json nameWithOwner` isn't the repo the PRs live on, prefix every `gh` command and script call with `GH_REPO=<owner>/<repo>`, or `GH_REPO=<host>/<owner>/<repo>` when `origin` isn't on `github.com` — `forge.sh` prints no host, and without one `gh` targets `github.com` (shell variables don't survive between tool calls).
+In a fork checkout with an `upstream` remote, bare `gh pr …` and `repos/{owner}/{repo}` resolve to the upstream repo, so `gh pr view <n>` fails or reads someone else's PR. If `gh repo view --json nameWithOwner` isn't the repo the PRs live on, prefix every `gh` command and script call with `GH_REPO=<owner>/<repo>`, or `GH_REPO=<host>/<owner>/<repo>` when `origin` isn't on `github.com`; `forge.sh` prints no host, and without one `gh` targets `github.com` (shell variables don't survive between tool calls).
 
 ## List PRs
 
@@ -35,7 +35,7 @@ gh api repos/{owner}/{repo}/pulls/<n>/comments --paginate \
 
 **Real review.** A review by a bot (`bot` above: REST `user.type` `Bot`, so CodeRabbit and Copilot whatever their login) never counts, and neither does a failure stub. Every thread reply also files an empty `COMMENTED` review of its own, so an empty-bodied comment review counts only when it opened an inline thread (its `id` is some comment's `review`); an empty approval or change request counts as it is. A human inline comment that opened a thread counts as a review too.
 
-**Changed since the last real review** — the reviewed commit against the head. Fetch first, so both exist locally even for a fork's PR or a push since the last fetch: `git fetch --quiet origin "pull/<n>/head"`; a reviewed commit still missing after that (a force-push dropped it) → use the `compare` call below instead of `git log`. That's the head of the `Range: <base>..<head>` line in the newest review whose body has one (a review-prs summary); with none, the newest real review's `commit_id`. A summary's `Fixed:` line lists the commits that answered it: count lines only from the other commits, with `git log --format=%H <reviewed-oid>..<headRefOid>` and `git show --numstat <sha>` per commit.
+**Changed since the last real review**: the reviewed commit against the head. Fetch first, so both exist locally even for a fork's PR or a push since the last fetch: `git fetch --quiet origin "pull/<n>/head"`; a reviewed commit still missing after that (a force-push dropped it) → use the `compare` call below instead of `git log`. That's the head of the `Range: <base>..<head>` line in the newest review whose body has one (a review-prs summary); with none, the newest real review's `commit_id`. A summary's `Fixed:` line lists the commits that answered it: count lines only from the other commits, with `git log --format=%H <reviewed-oid>..<headRefOid>` and `git show --numstat <sha>` per commit.
 
 ```bash
 gh api repos/{owner}/{repo}/compare/<reviewed-oid>...<headRefOid> --jq '[.files[] | {filename, additions, deletions}]'
@@ -58,8 +58,8 @@ The spec is the body and `closingIssuesReferences` (`gh issue view <m>`). Screen
 
 ## Outside findings
 
-- **Check-run annotations** — `<skill-dir>/scripts/outside-findings.sh <n>` prints one JSON object per annotation on the PR's head (linters, type checkers, CodeQL, any CI step with a problem matcher).
-- **Bot review threads** — inline threads and review bodies from bots:
+- **Check-run annotations**: `<skill-dir>/scripts/outside-findings.sh <n>` prints one JSON object per annotation on the PR's head (linters, type checkers, CodeQL, any CI step with a problem matcher).
+- **Bot review threads**: inline threads and review bodies from bots:
 
   ```bash
   <skill-dir>/scripts/review-threads.sh <n>   # every inline thread: its first comment, resolved, bot
@@ -69,7 +69,7 @@ The spec is the body and `closingIssuesReferences` (`gh issue view <m>`). Screen
   ```
 
   The bot threads are those with `"bot": true`. A confirmed finding in one with `"resolved": true` is posted as your own comment, since the fix step reads only unresolved threads.
-- **Sonar** — the PR's key for `pullRequest` is its number.
+- **Sonar**: the PR's key for `pullRequest` is its number.
 
 ## Post the review
 
@@ -80,7 +80,7 @@ GitHub rejects the **whole** review if one inline comment's line is outside the 
 {
   "body": "2 findings (1 Bug, 1 Test). Spec: matches #41. Tests and lint pass.",
   "comments": [
-    {"path": "src/export.ts", "line": 40, "side": "RIGHT", "body": "**Bug** — `rows` is undefined when the query returns nothing, so this throws on an empty export. Default it to `[]`."}
+    {"path": "src/export.ts", "line": 40, "side": "RIGHT", "body": "**Bug**: `rows` is undefined when the query returns nothing, so this throws on an empty export. Default it to `[]`."}
   ]
 }
 JSON
@@ -102,7 +102,7 @@ It adds the fix commits to a `Fixed:` line after the summary's `Range:` line, me
 
 Once the review is posted, remove any worktree you created yourself (`git worktree remove --force <path> && rmdir <its parent>`); T3 doesn't remove one a `delegate_task` created, so remove those too, with their branches (THREADS.md, *Worktree*). address-review-findings makes its own.
 
-Call the Skill tool with "address-review-findings" once, naming every PR that got comments or has bot threads you confirmed, deferred or disagree with, so each PR gets one push, and a stack layer gets its carried-up fixes and its own fixes in that same push. Each push starts another bot review. It reads the unresolved threads — yours and the bots' — fixes, replies to one you disagree with and leaves it open, commits, pushes, replies with the commit, resolves, and carries fixes up a stack. When *Setup* needed a `GH_REPO` prefix, pass it in the call's arguments (`GH_REPO=<owner>/<repo>`, then the PRs): the prefix ends with the command it was on, and without it the skill reads the upstream repo's PRs. Afterwards record the fix commits in your summary (*Record fixes*). A fix that changed what the PR describes → the "pr-body" skill for the body, `gh pr edit <n> --title` for the title.
+Call the Skill tool with "address-review-findings" once, naming every PR that got comments or has bot threads you confirmed, deferred or disagree with, so each PR gets one push, and a stack layer gets its carried-up fixes and its own fixes in that same push. Each push starts another bot review. It reads the unresolved threads (yours and the bots'), fixes, replies to one you disagree with and leaves it open, commits, pushes, replies with the commit, resolves, and carries fixes up a stack. When *Setup* needed a `GH_REPO` prefix, pass it in the call's arguments (`GH_REPO=<owner>/<repo>`, then the PRs): the prefix ends with the command it was on, and without it the skill reads the upstream repo's PRs. Afterwards record the fix commits in your summary (*Record fixes*). A fix that changed what the PR describes → the "pr-body" skill for the body, `gh pr edit <n> --title` for the title.
 
 ## Ready to merge
 

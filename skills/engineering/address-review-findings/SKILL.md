@@ -2,20 +2,20 @@
 name: address-review-findings
 compatibility: Requires git, jq and an authenticated gh CLI.
 description: >
-  Works through the review feedback on GitHub pull requests — one PR, several, or a stack — pulling the unresolved threads, fixing what's real, then replying and resolving. Use when the user wants to address review comments or PR feedback, respond to a reviewer, resolve review threads or conversations, asks what's left on the PR(s), or says the review came back.
+  Works through the review feedback on GitHub pull requests (one PR, several, or a stack), pulling the unresolved threads, fixing what's real, then replying and resolving. Use when the user wants to address review comments or PR feedback, respond to a reviewer, resolve review threads or conversations, asks what's left on the PR(s), or says the review came back.
 ---
 
 # Address Review Findings
 
-Turn a PR's review threads into fixes, replies, and resolutions — one decision per thread, none of them silent.
+Turn a PR's review threads into fixes, replies, and resolutions: one decision per thread, none of them silent.
 
-**Run the whole loop hands-off** — read, triage, fix, commit, push, reply, resolve — and report at the end. Nothing here waits for the user. What keeps that safe is what the run refuses to do, not a checkpoint: a thread is only ever resolved when it was actually addressed, and a thread that needs a human keeps itself open by staying open.
+**Run the whole loop hands-off** (read, triage, fix, commit, push, reply, resolve) and report at the end. Nothing here waits for the user. What keeps that safe is what the run refuses to do, not a checkpoint: a thread is only ever resolved when it was actually addressed, and a thread that needs a human keeps itself open by staying open.
 
-The feedback lives on GitHub, so `gh` must be authenticated (`gh auth status`). The thread queries and the push are bundled as scripts — run them from the repo under review by their path in this skill's directory (`<skill-dir>/scripts/…`). Findings produced in this session by a review skill are a different thing: act on those directly, no PR round-trip needed.
+The feedback lives on GitHub, so `gh` must be authenticated (`gh auth status`). The thread queries and the push are bundled as scripts; run them from the repo under review by their path in this skill's directory (`<skill-dir>/scripts/…`). Findings produced in this session by a review skill are a different thing: act on those directly, no PR round-trip needed.
 
 ---
 
-## Step 0 — Which PRs
+## Step 0: Which PRs
 
 **Pick the repo first.** In a fork checkout, bare `gh` resolves to the upstream repo, and a PR can live there or on the fork. Run `<skill-dir>/scripts/pick-repo.sh` with the PR numbers named, or `--head <the checkout's branch>` when none is: it prints `<n><TAB><repo>` per PR. Exit 3 (ambiguous, with the candidate URLs) or 4 (not found) names each PR it couldn't place: leave it out and ask in the report which was meant. Exit 1 is a failed `gh` call (a login, the network): fix what it prints and rerun, rather than asking which PR was meant. For "the open PRs" or "the stack", run it bare, which prints the repos, and run the mapping below once per repo with `--repo <repo>`. Then put `GH_REPO=<repo>` in front of every `gh` command and script call for that PR (shell variables don't survive between tool calls), and before fixing it check that `gh pr view <n> --json url` names that repo.
 
@@ -27,9 +27,9 @@ gh pr list --state open --author @me --limit 100 --json number,title,headRefName
 
 Without `--limit`, `gh` stops at 30 without saying so. 100 is a deliberate ceiling, not a page size: when the list comes back with exactly 100, there are probably more, so open the report with "100+ open PRs; only the 100 newest were considered".
 
-A PR whose base is another PR's head branch is **stacked** on it. Order the set bottom-up — base first — and run Steps 1–4 once per PR in that order. A fix made low in the stack is still missing from every PR above it until Step 4 carries it up.
+A PR whose base is another PR's head branch is **stacked** on it. Order the set bottom-up (base first) and run Steps 1-4 once per PR in that order. A fix made low in the stack is still missing from every PR above it until Step 4 carries it up.
 
-Never switch the main checkout — another session may be using it. When the current checkout is already on the PR's branch and clean, work there. Otherwise give the PR a detached worktree at its head, which works even when the branch is checked out in someone else's worktree:
+Never switch the main checkout: another session may be using it. When the current checkout is already on the PR's branch and clean, work there. Otherwise give the PR a detached worktree at its head, which works even when the branch is checked out in someone else's worktree:
 
 ```bash
 git fetch --quiet --prune origin && git fetch --quiet origin "pull/<n>/head"   # brings a fork's head too
@@ -38,11 +38,11 @@ tmp="$(mktemp -d)"; git worktree add --quiet --detach "$tmp/pr-<n>" <headRefOid>
 
 Shell variables don't survive between tool calls, so write the printed path into every later command literally, never `$wt`: an empty variable makes `cd "$wt"` a silent no-op, and the push that follows sends the main checkout's HEAD. Run every command for that PR from that path, and push with `push-once.sh` below (a fork's PR, `isCrossRepository`, passes the fork's URL as its remote, which needs "allow edits by maintainers"). A rejected push (exit 3) means the branch moved: `git fetch origin && git merge --no-edit origin/<headRefName>` (a fork's PR has no `origin/<headRefName>`: `git fetch origin "pull/<n>/head" && git merge --no-edit FETCH_HEAD`), rerun the checks, and run `push-once.sh` again with the count it names, one higher for that merge. Any other failed push exits 4 (a login, a URL, a hook, a protected branch): fix what it prints and rerun with the same count, without merging. Once the stack's fixes are carried up, `git worktree remove --force <path> && rmdir <its parent>`.
 
-A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data). Install or copy what a check needs — never symlink it in, or the link gets committed — or name the check as not run. A running dev server serves the main checkout, not the worktree.
+A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data). Install or copy what a check needs (never symlink it in, or the link gets committed) or name the check as not run. A running dev server serves the main checkout, not the worktree.
 
 - **Never `git stash`.** The stash is shared by every worktree; a pop can take another session's work.
 - **Delete only exact paths you created** (`mktemp` for scratch files too). Never by pattern: not `rm -rf /tmp/tmp.*`, not a loop over `git worktree list` matching a prefix.
-- **Don't pipe a command whose exit status matters — `git`, `gh`, this skill's scripts — into `| tail`, `| head` or `| wc -l`.** The pipe reports the last command's status, so a failure reads as success or as "0 threads". Capture first, then trim or count: `out="$(<command>)" && printf '%s\n' "$out" | wc -l`.
+- **Don't pipe a command whose exit status matters (`git`, `gh`, this skill's scripts) into `| tail`, `| head` or `| wc -l`.** The pipe reports the last command's status, so a failure reads as success or as "0 threads". Capture first, then trim or count: `out="$(<command>)" && printf '%s\n' "$out" | wc -l`.
 - **Commits run the repo's hooks**, and tests a hook runs inherit `GIT_DIR` and `GIT_INDEX_FILE`; a test that runs `git` can then act on this repo instead of its fixture. Never skip hooks with `--no-verify`.
 - **Push each PR once per run**, after its last commit. A bot reviewer such as CodeRabbit reviews every push, and each push it reviews brings back a new round of threads, so two pushes a minute apart cost two bot reviews. Commits never push; once the last one is made, push with [scripts/push-once.sh](scripts/push-once.sh) alone. Before pushing anything, it refuses a bare repo, uncommitted changes to tracked files, an unfinished merge, cherry-pick or revert, a `<start>` that isn't an ancestor of HEAD, and a commit count that's off, listing the commits it found. It names untracked files without refusing: one may be a new file the round forgot to add, so read the list before replying "Fixed in …":
 
@@ -56,32 +56,32 @@ A fresh worktree has no gitignored inputs (`.env`, `node_modules`, data). Instal
 
 ---
 
-## Step 1 — Pull the PR and its unresolved threads
+## Step 1: Pull the PR and its unresolved threads
 
 ```bash
 gh pr view <n> --json number,title,url,headRefName,baseRefName,state,reviewDecision,isDraft
-gh pr view <n> --comments   # review summaries and issue comments — the prose around the threads
+gh pr view <n> --comments   # review summaries and issue comments: the prose around the threads
 ```
 
 Always pass `<n>`: a detached worktree has no current branch for `gh` to find the PR from.
 
-Inline threads need GraphQL — the REST endpoint doesn't say whether a thread is resolved. Run this skill's script, which pages through every thread and prints the unresolved ones as one JSON object per line:
+Inline threads need GraphQL: the REST endpoint doesn't say whether a thread is resolved. Run this skill's script, which pages through every thread and prints the unresolved ones as one JSON object per line:
 
 ```bash
 <skill-dir>/scripts/unresolved-threads.sh <n>
 ```
 
-- `id` is the thread ID — it's what replies and resolutions attach to. Keep it with each finding.
+- `id` is the thread ID; it's what replies and resolutions attach to. Keep it with each finding.
 - **`line` is null on outdated threads.** Use `originalLine` and `diffHunk` to locate what the reviewer was looking at; the code has moved since.
 - Read every comment in a thread, not just the first. A reviewer often answers themselves further down.
 - If nothing is unresolved, say so and move to the next PR (or stop). A stack layer that got a carry-up merge pushes it first (Step 4).
-- `commentCount` above the length of `comments` means the thread outgrew one page — open its `url` and read the rest there.
-- **`awaitingReviewer: true`** means you already replied last in a thread someone else started — an earlier run left it open on purpose. Skip it unless the reviewer has written since; replying again just stacks duplicates. Threads from your own `review-prs` run are never flagged.
+- `commentCount` above the length of `comments` means the thread outgrew one page; open its `url` and read the rest there.
+- **`awaitingReviewer: true`** means you already replied last in a thread someone else started; an earlier run left it open on purpose. Skip it unless the reviewer has written since; replying again just stacks duplicates. Threads from your own `review-prs` run are never flagged.
 - **No real review is not a clean review.** A stacked layer can arrive with zero threads because no reviewer looked at it, and an automated reviewer that failed ("Copilot encountered an error…", a rate-limit notice) looked at nothing either. A bot's review (CodeRabbit, Copilot) is input, not a review: work through its threads like any other, but all of them resolved still isn't a reviewed PR. The script warns on stderr when a PR has no real review, naming the bots when only they reviewed; say so in the report rather than counting the PR as done, and suggest running `review-prs` on it.
 
 ---
 
-## Step 2 — Triage each thread against the code
+## Step 2: Triage each thread against the code
 
 Open the file at the referenced line **before** deciding. The comment is a claim about the code, not a fact.
 
@@ -100,7 +100,7 @@ Never convert "disagree" into a silent resolve. An unconvinced reviewer with a c
 
 **Disagree with evidence.** A *disagree* cites something the reviewer can open: a file and symbol, a test, a spec line, a recorded decision. "This was intentional" isn't evidence; when the reason lives only in someone's head (a team convention, a call made in a meeting), the verdict is *needs a decision*, not *disagree*. Three more rules:
 
-- **A misreading is a finding.** When the reviewer misread what the code does, their bug claim can be wrong while the code is still unclear: the next reader will misread it the same way. Disagree with the claim, and fix the clarity — a name, a comment, a smaller function — in the same reply.
+- **A misreading is a finding.** When the reviewer misread what the code does, their bug claim can be wrong while the code is still unclear: the next reader will misread it the same way. Disagree with the claim, and fix the clarity (a name, a comment, a smaller function) in the same reply.
 - **Don't re-grade quietly.** Fix a finding as raised or disagree with it out loud. A fix that only covers a smaller version of the finding, without saying so, is a silent downgrade.
 - **The author's wish isn't evidence.** You (or the thread you're in) wrote the code under review. Wanting the reviewer to be wrong doesn't make them wrong; re-read the code as if someone else wrote it.
 
@@ -114,23 +114,23 @@ All three say fix → **fix**. A rare setup with a loud failure, or a fix that's
 
 A *deferred* reply names the trigger and what it fails, so the reviewer can push back: "Real, but only with a port-443 SSH config, and it stops with `unsupported` rather than acting on the wrong repo. Deferred, not this PR's scope." A bot's thread gets resolved, so the next run doesn't take it up again. A human's thread stays open, since agreeing to defer is theirs to do.
 
-**Write the fixes straight away** and report the verdicts alongside them in Step 5. A verdict is cheaper to overrule from the diff than from a table of intentions. A *needs a decision* thread doesn't stall the run either — put the question in the thread, leave it open, and carry on with the rest.
+**Write the fixes straight away** and report the verdicts alongside them in Step 5. A verdict is cheaper to overrule from the diff than from a table of intentions. A *needs a decision* thread doesn't stall the run either: put the question in the thread, leave it open, and carry on with the rest.
 
 ---
 
-## Step 3 — Apply the fixes
+## Step 3: Apply the fixes
 
 - Fix **what the comment is about**, not only the line it hangs on. A comment on one duplicated block usually implicates the others.
-- Group into the smallest coherent commits — one concern each, not one commit per thread and not one commit for everything.
+- Group into the smallest coherent commits: one concern each, not one commit per thread and not one commit for everything.
 - Run whatever the repo runs (tests, linters, type checks). A review fix that breaks the build is a worse finding than the one it closed.
-- Call the Skill tool with "conventional-commit" to commit, without pushing: Step 4 pushes the PR's commits together. Say what changed and why, referencing the reviewer's point — never a bare "address feedback".
+- Call the Skill tool with "conventional-commit" to commit, without pushing: Step 4 pushes the PR's commits together. Say what changed and why, referencing the reviewer's point, never a bare "address feedback".
 - Stay inside the review's scope. A review is not a mandate to refactor what nobody commented on.
 
 ---
 
-## Step 4 — Push, reply, resolve
+## Step 4: Push, reply, resolve
 
-These post to a PR other people are watching, and a reply can't be unsent — so write each one as if the reviewer reads it without you there to explain. Then send it; no confirmation step.
+These post to a PR other people are watching, and a reply can't be unsent, so write each one as if the reviewer reads it without you there to explain. Then send it; no confirmation step.
 
 Push all of the PR's commits at once (Step 0), then per thread:
 
@@ -142,43 +142,43 @@ BODY
 
 `--resolve` only when the thread was actually addressed. The script refuses an empty body, so nothing gets resolved silently.
 
-A reply says what changed and where — the commit SHA or the new symbol name — not "done". Resolve only threads you fixed or proved already fixed, plus a bot's *deferred* thread with its reason in the reply. Threads left open are the record of what still needs the reviewer.
+A reply says what changed and where (the commit SHA or the new symbol name), not "done". Resolve only threads you fixed or proved already fixed, plus a bot's *deferred* thread with its reason in the reply. Threads left open are the record of what still needs the reviewer.
 
-**In a stack, carry the fixes up** before moving to the next PR. Merge each branch into the one stacked on it, bottom-up — merge, not rebase, so reviewers of the upper PRs don't lose their place. Don't push the merge on its own: the upper PR's own fixes go on top of it, and its Step 4 pushes the merge and those fixes together. A merge pushed alone is one more bot review of code the lower PR's review already covered. An upper PR with nothing of its own to fix still pushes the merge, with `push-once.sh` and a count of 1, so the PR above it can merge it as pushed. Each layer pushes once:
+**In a stack, carry the fixes up** before moving to the next PR. Merge each branch into the one stacked on it, bottom-up: merge, not rebase, so reviewers of the upper PRs don't lose their place. Don't push the merge on its own: the upper PR's own fixes go on top of it, and its Step 4 pushes the merge and those fixes together. A merge pushed alone is one more bot review of code the lower PR's review already covered. An upper PR with nothing of its own to fix still pushes the merge, with `push-once.sh` and a count of 1, so the PR above it can merge it as pushed. Each layer pushes once:
 
 ```bash
 cd <upper PR's worktree path> && git fetch origin && git merge --no-edit "origin/<lower-head>"
 ```
 
-The upper PR has no worktree yet on its first carry: create it with the Step 0 recipe and reuse it for that PR's own Steps 1–4. Merge the lower layer as pushed (`origin/…`, or `FETCH_HEAD` after `git fetch origin "pull/<lower-n>/head"` when it's a fork's PR), not a local branch another worktree may hold at an older commit.
+The upper PR has no worktree yet on its first carry: create it with the Step 0 recipe and reuse it for that PR's own Steps 1-4. Merge the lower layer as pushed (`origin/…`, or `FETCH_HEAD` after `git fetch origin "pull/<lower-n>/head"` when it's a fork's PR), not a local branch another worktree may hold at an older commit.
 
-A conflict here is the upper PR's code meeting the fix: resolve it on the upper branch by editing the conflicted files, keeping both intents — never `git checkout <rev> -- <path>`, which silently drops one side — commit the merge on its own, and run the checks again.
+A conflict here is the upper PR's code meeting the fix: resolve it on the upper branch by editing the conflicted files, keeping both intents (never `git checkout <rev> -- <path>`, which silently drops one side), commit the merge on its own, and run the checks again.
 
 ---
 
-## Step 5 — Report
+## Step 5: Report
 
-The report is the whole of the user's involvement, so it carries what a checkpoint would have: per PR, one line per thread — reviewer, file, verdict, and the commit or the reason it's still open — then what was left unaddressed and why. List the *deferred* findings together as follow-ups, one line each with the trigger and its thread, so the user can file an issue or overrule the call. Link the pushed commits so any verdict can be overruled from the diff. Name any PR that had no review at all. Before reporting, `git worktree list` shows none of the worktrees you created.
+The report is the whole of the user's involvement, so it carries what a checkpoint would have: per PR, one line per thread (reviewer, file, verdict, and the commit or the reason it's still open), then what was left unaddressed and why. List the *deferred* findings together as follow-ups, one line each with the trigger and its thread, so the user can file an issue or overrule the call. Link the pushed commits so any verdict can be overruled from the diff. Name any PR that had no review at all. Before reporting, `git worktree list` shows none of the worktrees you created.
 
-**Every *needs a decision* and *disagree* thread gets spelled out in the report**, not just pointed at — the user should be able to decide without opening GitHub:
+**Every *needs a decision* and *disagree* thread gets spelled out in the report**, not just pointed at; the user should be able to decide without opening GitHub:
 
-> **PR #12 · `src/export.ts:40` — needs a decision**
+> **PR #12 · `src/export.ts:40`: needs a decision**
 > The reviewer wants PDF links to expire after 24h; today they never expire.
 >
-> - **A.** Expire after 24h — matches the reviewer; breaks links already sent by email.
-> - **B.** Keep permanent links — current behaviour; the thread stays open.
+> - **A.** Expire after 24h: matches the reviewer; breaks links already sent by email.
+> - **B.** Keep permanent links: current behaviour; the thread stays open.
 > - **Recommended: A**, with a one-off note to existing users. [thread](https://github.com/acme/app/pull/12#discussion_r1)
 
 A line like "one thread is waiting on your decision" with no question in it is the report failing at its one job.
 
-Merging is not part of this skill. If the user asked to merge as well, finish the report first, then merge only PRs with no open threads and green checks — and in a stack, retarget the next PR to the default branch (`gh pr edit <next> --base <default>`) **before** merging its base with `--delete-branch`, or GitHub closes the next PR instead of retargeting it.
+Merging is not part of this skill. If the user asked to merge as well, finish the report first, then merge only PRs with no open threads and green checks, and in a stack, retarget the next PR to the default branch (`gh pr edit <next> --base <default>`) **before** merging its base with `--delete-branch`, or GitHub closes the next PR instead of retargeting it.
 
 ---
 
 ## Rules of thumb
 
 - One thread, one decision. Never bulk-resolve.
-- The reviewer's diagnosis can be wrong while the symptom is real — fix the cause you find, and say so in the reply.
-- Two comments that contradict each other are a question for the thread, not a coin flip — ask it there and leave the thread open.
+- The reviewer's diagnosis can be wrong while the symptom is real; fix the cause you find, and say so in the reply.
+- Two comments that contradict each other are a question for the thread, not a coin flip; ask it there and leave the thread open.
 - An outdated thread that looks fixed often isn't; the code moved, and the bug moved with it.
-- Don't rewrite history on a branch under review — reviewers lose their place. Add commits.
+- Don't rewrite history on a branch under review: reviewers lose their place. Add commits.

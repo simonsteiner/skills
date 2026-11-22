@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Name the forge the current repo's PRs live on, read from `git remote get-url origin`
-# only — never GH_REPO or another remote such as `upstream` — as one line whose fields
+# only (never GH_REPO or another remote such as `upstream`) as one line whose fields
 # are separated by tabs, since an Azure DevOps project or repo name can hold spaces:
 #
 #   forge.sh
@@ -23,7 +23,7 @@ if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
 fi
 
 url="$(git remote get-url origin 2>/dev/null)" \
-  || { echo "error: no 'origin' remote here (or not a git repo) — can't tell the forge" >&2; exit 1; }
+  || { echo "error: no 'origin' remote here (or not a git repo); can't tell the forge" >&2; exit 1; }
 
 # Split into host and path: scheme://[user@]host[:port]/path, or scp-style [user@]host:path.
 if [[ "$url" =~ ^([a-zA-Z][a-zA-Z0-9+.-]*)://([^/@]*@)?([^/:]+)(:[0-9]*)?(/.*)?$ ]]; then

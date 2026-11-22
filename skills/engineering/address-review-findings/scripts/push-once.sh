@@ -30,26 +30,26 @@ die() { echo "error: $*" >&2; exit 1; }
 
 (( $# == 3 || $# == 4 )) || die "expected <start> <commits> <branch> [<remote>], got $# arguments"
 start="$1" commits="$2" branch="$3" remote="${4:-origin}"
-[[ "$commits" =~ ^[1-9][0-9]*$ ]] || die "expected a commit count of 1 or more, got '$commits' — with nothing committed there's nothing to push"
+[[ "$commits" =~ ^[1-9][0-9]*$ ]] || die "expected a commit count of 1 or more, got '$commits'; with nothing committed there's nothing to push"
 [[ -n "$branch" && "$branch" != -* ]] || die "expected a branch name, got '$branch'"
 
 [[ "$(git rev-parse --is-inside-work-tree 2>/dev/null)" == true ]] \
-  || die "not inside a work tree (a bare repo, or the wrong directory) — run this from the PR's worktree"
+  || die "not inside a work tree (a bare repo, or the wrong directory); run this from the PR's worktree"
 [[ -z "$(git status --porcelain --untracked-files=no)" ]] \
-  || die "uncommitted changes to tracked files — commit them as part of the round, or they'd be left out of the push"
+  || die "uncommitted changes to tracked files; commit them as part of the round, or they'd be left out of the push"
 for op in MERGE_HEAD CHERRY_PICK_HEAD REVERT_HEAD; do
   if git rev-parse --quiet --verify "$op" >/dev/null; then
-    die "$op exists: a merge, cherry-pick or revert isn't finished — commit or abort it first"
+    die "$op exists: a merge, cherry-pick or revert isn't finished; commit or abort it first"
   fi
 done
 start_oid="$(git rev-parse --verify --quiet "$start^{commit}")" \
-  || die "'$start' isn't a commit here — fetch the PR's head first"
+  || die "'$start' isn't a commit here; fetch the PR's head first"
 git merge-base --is-ancestor "$start_oid" HEAD \
-  || die "$start isn't an ancestor of HEAD — this worktree isn't on the PR's branch"
+  || die "$start isn't an ancestor of HEAD; this worktree isn't on the PR's branch"
 
 made="$(git rev-list --count --first-parent "$start_oid..HEAD")"
 if [[ "$made" != "$commits" ]]; then
-  echo "error: expected $commits commit(s) since $start, found $made — nothing pushed:" >&2
+  echo "error: expected $commits commit(s) since $start, found $made, nothing pushed:" >&2
   git log --first-parent --format='  %h %s' "$start_oid..HEAD" >&2
   exit 1
 fi

@@ -6,7 +6,7 @@ set -euo pipefail
 #
 #   post-review.sh <pr-number> <<'JSON'
 #   {"body": "2 findings (1 Bug, 1 Test). ...",
-#    "comments": [{"path": "src/export.ts", "line": 40, "side": "RIGHT", "body": "**Bug** — ..."}]}
+#    "comments": [{"path": "src/export.ts", "line": 40, "side": "RIGHT", "body": "**Bug**: ..."}]}
 #   JSON
 #
 # Nothing is sent until the payload is valid JSON with a non-empty body and every
@@ -27,10 +27,10 @@ pr="${1:-}"
 [[ "$pr" =~ ^[0-9]+$ ]] || { echo "error: expected a PR number, got '$pr'" >&2; exit 1; }
 
 payload="$(cat)"
-[[ -n "${payload//[[:space:]]/}" ]] || { echo "error: empty payload on stdin — nothing posted" >&2; exit 1; }
+[[ -n "${payload//[[:space:]]/}" ]] || { echo "error: empty payload on stdin; nothing posted" >&2; exit 1; }
 jq -e '(.body | type == "string" and length > 0) and ((.comments // []) | type == "array")' \
   <<<"$payload" >/dev/null 2>&1 \
-  || { echo "error: payload must be JSON with a non-empty \"body\" and an optional \"comments\" array — nothing posted" >&2; exit 1; }
+  || { echo "error: payload must be JSON with a non-empty \"body\" and an optional \"comments\" array; nothing posted" >&2; exit 1; }
 
 # gh api takes its host from GH_HOST, never from GH_REPO or the checkout, so pass the host on: a
 # host-qualified GH_REPO's, else (no GH_REPO and no GH_HOST) the checkout's, or a GitHub Enterprise
@@ -75,7 +75,7 @@ outside="$(jq -r --slurpfile files "$files" '
   | "\(.path):\($from)\(if .start_line then "-\(.line)" else "" end)"
 ' <<<"$payload")"
 if [[ -n "$outside" ]]; then
-  echo "error: these comments are outside the diff — move them into the body, nothing posted:" >&2
+  echo "error: these comments are outside the diff; move them into the body, nothing posted:" >&2
   echo "$outside" >&2
   if (( listed >= 3000 )); then
     echo "note: GitHub lists only the first 3000 files of a PR; a comment on a later file can't be checked, so it reads as outside" >&2
@@ -93,7 +93,7 @@ pending_ids() {
 }
 existing="$(pending_ids)"
 if [[ -n "$existing" ]]; then
-  echo "error: you already have a pending draft review on PR $pr (id $existing) — submit or discard it first, nothing posted" >&2
+  echo "error: you already have a pending draft review on PR $pr (id $existing); submit or discard it first, nothing posted" >&2
   exit 1
 fi
 

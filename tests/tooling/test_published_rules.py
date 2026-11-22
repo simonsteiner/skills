@@ -19,7 +19,7 @@ README = f"""# Skills
 
 ## Third-party skills
 
-- **[elsewhere](./third-party/README.md)** — not an owned skill.
+- **[elsewhere](./third-party/README.md)**: not an owned skill.
 """
 
 

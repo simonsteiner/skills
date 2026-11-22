@@ -1,7 +1,7 @@
 ---
 name: pr-body
 description: >
-  Writes a pull request's title and body, shaped by the kind of change — a fix shows before → after, a feature shows it working, a refactor shows nothing changed, a chore stays a few lines. Use before every `gh pr create`, even for a PR that seems too small to need it — when the user says "open a PR", "commit and open a PR", "push and open a PR" or "open it as a stacked PR", when opening a PR is the last step of a bigger ask, and when another workflow reaches its open-a-PR step. Also use when writing, rewriting or updating a PR description. Not for reading, reviewing or merging an existing PR.
+  Writes a pull request's title and body, shaped by the kind of change: a fix shows before → after, a feature shows it working, a refactor shows nothing changed, a chore stays a few lines. Use before every `gh pr create`, even for a PR that seems too small to need it, when the user says "open a PR", "commit and open a PR", "push and open a PR" or "open it as a stacked PR", when opening a PR is the last step of a bigger ask, and when another workflow reaches its open-a-PR step. Also use when writing, rewriting or updating a PR description. Not for reading, reviewing or merging an existing PR.
 ---
 
 # PR Body
@@ -30,7 +30,7 @@ From the PR's Conventional Commit type, or what dominates the diff when commits 
 | **Fix** | `fix`, `perf` | the same input goes from wrong to right |
 | **Feature** | `feat` | it works, on a real run |
 | **Refactor** | `refactor` | nothing changed that shouldn't have |
-| **Small** | `docs`, `chore`, `build`, `ci`, `style`, `test`, deps bumps | — |
+| **Small** | `docs`, `chore`, `build`, `ci`, `style`, `test`, deps bumps | none |
 
 A refactor that also fixes a bug is a refactor with a before → after for that bug. A feature that also fixes one is a feature with a before → after line for it.
 
@@ -56,8 +56,8 @@ Aligns the PyPI summary with the GitHub description; takes effect with the next 
 ## Fix, feature, refactor
 
 ```markdown
-<Context line — only what applies: Implements [card](…) / closes #N. Stacked on #N; retarget to X once it merges.>
-<Why, 1–2 sentences — only when no linked card or issue already says it.>
+<Context line, only what applies: Implements [card](…) / closes #N. Stacked on #N; retarget to X once it merges.>
+<Why, 1-2 sentences; only when no linked card or issue already says it.>
 
 ## Summary
 
@@ -67,7 +67,7 @@ Aligns the PyPI summary with the GitHub description; takes effect with the next 
 
 <per kind, below>
 
-**Checks:** <one line — suite count, lint, types, build>
+**Checks:** <one line: suite count, lint, types, build>
 
 ## Merge Danger
 
@@ -81,11 +81,11 @@ Aligns the PyPI summary with the GitHub description; takes effect with the next 
 Pick the smallest view that makes the change clear, and put each decision's reason right next to it ("150 m: 99.9 % of flying fixes read above 89 m under the ground"). Thresholds, constants and rejected options are explained here, not in Evidence.
 
 - **Call tree** for runtime control flow, **file tree** for a new module or a broad move, **component tree** for UI structure, **pseudocode** for an algorithm, **Mermaid** for interaction between parts.
-- **`diff`** when the point is what changes and the surrounding shape already exists. Match the diff to the topic — a call tree, a file tree, a signature, a state machine — not just the source code.
+- **`diff`** when the point is what changes and the surrounding shape already exists. Match the diff to the topic (a call tree, a file tree, a signature, a state machine) not just the source code.
 - **A whole block** when most of it is new or the reader needs a copyable target shape.
 - Keep only the calls, files, states and boundaries the reader needs. Usually one view, sometimes two; rarely more.
 
-**Fix:** a bug with a story may use story headings in place of `## Summary` — the symptom as observed (`## Day 3, 19:12: a walk read as a 4 min flight`), then `## Fix: <the rule>`. Evidence and Merge Danger follow as usual.
+**Fix:** a bug with a story may use story headings in place of `## Summary`: the symptom as observed (`## Day 3, 19:12: a walk read as a 4 min flight`), then `## Fix: <the rule>`. Evidence and Merge Danger follow as usual.
 
 **Feature:** after the view, the key decisions as bullets, each with its reason. Name the alternative not taken when a reviewer would ask about it ("a second backend rather than a flag, because …").
 
@@ -93,24 +93,24 @@ Pick the smallest view that makes the change clear, and put each decision's reas
 
 Screenshots for visual changes, when the environment can take them; call the Skill tool with "attach-media" to embed local captures. Otherwise execution: commands, outputs, tests, measurements. Never a vague "tested locally".
 
-**Fix — before → after**, the same input both times:
+**Fix: before → after**, the same input both times:
 
 ```markdown
 - **Before** (on <base>): <exact input> → <wrong output, error, or failing test>
   **After:** <same input> → <right output>
 - **Effect on real data:** <what else moved when re-run, with numbers; "nothing else changed" is evidence too>
-- **New test:** `<name>` — fails on the base.
+- **New test:** `<name>`, fails on the base.
 ```
 
-**Feature — shown working.** No "before": the feature didn't exist, and `invalid choice: 'fcw'` proves nothing.
+**Feature: shown working.** No "before": the feature didn't exist, and `invalid choice: 'fcw'` proves nothing.
 
 ```markdown
-- **Run:** <a real end-to-end run — command, output trimmed to what matters, or a screenshot>
+- **Run:** <a real end-to-end run: command, output trimmed to what matters, or a screenshot>
 - **Measured:** <quality, speed, cost against the baseline or the alternative, as a table when there are several>
 - **Tests:** what they cover, as a short list.
 ```
 
-**Refactor — unchanged:**
+**Refactor: unchanged.**
 
 ```markdown
 - **Unchanged:** <golden outputs / re-export / snapshot> byte-identical to the base (<how it was compared>).
@@ -121,12 +121,12 @@ Screenshots for visual changes, when the environment can take them; call the Ski
 
 ### Merge Danger
 
-Trivial — one line:
+Trivial, one line:
 
 ```markdown
 ## Merge Danger
 
-Reverts cleanly · blast radius: none — no export key or value changes.
+Reverts cleanly · blast radius: none; no export key or value changes.
 ```
 
 Otherwise two bullets:
@@ -134,8 +134,8 @@ Otherwise two bullets:
 ```markdown
 ## Merge Danger
 
-- **Doesn't revert:** <what a revert leaves behind — a published release, synced calendar events, written data, a created job, a cache — or "nothing">
-- **Blast radius:** <none | repo-internal | site users | library consumers | production data> — <what could break, and for whom>
+- **Doesn't revert:** <what a revert leaves behind (a published release, synced calendar events, written data, a created job, a cache) or "nothing">
+- **Blast radius:** <none | repo-internal | site users | library consumers | production data>: <what could break, and for whom>
 ```
 
 Pick the blast radius from that fixed scale so it compares across PRs; the specifics go after the dash. For a feature, say what it now costs or depends on to run: an external service, VRAM, a scheduled job, a new secret.
@@ -144,15 +144,15 @@ Pick the blast radius from that fixed scale so it compares across PRs; the speci
 
 Add each only when it applies, after Merge Danger:
 
-- **`## For consumers`** — a library's API or behaviour change, in the words the changelog will use.
-- **`## After merge`** — deploy notes and exact commands, run from where.
-- **`## Not done`** — what was dropped and why, follow-ups, and anything needed before the feature takes real work. New findings the work turned up go here, not in Evidence.
+- **`## For consumers`**: a library's API or behaviour change, in the words the changelog will use.
+- **`## After merge`**: deploy notes and exact commands, run from where.
+- **`## Not done`**: what was dropped and why, follow-ups, and anything needed before the feature takes real work. New findings the work turned up go here, not in Evidence.
 
 ---
 
 ## Title
 
-PR titles usually become the squash commit's subject, so follow the repo's title convention — Conventional Commits when its history uses them; check the last few merged PRs. Within that, say why the change matters, not how it was done:
+PR titles usually become the squash commit's subject, so follow the repo's title convention: Conventional Commits when its history uses them; check the last few merged PRs. Within that, say why the change matters, not how it was done:
 
 - ❌ `perf(server): negotiate permessage-deflate on the websocket`
 - ✅ `perf(server): cut websocket frame size by 70% with compression`

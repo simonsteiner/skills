@@ -3,8 +3,8 @@
 The loop follows https://agentskills.io/skill-creation/evaluating-skills: run every eval
 with the skill and with a baseline (no skill, or the skill at an older git ref), grade
 each run's outputs against the eval's expected behaviour, and aggregate the grades. This
-module does the mechanical parts — validating evals.json, laying out an iteration, and
-aggregating — so the runs and the grading are all that's left for agents to do.
+module does the mechanical parts: validating evals.json, laying out an iteration, and
+aggregating, so the runs and the grading are all that's left for agents to do.
 
     .eval-workspace/<skill>/iteration-<N>/
       old_skill/                      the baseline snapshot, when --baseline <ref> is given
@@ -143,7 +143,7 @@ def prepare(repo, skill, baseline=None, root=None):
             shutil.rmtree(iteration)  # a failed iteration would still take the next number
             raise
     else:
-        configs["without_skill"] = "none — work without any skill"
+        configs["without_skill"] = "none: work without any skill"
 
     runs = []
     for i, e in enumerate(evals, 1):

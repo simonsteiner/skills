@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Skill linker — a clone's equivalent of `npx skills add <repo>`.
+"""Skill linker: a clone's equivalent of `npx skills add <repo>`.
 
 Links every owned skill outside deprecated/ into ~/.agents/skills, ~/.claude/skills
 and ~/.gemini/config/skills, so the checkout's working tree is what the agents load and

@@ -31,7 +31,7 @@ def status_values(skill):
     return set(re.findall(r"`([a-z-]+)`", line.group(1))) if line else set()
 
 
-LOOSE_ENDS_START = re.compile(r"\*\*Loose ends\.\*\*|## Step \d+ — Loose ends")
+LOOSE_ENDS_START = re.compile(r"\*\*Loose ends\.\*\*|## Step \d+: Loose ends")
 LOOSE_ENDS_END = "\nRunning low on budget"
 
 
@@ -41,7 +41,7 @@ def loose_ends(skill):
     start = LOOSE_ENDS_START.search(text)
     if not start:
         raise AssertionError(f"{skill}/SKILL.md has no loose-ends heading: neither **Loose ends.** "
-                             "nor ## Step N — Loose ends")
+                             "nor ## Step N: Loose ends")
     end = text.find(LOOSE_ENDS_END, start.end())
     if end < 0:
         raise AssertionError(f"{skill}/SKILL.md has no {LOOSE_ENDS_END.strip()!r} line after its "

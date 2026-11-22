@@ -42,9 +42,9 @@ az devops invoke <thread-route> --resource pullRequestIterations -o json
 
 **The head** (`<head-oid>`) is the newest iteration's `sourceRefCommit.commitId`. Not `lastMergeSourceCommit`: that is the source tip of the last merge calculation and lags a push until the merge is recalculated.
 
-- **Real review** — any of: a non-zero `vote` from a human reviewer; an inline human thread (`threadContext` set, first comment `commentType` `text`, not `isDeleted`) by someone other than the PR's author — a general comment doesn't count; or a review-prs summary (`Range: …`). A human is an author that isn't a bot or service account (CodeRabbit posts under whatever account it was installed with — usually named for it).
-- **Reviewed commit** — a review-prs summary names its range (`Range: <base>..<head>`); use that head. Otherwise take the time of the newest real review — the inline thread's `publishedDate`, or for a vote the `system` thread Azure DevOps adds when the vote is cast (`properties.CodeReviewThreadType.$value` `VoteUpdate`; property values come wrapped as `{"$type", "$value"}`) — and the iteration that was newest then: its `sourceRefCommit.commitId`. No baseline found → review the whole PR.
-- **Changed since** — fetch both and diff locally: `git diff --stat <reviewed-oid> <head-oid>`. Commits the summary's `Fixed:` line lists don't count: `git log --format=%H <reviewed-oid>..<head-oid>`, then `git show --numstat <sha>` for the others.
+- **Real review**: any of: a non-zero `vote` from a human reviewer; an inline human thread (`threadContext` set, first comment `commentType` `text`, not `isDeleted`) by someone other than the PR's author (a general comment doesn't count); or a review-prs summary (`Range: …`). A human is an author that isn't a bot or service account (CodeRabbit posts under whatever account it was installed with, usually named for it).
+- **Reviewed commit**: a review-prs summary names its range (`Range: <base>..<head>`); use that head. Otherwise take the time of the newest real review, meaning the inline thread's `publishedDate`, or for a vote the `system` thread Azure DevOps adds when the vote is cast (`properties.CodeReviewThreadType.$value` `VoteUpdate`; property values come wrapped as `{"$type", "$value"}`), and the iteration that was newest then: its `sourceRefCommit.commitId`. No baseline found → review the whole PR.
+- **Changed since**: fetch both and diff locally: `git diff --stat <reviewed-oid> <head-oid>`. Commits the summary's `Fixed:` line lists don't count: `git log --format=%H <reviewed-oid>..<head-oid>`, then `git show --numstat <sha>` for the others.
 
 A PR whose `targetRefName` is another open PR's `sourceRefName` is stacked on it.
 
@@ -62,8 +62,8 @@ tmp="$(mktemp -d)"; git worktree add --quiet --detach "$tmp/pr-<id>" <head-oid> 
 
 ## Outside findings
 
-- **Policies** — `az repos pr policy list --org … --id <id> -o json`: each evaluation's `status` (`approved`, `rejected`, `running`, `queued`) and `configuration.type.displayName` (Build, Status, Minimum number of reviewers). A `rejected` Build or Status is a failed check.
-- **Build issues** — the ADO analogue of check annotations. The PR's builds: `az pipelines runs list <scope> --branch "refs/pull/<id>/merge" --top 5 -o json`. Their errors and warnings, with `data.sourcepath` and `data.linenumber` when the task gave them:
+- **Policies**: `az repos pr policy list --org … --id <id> -o json`: each evaluation's `status` (`approved`, `rejected`, `running`, `queued`) and `configuration.type.displayName` (Build, Status, Minimum number of reviewers). A `rejected` Build or Status is a failed check.
+- **Build issues**: the ADO analogue of check annotations. The PR's builds: `az pipelines runs list <scope> --branch "refs/pull/<id>/merge" --top 5 -o json`. Their errors and warnings, with `data.sourcepath` and `data.linenumber` when the task gave them:
 
   ```bash
   az devops invoke --org https://dev.azure.com/<org> --area build --resource timeline --api-version 7.1 \
@@ -71,19 +71,19 @@ tmp="$(mktemp -d)"; git worktree add --quiet --detach "$tmp/pr-<id>" <head-oid> 
     --query "records[].issues[] | [?type=='error' || type=='warning']"
   ```
 
-- **Bot threads** — from `pullRequestThreads`: threads whose first comment's author is a bot (CodeRabbit, a scanner's service account), `status` `active` or `pending`, with `threadContext.filePath` and `rightFileStart.line`.
-- **Sonar** — the PR's key for `pullRequest` is its `pullRequestId`.
+- **Bot threads**: from `pullRequestThreads`: threads whose first comment's author is a bot (CodeRabbit, a scanner's service account), `status` `active` or `pending`, with `threadContext.filePath` and `rightFileStart.line`.
+- **Sonar**: the PR's key for `pullRequest` is its `pullRequestId`.
 
 ## Post the review
 
 ADO has no batched review: each inline comment is its own thread, and nothing is atomic. So:
 
 1. Check every comment's line against `git diff -U0 origin/<target branch>...<head-oid> -- <path>` first; a line outside every hunk goes in the summary instead. ADO would accept it, but the rule holds on every forge.
-2. Re-read the head (`pullRequestIterations`) right before posting; a head that moved since the review means the lines may not match — re-check the new commits before posting.
+2. Re-read the head (`pullRequestIterations`) right before posting; a head that moved since the review means the lines may not match, so re-check the new commits before posting.
 3. Post each thread from a `mktemp` file, then delete that exact path:
 
    ```json
-   {"comments": [{"parentCommentId": 0, "commentType": 1, "content": "**Bug** — `rows` is undefined when …"}],
+   {"comments": [{"parentCommentId": 0, "commentType": 1, "content": "**Bug**: `rows` is undefined when …"}],
     "status": "active",
     "threadContext": {"filePath": "/src/export.ts",
                       "rightFileStart": {"line": 40, "offset": 1}, "rightFileEnd": {"line": 40, "offset": 1}}}
@@ -94,7 +94,7 @@ ADO has no batched review: each inline comment is its own thread, and nothing is
    ```
 
    `filePath` starts with `/`. A deleted line uses `leftFileStart`/`leftFileEnd` with old-file numbers; a range sets start and end lines.
-4. Post the summary last, as a thread with no `threadContext` and `"status": "closed"` — it asks for no action, so it mustn't hold a "resolve all comments" policy open. Its body names `Range: <base-oid>..<head-oid>` so a re-run finds the reviewed commit. Keep the `id` the POST returns: *Record fixes* writes the fix commits into this thread.
+4. Post the summary last, as a thread with no `threadContext` and `"status": "closed"`; it asks for no action, so it mustn't hold a "resolve all comments" policy open. Its body names `Range: <base-oid>..<head-oid>` so a re-run finds the reviewed commit. Keep the `id` the POST returns: *Record fixes* writes the fix commits into this thread.
 
 Never cast a vote (approve, reject, wait for author): the review runs under the user's account, and a vote is theirs.
 
@@ -113,9 +113,9 @@ az devops invoke <thread-route> threadId=<summary-thread-id> commentId=1 --resou
 
 address-review-findings works only on GitHub, so do its loop here yourself, with the steps below. Per PR, stacks bottom-up:
 
-1. Keep the review worktree from *Read a PR* after posting and fix in it — or, if the review ran in a delegate's worktree, create a fresh worktree at `<head-oid>` as in *Read a PR* and fix there, and remove the delegate's worktree and branch now: T3 doesn't (THREADS.md, *Worktree*). Each posted finding and each bot thread you confirmed gets a fix, after the weighing in LENSES.md (*Weigh and disagree*), except a finding you posted as the user's call, which waits for their answer; run the repo's checks again.
+1. Keep the review worktree from *Read a PR* after posting and fix in it or, if the review ran in a delegate's worktree, create a fresh worktree at `<head-oid>` as in *Read a PR* and fix there, and remove the delegate's worktree and branch now: T3 doesn't (THREADS.md, *Worktree*). Each posted finding and each bot thread you confirmed gets a fix, after the weighing in LENSES.md (*Weigh and disagree*), except a finding you posted as the user's call, which waits for their answer; run the repo's checks again.
 2. Call the Skill tool with "conventional-commit" to commit. Then push once with `git push origin HEAD:<source branch>`, after the PR's last commit: each push starts another bot review. A PR from a fork (`forkSource` set) pushes to `forkSource.repository.remoteUrl` instead; when that isn't writable, say so, leave its threads open, and stop fixing that PR.
-3. Per thread — yours and the bots' you confirmed, deferred or disagree with — reply, and resolve only when a fix landed or for a bot's deferred thread, with the reason in the reply:
+3. Per thread (yours and the bots' you confirmed, deferred or disagree with), reply, and resolve only when a fix landed or for a bot's deferred thread, with the reason in the reply:
 
    ```bash
    # reply: {"parentCommentId": 1, "commentType": 1, "content": "Fixed in abc1234: …"}
@@ -126,7 +126,7 @@ address-review-findings works only on GitHub, so do its loop here yourself, with
 
    (`threadId=` joins the other `--route-parameters`.) A thread you disagree with gets a reply and stays `active`, and so do a human's deferred thread and a finding left as the user's call.
 4. Record the fix commits (*Record fixes*).
-5. In a stack, carry the fixes up before the next layer starts: merge the layer as pushed into the one stacked on it, in that layer's worktree — merge, not rebase. Don't push the merge yet: it goes out in that layer's own step 2 push, with its fixes. A layer with nothing to fix pushes the merge alone.
+5. In a stack, carry the fixes up before the next layer starts: merge the layer as pushed into the one stacked on it, in that layer's worktree; merge, not rebase. Don't push the merge yet: it goes out in that layer's own step 2 push, with its fixes. A layer with nothing to fix pushes the merge alone.
 6. Remove the worktree once the PR's fixes are pushed and carried up: `git worktree remove --force <path> && rmdir <its parent>`.
 
 A fix that changed what the PR describes → the "pr-body" skill, then `az repos pr update --org … --id <id> --description "<body>"` and `--title`.

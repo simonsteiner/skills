@@ -30,7 +30,7 @@ The goal was a small, owned repo: keep the structure and tooling that are useful
 
 ## Consequences
 
-- **Upgrades from upstream are now manual and intentional.** Picking up a future improvement from `mattpocock/skills` means deliberately copying it, not merging — which is the point.
+- **Upgrades from upstream are now manual and intentional.** Picking up a future improvement from `mattpocock/skills` means deliberately copying it, not merging, which is the point.
 - **The repo is small and self-consistent.** No skill references another skill that doesn't exist; the active docs describe only what's present.
 - **Reintroducing the deleted flow is a real project, not a toggle.** The taxonomy and folder scaffolding lower the cost, but the skills themselves (and any `setup-skills`-style config they need) would have to be rebuilt or re-copied.
 - **`conventional-commit` can be developed live** via `scripts/link-skills.sh` and shipped via skills.sh, without the two install paths colliding. Note that a dev-linked skill does not appear in `npx skills list -g`, because that reads skills.sh's lock file, which the dev link intentionally leaves untouched.

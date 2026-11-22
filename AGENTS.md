@@ -62,10 +62,10 @@ npx changeset  # add a changeset for a user-visible change
 ## Docs
 
 - **No deploy step:** merging to `main` publishes, since skills.sh installs straight from this repo; `.github/workflows/changelog.yml` then writes `CHANGELOG.md` from the changesets ([ADR 0006](docs/adr/0006-apply-changesets-on-main-without-a-version-pr.md)).
-- `README.md` — what the repo is, how to install it, and the generated skill catalog.
-- `docs/setup.md` — what the sync does and when to rerun it, every check and the git hooks.
-- `docs/invocation.md` — user-invoked vs model-invoked in full; read before writing a description or a cross-skill call.
-- `docs/evals.md` — running a skill's evals and trigger evals; `docs/session-mining.md` — mining real sessions before writing evals or changing a description.
-- `third-party/README.md` — the curated skills, why each is there, and what the sync's `--check` reports.
-- `docs/adr/` — decisions; `.out-of-scope/` — ideas deliberately not built; `docs/research/` — dated research notes, not kept current.
-- `docs/arch-review/` — architecture review reports, written by the `arch-review` skill.
+- `README.md`: what the repo is, how to install it, and the generated skill catalog.
+- `docs/setup.md`: what the sync does and when to rerun it, every check and the git hooks.
+- `docs/invocation.md`: user-invoked vs model-invoked in full; read before writing a description or a cross-skill call.
+- `docs/evals.md`: running a skill's evals and trigger evals; `docs/session-mining.md`: mining real sessions before writing evals or changing a description.
+- `third-party/README.md`: the curated skills, why each is there, and what the sync's `--check` reports.
+- `docs/adr/`: decisions; `.out-of-scope/`: ideas deliberately not built; `docs/research/`: dated research notes, not kept current.
+- `docs/arch-review/`: architecture review reports, written by the `arch-review` skill.

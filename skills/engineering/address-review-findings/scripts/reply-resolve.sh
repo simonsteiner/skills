@@ -25,7 +25,7 @@ resolve="${2:-}"
 [[ -z "$resolve" || "$resolve" == --resolve ]] || { echo "error: unknown option '$resolve'" >&2; exit 1; }
 
 body="$(cat)"
-[[ -n "${body//[[:space:]]/}" ]] || { echo "error: empty reply body on stdin — a resolve without a reply is never allowed" >&2; exit 1; }
+[[ -n "${body//[[:space:]]/}" ]] || { echo "error: empty reply body on stdin; a resolve without a reply is never allowed" >&2; exit 1; }
 
 # gh api takes its host from GH_HOST, never from GH_REPO or the checkout, so pass the host on: a
 # host-qualified GH_REPO's, else (no GH_REPO and no GH_HOST) the checkout's, or a GitHub Enterprise

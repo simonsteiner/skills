@@ -9,7 +9,7 @@
 
 [← Report](README.md)
 
-🟢 **Strong** · 🔴 **live defect** · `<in-process | local-substitutable | ports & adapters | mock>` · <↔ `two-way` | 🚪 `one-way`> · builds on: <— | C2>
+🟢 **Strong** · 🔴 **live defect** · `<in-process | local-substitutable | ports & adapters | mock>` · <↔ `two-way` | 🚪 `one-way`> · builds on: <none | C2>
 
 `<path/a.py:81-127>` · `<path/b.py:117>` · `<tests/test_a.py:34>`
 
@@ -47,8 +47,8 @@ flowchart LR
 
 **Removes:**
 
-- `<path/a.py:90>` — <one special case or link the fix makes unnecessary>
-- `<path/b.py:117>` — <…>
+- `<path/a.py:90>`: <one special case or link the fix makes unnecessary>
+- `<path/b.py:117>`: <…>
 
 | Problem | Solution | Wins |
 |---|---|---|
@@ -61,6 +61,6 @@ flowchart LR
 <summary>Decisions</summary>
 
 <!-- filled during implementation, one line each -->
-Q1 — <question> → <answer>, because <fact>.
+Q1: <question> → <answer>, because <fact>.
 
 </details>

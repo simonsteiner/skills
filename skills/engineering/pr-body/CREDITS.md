@@ -2,10 +2,10 @@
 
 Adapted from four MIT-licensed skills:
 
-- `pr` from <https://github.com/mattpocock/skills> — the Summary / Evidence / Merge Danger skeleton, the catalogue of views (pseudocode, call tree, component tree, file tree, Mermaid, topic-shaped diffs), and evidence tiers.
+- `pr` from <https://github.com/mattpocock/skills>: the Summary / Evidence / Merge Danger skeleton, the catalogue of views (pseudocode, call tree, component tree, file tree, Mermaid, topic-shaped diffs), and evidence tiers.
 - `show-me` from <https://github.com/humanlayer/skills> (by Dex Horthy), which `pr` itself credits as its source.
-- `create-pr` from <https://github.com/intercom/2x-skills> — the Before writing rules: read the diff rather than the conversation and flag undiscussed files, never invent the why, keep internal details out of public repos, and only write `#N` as an intended link.
-- `file-pr` from <https://github.com/t3dotgg/tstack> — the title rule and its websocket example, opening a ready PR rather than a draft so review bots run, and the REST fallback when GraphQL's rate limit is used up.
+- `create-pr` from <https://github.com/intercom/2x-skills>: the Before writing rules: read the diff rather than the conversation and flag undiscussed files, never invent the why, keep internal details out of public repos, and only write `#N` as an intended link.
+- `file-pr` from <https://github.com/t3dotgg/tstack>: the title rule and its websocket example, opening a ready PR rather than a draft so review bots run, and the REST fallback when GraphQL's rate limit is used up.
 
 All four are under the same MIT License; only the copyright line differs, so it follows once with each copyright line.
 

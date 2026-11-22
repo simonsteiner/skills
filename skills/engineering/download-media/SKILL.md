@@ -1,7 +1,7 @@
 ---
 name: download-media
 description: >
-  Downloads the screenshots, recordings, and files attached to GitHub issues, pull requests, and comments so they can be looked at — including on private repos, where the attachment URLs 404 without auth. Use when the user points at an issue or PR with a screenshot to look at, says "see the screenshot" or "check the recording", pastes a github.com/user-attachments URL, or when a review comment or bug report carries an image the work depends on.
+  Downloads the screenshots, recordings, and files attached to GitHub issues, pull requests, and comments so they can be looked at, including on private repos, where the attachment URLs 404 without auth. Use when the user points at an issue or PR with a screenshot to look at, says "see the screenshot" or "check the recording", pastes a github.com/user-attachments URL, or when a review comment or bug report carries an image the work depends on.
 compatibility: Requires an authenticated gh CLI; file and ffmpeg are optional.
 ---
 
@@ -28,7 +28,7 @@ Fetch only what the task needs: the one comment the user means, not a long threa
 <skill-dir>/scripts/download.sh [-o DIR] <url>...
 ```
 
-It saves into a new temp folder unless `-o` names one and prints `<path><TAB><url>` per file, so each file maps back to where it was posted. An asset URL has no file name; the script adds the extension from the file's type. It fetches only GitHub attachment URLs — anything else is refused, so the token goes nowhere else — and a failed download doesn't stop the rest.
+It saves into a new temp folder unless `-o` names one and prints `<path><TAB><url>` per file, so each file maps back to where it was posted. An asset URL has no file name; the script adds the extension from the file's type. It fetches only GitHub attachment URLs; anything else is refused, so the token goes nowhere else, and a failed download doesn't stop the rest.
 
 - **404** means the account behind `gh` can't see that repo, or the attachment hasn't been posted in any body yet.
 - **`private-user-images.githubusercontent.com`** links come from rendered HTML, are signed, and expire within minutes; take the `github.com/…` URL from the raw body instead.

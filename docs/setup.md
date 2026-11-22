@@ -22,7 +22,7 @@ npm install               # changesets, rumdl, and the lefthook git hooks
 ./scripts/link-skills.py --check  # report owned skills that aren't linked, and dead links
 ```
 
-This is the clone's equivalent of `npx skills add`: it links each skill into `~/.agents/skills` (and mirrors it for Claude Code under `~/.claude/skills` and Antigravity under `~/.gemini/config/skills`), so edits here take effect immediately. Pick one path per skill — link it from a clone, or install it with skills.sh — not both.
+This is the clone's equivalent of `npx skills add`: it links each skill into `~/.agents/skills` (and mirrors it for Claude Code under `~/.claude/skills` and Antigravity under `~/.gemini/config/skills`), so edits here take effect immediately. Pick one path per skill (link it from a clone, or install it with skills.sh), not both.
 
 The links point at this checkout's working tree, so whatever branch is checked out is what your agents run. That decides when a sync is needed:
 
@@ -51,6 +51,6 @@ The skill lists in `README.md`, each `skills/<bucket>/README.md` and `.claude-pl
 
 CI (`.github/workflows/lint.yml`) runs all of them on every PR. The lefthook pre-commit hooks (`lefthook.yml`) run the same checks on the staged files, rebuild the skill catalog, and let rumdl fix what it can. With the [SonarQube CLI](https://sonarsource.com/sonarqube/cli) installed and logged in, they also scan the staged files for secrets and new dependency risks; without it that job is skipped, and SonarCloud's PR analysis still runs.
 
-What counts as an owned skill — its bucket, its name, no duplicates and no clash with a curated skill — is decided once, in `scripts/tooling/skill_inventory.py`, and everything about `third-party/skills.json` in `scripts/tooling/third_party.py`; the commands at the top of `scripts/` read them.
+What counts as an owned skill (its bucket, its name, no duplicates and no clash with a curated skill) is decided once, in `scripts/tooling/skill_inventory.py`, and everything about `third-party/skills.json` in `scripts/tooling/third_party.py`; the commands at the top of `scripts/` read them.
 
 A skill's evals run with `./scripts/eval-skill.py`; see [evals.md](evals.md).

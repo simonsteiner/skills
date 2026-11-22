@@ -23,7 +23,7 @@ The backlog, in rank order. After the scan only this table (including `S` rows B
 | [C1](C1-<card-slug>.md) | <names the fix> | 🕳️ blind spot | 🟢 Strong · 🔴 live defect | ↔ two-way | `tdd` | todo | `test/<slug>` | | |
 | [C2](C2-<card-slug>.md) | <names the fix> | 🗑️ waste | 🟢 Strong | ↔ two-way | `prune-tests` | todo | `test/<slug>` | | |
 | [C3](C3-<card-slug>.md) | <names the fix> | 🔧 infra | 🟡 Worth exploring | ↔ two-way | `direct` | todo | `ci/<slug>` | | |
-| [S1](#s1--title) | <smaller finding> | 🗑️ waste | — | ↔ two-way | `prune-tests` | todo | rides with C2 | | |
+| [S1](#s1--title) | <smaller finding> | 🗑️ waste | - | ↔ two-way | `prune-tests` | todo | rides with C2 | | |
 
 Kind: 🕳️ blind spot (fixed with tdd) · 🗑️ waste (fixed with prune-tests) · 🔧 infra (a direct change).
 Strength: 🟢 Strong · 🟡 Worth exploring · ⚪ Speculative · 🔴 live defect (a bug reproduced during the scan).
@@ -67,11 +67,11 @@ flowchart LR
 
 Behaviour with no seam to test at; a module question for `/arch-review`, not a test one.
 
-- `<path:line>` — <why there's no seam> → `/arch-review <direction>`
+- `<path:line>`: <why there's no seam> → `/arch-review <direction>`
 
 ## Since the last review
 
-- `<YYYY-MM-DD> C3` — <merged in #41 | still open | dropped because …>
+- `<YYYY-MM-DD> C3`: <merged in #41 | still open | dropped because …>
 - Vitals: <suite 212 s → 140 s; untested fixes 11 → 4>
 
 ## Smaller findings
@@ -85,7 +85,7 @@ Behaviour with no seam to test at; a module question for `/arch-review`, not a t
 ## Recommendation
 
 > [!IMPORTANT]
-> **Start with [C1 · <title>](C1-<card-slug>.md)** — <one sentence on why this one first>.
+> **Start with [C1 · <title>](C1-<card-slug>.md)**: <one sentence on why this one first>.
 >
 > **Proposed batch** (every 🟢 Strong, in order): C1 → C2
 

@@ -14,7 +14,7 @@ Two review skills for one activity meant two descriptions competing for the same
 
 - `review-prs` finds open PRs (one, several, a stack) with no real review or much new code since the last one, reviews each against its base, posts one inline-comment review per PR, then hands the threads to `address-review-findings` to fix and resolve. A review that only reports its own failure doesn't count as a review.
 - It keeps what was worth keeping from upstream, MIT-credited in `CREDITS.md`: the Standards and Spec axes, the Fowler smell baseline (judgement calls that a documented repo standard overrides), and "standards files must be on the list". They live in `LENSES.md`, loaded at review time.
-- A **local mode** reviews a fixed point with no PR and fixes directly — what `arch-review` needs before its PR exists. `arch-review` now calls `review-prs` instead of `code-review`.
+- A **local mode** reviews a fixed point with no PR and fixes directly: what `arch-review` needs before its PR exists. `arch-review` now calls `review-prs` instead of `code-review`.
 - Dropped: mandatory parallel sub-agents (arch-review already burned a usage window), the tracker-doc setup dependency, and keeping the axes un-merged in the output.
 - The skill's scripts were dropped in favour of plain `gh` commands; GraphQL thread handling stays in `address-review-findings`, where REST can't say whether a thread is resolved.
 

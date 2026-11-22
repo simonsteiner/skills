@@ -1,6 +1,6 @@
 # Report format
 
-One folder per scan: `docs/arch-review/YYYY-MM-DD-<slug>/`, holding `README.md` (the overview, from `assets/report-template.md`) and one `C<n>-<card-slug>.md` per candidate (from `assets/card-template.md`; SKILL.md links both). A folder, not one file, so that every file stays under the project's token budget: an agent reads the overview and the one card it works on, never the whole scan. It renders on GitHub — Mermaid diagrams, callouts, collapsible sections — so the report is read where the code is, and agents edit it and git diffs it line by line.
+One folder per scan: `docs/arch-review/YYYY-MM-DD-<slug>/`, holding `README.md` (the overview, from `assets/report-template.md`) and one `C<n>-<card-slug>.md` per candidate (from `assets/card-template.md`; SKILL.md links both). A folder, not one file, so that every file stays under the project's token budget: an agent reads the overview and the one card it works on, never the whole scan. It renders on GitHub (Mermaid diagrams, callouts, collapsible sections), so the report is read where the code is, and agents edit it and git diffs it line by line.
 
 The look is borrowed from upstream's HTML report: diagrams carry the weight, prose is sparse, every candidate is a card with the same shape. The index `docs/arch-review/README.md` lists reports newest first: date, headline linked to the report's `README.md`, open row count.
 
@@ -8,7 +8,7 @@ The look is borrowed from upstream's HTML report: diagrams carry the weight, pro
 
 The project's token budget is what its `file-tokens` job enforces: a pre-commit job in its lefthook config that blocks any staged file over it. `lefthook dump` shows the merged config (remotes and `lefthook-local.yml` included); the budget is the `--max-tokens <N>` in the job's `args:` (5,000 when absent). A project not yet migrated keeps a copy of the script instead (`git ls-files '*check-file-tokens.py'`) with its job's limit. Neither → 5,000 tokens. Bytes / 4 is the measure, so 20 KB at the default.
 
-**Files over it in the scope** (Step 1): run the job through lefthook, so it uses the project's pinned script and budget — `lefthook run pre-commit --job file-tokens --file <path> [--file …]`, or `--all-files` for the whole repo, invoked the way the project installs lefthook (`uv run lefthook`, `npm exec -- lefthook`, `lefthook`). With only the copied script: `git ls-files -z <scope> | xargs -0 python3 <path> --max-tokens <N>`. Every file it lists fails the next commit that touches it, so each one gets a row (LENSES.md, "Size as a pointer").
+**Files over it in the scope** (Step 1): run the job through lefthook, so it uses the project's pinned script and budget: `lefthook run pre-commit --job file-tokens --file <path> [--file …]`, or `--all-files` for the whole repo, invoked the way the project installs lefthook (`uv run lefthook`, `npm exec -- lefthook`, `lefthook`). With only the copied script: `git ls-files -z <scope> | xargs -0 python3 <path> --max-tokens <N>`. Every file it lists fails the next commit that touches it, so each one gets a row (LENSES.md, "Size as a pointer").
 
 **The report's own files** stay under it. A card that runs over has too many files or too long a diagram: trim the diagram to the modules that carry the point. An overview that runs over moves **Smaller findings** to `smaller-findings.md` beside it, and points the jump link and the Status rows' `S` links there (`smaller-findings.md#s1--title`).
 
@@ -16,43 +16,43 @@ Reports written before this layout are single files. They're dated records: leav
 
 ## What changes after the scan
 
-Only three parts: the **Status** table (including `S` rows a Build phase adds, with their **Smaller findings** entries) and **Departures** in the overview, and each card's **Decisions**. Everything else is the dated record of what the scan found — never rewritten. A new scan is a new folder.
+Only three parts: the **Status** table (including `S` rows a Build phase adds, with their **Smaller findings** entries) and **Departures** in the overview, and each card's **Decisions**. Everything else is the dated record of what the scan found, never rewritten. A new scan is a new folder.
 
 ## Overview sections, in order
 
-1. **Header** — repo and headline, then one meta line: date, SHA and branch, scope, glossary file, ADRs read. A jump line to the sections and the card files. The legend sits in a collapsed `<details>`. No introduction paragraph.
-2. **Status** — the backlog at a glance, in rank order, each ID linking to its card file: badges, door, lens, status, planned branch, PR, breaking, notes. Step 4 proposes the batch from it; every later session reads it first.
-3. **Where it hurts** — one diagram of the scanned area with the hot modules marked, and one line of evidence for why they're hot.
-4. **Since the last review** — the previous report's open rows and what became of them. Omit on a first scan.
-5. **Smaller findings** — `S1…`: title, `path:line`, which PR it rides with, two sentences.
-6. **Recommendation** — an `[!IMPORTANT]` callout: the candidate to take first, why in one sentence, the proposed batch (every Strong, in order).
-7. **Departures** — empty at scan time.
+1. **Header**: repo and headline, then one meta line: date, SHA and branch, scope, glossary file, ADRs read. A jump line to the sections and the card files. The legend sits in a collapsed `<details>`. No introduction paragraph.
+2. **Status**: the backlog at a glance, in rank order, each ID linking to its card file: badges, door, lens, status, planned branch, PR, breaking, notes. Step 4 proposes the batch from it; every later session reads it first.
+3. **Where it hurts**: one diagram of the scanned area with the hot modules marked, and one line of evidence for why they're hot.
+4. **Since the last review**: the previous report's open rows and what became of them. Omit on a first scan.
+5. **Smaller findings**: `S1…`: title, `path:line`, which PR it rides with, two sentences.
+6. **Recommendation**: an `[!IMPORTANT]` callout: the candidate to take first, why in one sentence, the proposed batch (every Strong, in order).
+7. **Departures**: empty at scan time.
 
 ## Candidate card
 
-One file per candidate, `C<n>-<card-slug>.md` beside the overview — the centrepiece of the report. If a diagram needs a paragraph to be understood, redraw the diagram.
+One file per candidate, `C<n>-<card-slug>.md` beside the overview, the centrepiece of the report. If a diagram needs a paragraph to be understood, redraw the diagram.
 
-- **Heading** — `# C1 · <title>`, a short title naming the fix ("Collapse the order intake pipeline", "Move checkout into one module"), with a `[← Report](README.md)` back link under it.
-- **Badge line** — strength (🟢 Strong · 🟡 Worth exploring · ⚪ Speculative), 🔴 live defect when a bug was reproduced, the dependency category in code font (`in-process`, `local-substitutable`, `ports & adapters`, `mock`), the door (↔ `two-way` · 🚪 `one-way`: hard to reverse once merged — a data migration, a published wire or file format, deleted user data), and what it builds on.
-- **Files** — code-font paths with line ranges, on one line.
-- **Before / After** — one Mermaid flowchart with two subgraphs side by side (`flowchart LR`, each subgraph `direction TB`, `before ~~~ after` to keep them apart). It's the only way GitHub puts two diagrams next to each other.
-- **Evidence** — a `[!CAUTION]` callout with the reproduced failure for a live defect; otherwise one plain line with the count that shows the friction.
-- **Removes** — the symptoms this one fix makes unnecessary, one bullet each with `path:line`: the special cases, hidden links, and needless links the scan found. Step 8 checks each one is gone.
-- **Problem / Solution / Wins** — a one-row table: one sentence, one sentence, ≤ 6-word wins separated by `<br>`. No interface design here; that's Step 6.
-- **ADR** — a `[!NOTE]` callout, only when an ADR bears on it.
-- **Decisions** — a collapsed `<details>`, empty until the candidate is implemented.
+- **Heading**: `# C1 · <title>`, a short title naming the fix ("Collapse the order intake pipeline", "Move checkout into one module"), with a `[← Report](README.md)` back link under it.
+- **Badge line**: strength (🟢 Strong · 🟡 Worth exploring · ⚪ Speculative), 🔴 live defect when a bug was reproduced, the dependency category in code font (`in-process`, `local-substitutable`, `ports & adapters`, `mock`), the door (↔ `two-way` · 🚪 `one-way`: hard to reverse once merged, such as a data migration, a published wire or file format, deleted user data), and what it builds on.
+- **Files**: code-font paths with line ranges, on one line.
+- **Before / After**: one Mermaid flowchart with two subgraphs side by side (`flowchart LR`, each subgraph `direction TB`, `before ~~~ after` to keep them apart). It's the only way GitHub puts two diagrams next to each other.
+- **Evidence**: a `[!CAUTION]` callout with the reproduced failure for a live defect; otherwise one plain line with the count that shows the friction.
+- **Removes**: the symptoms this one fix makes unnecessary, one bullet each with `path:line`: the special cases, hidden links, and needless links the scan found. Step 8 checks each one is gone.
+- **Problem / Solution / Wins**: a one-row table: one sentence, one sentence, ≤ 6-word wins separated by `<br>`. No interface design here; that's Step 6.
+- **ADR**: a `[!NOTE]` callout, only when an ADR bears on it.
+- **Decisions**: a collapsed `<details>`, empty until the candidate is implemented.
 
 ## Diagrams
 
-Every diagram ends with the same `classDef` block from the template, so the visual language holds across reports: white `module`, dashed grey `shallow`, dark `deep`, `faded` internals inside a deep module, red `leak`. Quote every label, and never put `{{ }}` in a diagram — double braces are Mermaid's hexagon shape and break the render.
+Every diagram ends with the same `classDef` block from the template, so the visual language holds across reports: white `module`, dashed grey `shallow`, dark `deep`, `faded` internals inside a deep module, red `leak`. Quote every label, and never put `{{ }}` in a diagram: double braces are Mermaid's hexagon shape and break the render.
 
 Pick the pattern that fits the candidate. Every diagram looking the same is a sign of not thinking about what each one needs to show.
 
-- **Call flow** — `flowchart`, the workhorse for "X calls Y calls Z, and look at the mess". Mark leaking modules `:::leak` and label the edge `"leak"`.
-- **Deep module** — the *after* as a dark `:::deep` node for the interface, joined by a dotted edge to a dark subgraph holding the absorbed modules as `:::faded` nodes. The template's card is this pattern.
-- **Round-trips** — `sequenceDiagram` for "before: six round-trips; after: one".
-- **Cross-section** — `flowchart TB` of thin `:::shallow` nodes for each pass-through a call crosses; after, one `:::deep` node named for the responsibility.
-- **Collapse** — before: a nested call tree as subgraphs; after: the same tree inside one dark subgraph, its calls faded.
+- **Call flow**: `flowchart`, the workhorse for "X calls Y calls Z, and look at the mess". Mark leaking modules `:::leak` and label the edge `"leak"`.
+- **Deep module**: the *after* as a dark `:::deep` node for the interface, joined by a dotted edge to a dark subgraph holding the absorbed modules as `:::faded` nodes. The template's card is this pattern.
+- **Round-trips**: `sequenceDiagram` for "before: six round-trips; after: one".
+- **Cross-section**: `flowchart TB` of thin `:::shallow` nodes for each pass-through a call crosses; after, one `:::deep` node named for the responsibility.
+- **Collapse**: before: a nested call tree as subgraphs; after: the same tree inside one dark subgraph, its calls faded.
 
 ## Tone
 
@@ -61,5 +61,5 @@ Plain and concise, with the nouns and verbs from codebase-design.
 - **Use exactly:** module, interface, implementation, depth, deep, shallow, seam, adapter, leverage, locality.
 - **Never substitute:** component, service, unit (for module) · API, signature (for interface) · boundary (for seam) · layer, wrapper (for module).
 - Fits: "Order intake is shallow: its interface nearly matches its implementation." "Pricing leaks across the seam." "Two adapters justify the seam: HTTP in prod, in-memory in tests."
-- **Wins** name the gain in those terms — "locality: pricing bugs live in one module", "interface shrinks; implementation absorbs the wrappers" — never "easier to maintain" or "cleaner code".
+- **Wins** name the gain in those terms: "locality: pricing bugs live in one module", "interface shrinks; implementation absorbs the wrappers", never "easier to maintain" or "cleaner code".
 - No hedging, no throat-clearing. If a sentence could be a bullet, make it one; if a bullet could be cut, cut it.

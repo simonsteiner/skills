@@ -1,7 +1,7 @@
 ---
 name: setup-lefthook
 description: >
-  Sets up lefthook git hooks in a project — installs lefthook the way the stack expects, writes a lefthook.yml whose pre-commit jobs fix and check only what's staged, and adds a per-file token budget that blocks oversized agent-written files with instructions for splitting them. Use when the user wants pre-commit or pre-push hooks, asks to add or set up lefthook, wants lint, format or type checks on commit, or wants to stop agents committing huge files.
+  Sets up lefthook git hooks in a project: installs lefthook the way the stack expects, writes a lefthook.yml whose pre-commit jobs fix and check only what's staged, and adds a per-file token budget that blocks oversized agent-written files with instructions for splitting them. Use when the user wants pre-commit or pre-push hooks, asks to add or set up lefthook, wants lint, format or type checks on commit, or wants to stop agents committing huge files.
 ---
 
 # Setup Lefthook

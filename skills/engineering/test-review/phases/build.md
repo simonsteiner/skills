@@ -10,6 +10,6 @@ Branch the planned name off the base, or check out the Design phase's branch for
 - **Waste.** Time the affected tests first. Call the Skill tool with "prune-tests", passing each file that holds the card's Prune rows. It takes only a path and prunes every test in it, but only the card's rows were confirmed: commit the changes to those rows alone, put back every other test it cut or rewrote, and make each of those a new `S` row in the status table, not part of this PR. Before each deletion, the card says what still guards the behaviour; a test that's the only guard of a behaviour something relies on is rewritten against that behaviour, not deleted. Time them again.
 - **Infra.** Implement the Decisions: hooks through the Skill tool with "setup-lefthook", workflows through the Skill tool with "secure-github-actions". Re-measure what the card said it should move (suite time, single-file time, reruns, an order-shuffled run passing).
 
-Then run what the repo runs — typecheck, lint, the full suite — and call the Skill tool with "conventional-commit" to commit.
+Then run what the repo runs (typecheck, lint, the full suite) and call the Skill tool with "conventional-commit" to commit.
 
 **Hand back:** the branch committed with checks green and the before/after numbers, the row `blocked` with its question, or what failed and the trimmed output that shows it.

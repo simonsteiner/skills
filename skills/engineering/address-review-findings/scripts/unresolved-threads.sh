@@ -14,11 +14,11 @@ set -euo pipefail
 #
 # stderr warns when the PR has no real review: no reviews, only ones that report their
 # own failure ("Copilot encountered an error…", rate-limit notices), only bots'
-# (CodeRabbit, Copilot) — their threads are still listed — or only thread replies.
+# (CodeRabbit, Copilot), whose threads are still listed, or only thread replies.
 # awaitingReviewer is true when you (the authenticated user) already replied last in a
-# thread someone else started — reply again only if the reviewer has said more since.
+# thread someone else started; reply again only if the reviewer has said more since.
 # A thread whose commentCount exceeds its comments array has more than one page of
-# comments — open its url.
+# comments; open its url.
 
 if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
   sed -n '/^# [A-Z]/,/^$/{/^$/q;s/^# \{0,1\}//p;}' "$0"  # the comment above
@@ -65,9 +65,9 @@ real="$(jq -s --argjson opened "[${opened//$'\n'/,}]" '[.[]
 human="$(jq '[.[] | select(.bot | not)] | length' <<<"$real")"
 bots="$(jq -r '[.[] | select(.bot) | .login] | unique | join(", ")' <<<"$real")"
 if [[ "$human" == 0 && -n "$bots" ]]; then
-  echo "warning: PR #$pr has no real review — only bot reviews ($bots); their threads are listed, but no person or review-prs run has reviewed it" >&2
+  echo "warning: PR #$pr has no real review; only bot reviews ($bots); their threads are listed, but no person or review-prs run has reviewed it" >&2
 elif [[ "$human" == 0 ]]; then
-  echo "warning: PR #$pr has no real review — none, or only failed ones; not a clean review, nobody looked" >&2
+  echo "warning: PR #$pr has no real review: none, or only failed ones; not a clean review, nobody looked" >&2
 fi
 
 # 100 is GitHub's maximum page size for both connections.

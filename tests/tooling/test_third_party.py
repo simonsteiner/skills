@@ -92,10 +92,10 @@ class ThirdPartyTest(unittest.TestCase):
         self.installed("alpha", text=USER_INVOKED.replace("beta", "alpha"))
         self.installed("beta", text="---\nname: beta\n---\nBody.\n")
         self.assertEqual([f for f in self.findings() if f[0].startswith("invocation")], [
-            (("invocation alpha (skills.json says model-invoked; the installed copy is user-invoked "
-             "— update skills.json and run scripts/build-catalog.py)"), True),
-            (("invocation beta (skills.json says user-invoked; the installed copy is model-invoked "
-             "— update skills.json and run scripts/build-catalog.py)"), True),
+            (("invocation alpha (skills.json says model-invoked; the installed copy is user-invoked; "
+             "update skills.json and run scripts/build-catalog.py)"), True),
+            (("invocation beta (skills.json says user-invoked; the installed copy is model-invoked; "
+             "update skills.json and run scripts/build-catalog.py)"), True),
         ])
 
     def test_invocation_reads_the_frontmatter_boolean(self):
@@ -125,7 +125,7 @@ class ThirdPartyTest(unittest.TestCase):
         self.locked("random", "x/y")
         self.locked("local", "/tmp/x", kind="local")
         found = self.findings()
-        self.assertIn(("archived  old is still installed — remove it with: npx skills remove -g old", True), found)
+        self.assertIn(("archived  old is still installed; remove it with: npx skills remove -g old", True), found)
         self.assertIn(("uncurated random (installed from x/y)", False), found)
         self.assertNotIn("local", " ".join(f for f, _ in found))
 
@@ -145,7 +145,7 @@ class ThirdPartyTest(unittest.TestCase):
         self.installed("alpha", claude, text="older", mtime=1)
         self.installed("beta", claude, text="newer", mtime=4_000_000_000)
         found = self.findings()
-        self.assertIn((f"drift     alpha ({claude} is older than the store — re-sync from a plain terminal)", True), found)
+        self.assertIn((f"drift     alpha ({claude} is older than the store; re-sync from a plain terminal)", True), found)
         self.assertIn((f"note      1 store copies under {self.home.store} are older than what the agents load, and unused",
                        False), found)
 
@@ -154,11 +154,11 @@ class ThirdPartyTest(unittest.TestCase):
         codex = self.home.agent_dir("codex")
         (codex / "alpha").unlink()
         self.installed("alpha", codex)
-        stale = f"({codex / 'alpha'} is a stale copy, not a link into the store — move it aside, then run the sync)"
+        stale = f"({codex / 'alpha'} is a stale copy, not a link into the store; move it aside, then run the sync)"
         self.assertIn((f"drift     alpha {stale}", True), self.findings())
         (codex / "alpha" / "SKILL.md").unlink()
         (codex / "alpha").rmdir()
-        self.assertIn((f"drift     alpha (codex is missing the link {codex / 'alpha'} — run the sync)", True),
+        self.assertIn((f"drift     alpha (codex is missing the link {codex / 'alpha'}; run the sync)", True),
                       self.findings())
 
     def test_link_makes_missing_links_and_refuses_to_replace_a_copy(self):
@@ -228,7 +228,7 @@ class ThirdPartyTest(unittest.TestCase):
             "beta": {"source": "b/two", "skillPath": "SKILL.md", "skillFolderHash": "root"},
         }
         found, asked = self.outdated({"a/one": {"": "x", "skills/alpha": "new"}, "b/two": {"": "root"}})
-        self.assertEqual(found, ["outdated  alpha (a/one changed it since the install of 2026-11-01 — run the sync)"])
+        self.assertEqual(found, ["outdated  alpha (a/one changed it since the install of 2026-11-01; run the sync)"])
         self.assertEqual(asked, ["a/one", "b/two"])
 
     def test_outdated_reports_a_skill_gone_upstream_and_an_unreadable_source(self):
@@ -246,7 +246,7 @@ class ThirdPartyTest(unittest.TestCase):
 
     def test_listing(self):
         lines = third_party.listing(self.manifest)
-        self.assertEqual(lines[:4], ["", "a/one — w", f"  {'alpha':<30} w", f"  {'old (archived)':<30} w"])
+        self.assertEqual(lines[:4], ["", "a/one: w", f"  {'alpha':<30} w", f"  {'old (archived)':<30} w"])
 
     def test_antigravity_uses_shared_gemini_config_skills_dir(self):
         self.assertEqual(self.home.agent_dir("antigravity"), self.home.root / ".gemini/config/skills")

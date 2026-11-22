@@ -1,4 +1,4 @@
-# Ref: https://docs.astral.sh/ruff/ — lints the Python tooling under scripts/ and tests/.
+# Ref: https://docs.astral.sh/ruff/; lints the Python tooling under scripts/ and tests/.
 # Run with `uvx ruff@<version> check scripts tests`; lefthook and CI pin the version.
 
 # The scripts use 3.10 syntax (`X | None`) and nothing newer.

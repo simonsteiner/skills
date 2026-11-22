@@ -17,11 +17,11 @@ Both work **with** the skills.sh model rather than as part of it. The right inte
 
 ## What They Are
 
-### microsoft/apm — Agent Package Manager
+### microsoft/apm: Agent Package Manager
 
 **Purpose:** A distributed, reproducible dependency manager for AI agent context (like npm for agent config).
 
-**Key idea:** One `apm.yml` file declares an agent's dependencies — instructions, skills, prompts, plugins, MCP servers — and `apm install` reproduces the setup everywhere.
+**Key idea:** One `apm.yml` file declares an agent's dependencies (instructions, skills, prompts, plugins, MCP servers) and `apm install` reproduces the setup everywhere.
 
 **Example apm.yml:**
 
@@ -49,43 +49,43 @@ dependencies:
 
 **First-party skills found:**
 
-- `apm-issue-autopilot` — intake-to-merge issue orchestrator.
-- `batch-bug-shepherd` — batch bug triage and PR shepherding.
-- `shepherd-driver` — single-PR drive-to-merge convergence loop.
-- `apm-review-panel` — PR review panel (transitive dependency).
-- `apm-triage-panel` — issue triage rubric (transitive dependency).
-- `pr-description-skill` — anchored PR description generation.
-- `apm-guide` — teaches agents how to use APM.
-- `apm-contributor-dashboard` — interactive GitHub dashboard for Copilot CLI.
+- `apm-issue-autopilot`: intake-to-merge issue orchestrator.
+- `batch-bug-shepherd`: batch bug triage and PR shepherding.
+- `shepherd-driver`: single-PR drive-to-merge convergence loop.
+- `apm-review-panel`: PR review panel (transitive dependency).
+- `apm-triage-panel`: issue triage rubric (transitive dependency).
+- `pr-description-skill`: anchored PR description generation.
+- `apm-guide`: teaches agents how to use APM.
+- `apm-contributor-dashboard`: interactive GitHub dashboard for Copilot CLI.
 
 All follow the `SKILL.md` pattern with detailed documentation, boundary contracts, composition instructions, and eval fixtures.
 
-### microsoft/agentrc — Context Engineering
+### microsoft/agentrc: Context Engineering
 
 **Purpose:** Analyze a repository and generate agent instruction files tailored to its codebase.
 
 **Key commands:**
 
-- `agentrc readiness` — score a repo's AI-readiness across 9 pillars (style, build, testing, docs, dev-env, code-quality, observability, security, AI tooling).
-- `agentrc instructions` — generate `.github/copilot-instructions.md` from codebase analysis.
-- `agentrc eval` — evaluate whether instructions improve agent responses.
-- `agentrc init` — interactive setup for a repository.
+- `agentrc readiness`: score a repo's AI-readiness across 9 pillars (style, build, testing, docs, dev-env, code-quality, observability, security, AI tooling).
+- `agentrc instructions`: generate `.github/copilot-instructions.md` from codebase analysis.
+- `agentrc eval`: evaluate whether instructions improve agent responses.
+- `agentrc init`: interactive setup for a repository.
 
 **Generated files:**
 
-- `.github/copilot-instructions.md` — root repo instructions.
-- `.instructions.md` — area-scoped instructions (for monorepos).
-- `AGENTS.md` — lean hub file with links to detailed instruction files.
-- `.vscode/mcp.json` — MCP server configuration.
-- `.vscode/settings.json` — VS Code settings for AI-assisted development.
-- `agentrc.eval.json` — test cases to measure instruction quality.
+- `.github/copilot-instructions.md`: root repo instructions.
+- `.instructions.md`: area-scoped instructions (for monorepos).
+- `AGENTS.md`: lean hub file with links to detailed instruction files.
+- `.vscode/mcp.json`: MCP server configuration.
+- `.vscode/settings.json`: VS Code settings for AI-assisted development.
+- `agentrc.eval.json`: test cases to measure instruction quality.
 
 **Built-in skills (all in `plugin/skills/`):**
 
-- `root-instructions` — generate root `.github/copilot-instructions.md` by analyzing the codebase.
-- `area-instructions` — generate scoped `.instructions.md` for a specific area.
-- `nested-hub` — generate a lean `AGENTS.md` hub file with recommended topics.
-- `nested-detail` — generate a deep-dive instruction file on a specific topic.
+- `root-instructions`: generate root `.github/copilot-instructions.md` by analyzing the codebase.
+- `area-instructions`: generate scoped `.instructions.md` for a specific area.
+- `nested-hub`: generate a lean `AGENTS.md` hub file with recommended topics.
+- `nested-detail`: generate a deep-dive instruction file on a specific topic.
 
 All are **SKILL.md format** with YAML frontmatter (name, description) and Copilot SDK integration.
 
@@ -136,7 +136,7 @@ APM ships 5+ reusable first-party skills that follow SKILL.md format. You could 
 **Pros:**
 
 - Follows your existing curation model (referenced, not vendored).
-- No duplication of effort — upstream maintains the source.
+- No duplication of effort: upstream maintains the source.
 - Leverages skills.sh CLI's existing `apm install` compatibility.
 - The skills are **mature, battle-tested** (Microsoft's own repo uses them).
 - Comes with eval fixtures showing quality improvements.
@@ -144,8 +144,8 @@ APM ships 5+ reusable first-party skills that follow SKILL.md format. You could 
 **Cons:**
 
 - APM's transitive dependency model is complex (shepherd-driver composes apm-review-panel, etc.). Your sync script would need to handle multi-level paths.
-- APM's skills are **domain-specific** (issue/PR automation) — less breadth than Cloudflare's.
-- Upstream moving fast (v0.10.0 currently) — breakage risk is higher than stable repos.
+- APM's skills are **domain-specific** (issue/PR automation); less breadth than Cloudflare's.
+- Upstream moving fast (v0.10.0 currently); breakage risk is higher than stable repos.
 
 ---
 
@@ -197,7 +197,7 @@ AgentRC ships 4 built-in skills for instruction generation. All are in `plugin/s
 
 - **Narrower scope**: instruction generation only. Not as broadly applicable as APM or Cloudflare.
 - **Young project** (experimental; breaking changes expected per README).
-- Depends on Copilot SDK (`github/copilot-sdk`) — adds a dependency.
+- Depends on Copilot SDK (`github/copilot-sdk`), which adds a dependency.
 
 ---
 
@@ -258,7 +258,7 @@ apm install
 
 **Pros:**
 
-- Low coupling — each tool owns its domain.
+- Low coupling: each tool owns its domain.
 - No maintenance burden (tools are external).
 - Positions skills as **part of a larger ecosystem** rather than competing with APM.
 
@@ -288,7 +288,7 @@ skills/engineering/repo-readiness-checkpoint/
 
 **Cons:**
 
-- **High maintenance cost** — you're wrapping external tools; upstream changes break you.
+- **High maintenance cost**: you're wrapping external tools; upstream changes break you.
 - Couples your skills to APM/agentrc versions.
 - Only worthwhile if you have strong opinions about *how* agentrc/apm should run.
 
@@ -298,7 +298,7 @@ skills/engineering/repo-readiness-checkpoint/
 
 **Start with Path 1 + Path 3 combined:**
 
-1. **Curate APM skills** into `third-party/skills.json` — they're mature, reusable, and well-documented.
+1. **Curate APM skills** into `third-party/skills.json`; they're mature, reusable, and well-documented.
 2. **Add a companion integration guide** in `docs/integrations/apm-agentrc-workflow.md` explaining how to use APM + agentrc to prepare a repo, then install your skills.
 
 This gives you:
@@ -307,7 +307,7 @@ This gives you:
 - Clear positioning in a broader ecosystem (you're not competing with APM; you're complementary).
 - A documented workflow that helps users understand the full picture.
 
-**Path 2 (AgentRC skills) is lower priority** — the project is young and narrower in scope. Revisit after it reaches v1.0.0 stable.
+**Path 2 (AgentRC skills) is lower priority**: the project is young and narrower in scope. Revisit after it reaches v1.0.0 stable.
 
 ---
 
@@ -401,7 +401,7 @@ agentrc/
 └── examples/                       # Sample configs and policies
 ```
 
-Key observation: Skills are resolved via `getBuiltinSkillsDir()` from the Copilot SDK. No manifest file needed for skills — just SKILL.md with frontmatter.
+Key observation: Skills are resolved via `getBuiltinSkillsDir()` from the Copilot SDK. No manifest file needed for skills, just SKILL.md with frontmatter.
 
 ---
 
@@ -418,7 +418,7 @@ Key observation: Skills are resolved via `getBuiltinSkillsDir()` from the Copilo
 1. **Decide on Path 1 vs Path 3** (or both).
 2. **If Path 1:** Open an issue to discuss APM's transitive dependency model with your sync script.
 3. **If Path 3:** Draft `docs/integrations/apm-agentrc-workflow.md` with examples.
-4. **Monitor agentrc** releases — revisit for Path 2 curation once v1.0.0 is stable.
+4. **Monitor agentrc** releases: revisit for Path 2 curation once v1.0.0 is stable.
 5. **Test sync script** with APM paths to ensure `skills.sh` CLI can resolve local-path dependencies.
 
 ---
