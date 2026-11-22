@@ -9,37 +9,53 @@ A folder with a `SKILL.md` that an agent loads on demand.
 _Avoid_: command, prompt, plugin
 
 **Owned skill**:
-A skill this repo writes and publishes, under `skills/<bucket>/`.
+A skill this repo writes, kept in one of its buckets.
 _Avoid_: local skill, custom skill
 
-**Curated skill**:
-Someone else's skill listed in `third-party/skills.json` and installed from its upstream repo; never copied into this one.
-_Avoid_: vendored, forked, third-party copy
+**Published skill**:
+An owned skill in a bucket that ships (engineering, productivity, misc): listed in the skill catalog and installable from this repo.
+_Avoid_: public skill, released skill
 
-**Archived skill**:
-A curated skill that was retired: kept in its source's `archived` list with the reason, no longer installed.
-_Avoid_: deleted, dropped
+**Skill catalog**:
+The list of published skills, grouped by bucket and invocation, generated from the skills themselves; each entry is the skill's name and the summary from its description.
+_Avoid_: skill list, index
 
 **Bucket**:
-A folder under `skills/` grouping owned skills by how often and where they're used (`engineering/`, `productivity/`, `misc/`, `personal/`, `in-progress/`, `deprecated/`).
+A group of owned skills sorted by how often and where they're used: engineering, productivity, misc, personal, in-progress, deprecated.
 _Avoid_: category
 
 **User-invoked**:
-A skill only the human can start, by typing its name (`disable-model-invocation: true`).
+A skill only the human can start, by typing its name.
 _Avoid_: slash command, manual skill
 
 **Model-invoked**:
 A skill the model can start on its own when the task matches its description, and the human can too.
 _Avoid_: auto skill
 
+**Curated skill**:
+Someone else's skill listed in the curated manifest and installed from its upstream repo; never copied into this one.
+_Avoid_: vendored, forked, third-party copy
+
+**Source**:
+An upstream repo in the curated manifest, with the agents its skills are installed into and the skills curated from it.
+_Avoid_: upstream, provider
+
+**Archived skill**:
+A skill kept in its source's archived list with the reason: curated once and retired, or considered and declined. Never installed.
+_Avoid_: deleted, dropped
+
+**Store**:
+The global folder every skill, owned or curated, is installed into; agents load it directly or through links.
+_Avoid_: cache, install dir
+
 **Bundled script**:
-An executable inside a skill's own `scripts/` folder that the agent runs while using the skill; it ships with the skill.
+An executable inside a skill that the agent runs while using the skill; it ships with the skill.
 _Avoid_: helper, tool
 
 **Tooling**:
-The commands this repo's maintainer runs to lint, link and sync skills, and the code they share; never shipped with a skill.
+The commands this repo's maintainer runs to lint, link, catalog and sync skills, and the code they share; never shipped with a skill.
 _Avoid_: scripts (ambiguous with bundled scripts)
 
 **Sync**:
-Running `scripts/sync-third-party.py` to install or upgrade every curated skill at upstream's latest.
+Installing or upgrading every curated skill at its upstream's latest.
 _Avoid_: update, pull
