@@ -4,8 +4,8 @@
 pre-commit:
   parallel: true
   commands:
-    # Rebuilds the skill catalog (README.md, bucket READMEs, plugin.json) from the
-    # skills and stages the files it rewrote, then lints the whole repo, not just
+    # Rebuilds the skill catalogs (README.md, bucket READMEs, plugin.json, and
+    # third-party/README.md) and stages the files it rewrote, then lints the whole repo, not just
     # the staged files: the rules cross files (links, shared trigger phrases). One
     # job, so the lint never reads a catalog the build is still writing. Same lint as CI.
     lint-skills:

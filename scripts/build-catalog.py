@@ -1,9 +1,10 @@
 #!/usr/bin/env -S uv run --locked --no-build python3
-"""Render the skill catalog from the skills: README.md, each bucket README, plugin.json.
+"""Render the skill catalogs: README.md, each bucket README and plugin.json from the skills,
+third-party/README.md from third-party/skills.json.
 
-The lists of owned skills in those files are generated (tooling/catalog.py has the
-format), so a skill is added, moved, renamed or re-described by editing the skill and
-running this; lefthook runs it on commit, and lint-skills.py fails while it's stale.
+The lists of skills in those files are generated (tooling/catalog.py has the format), so a
+skill is added, moved, renamed or re-described by editing the skill or its skills.json entry
+and running this; lefthook runs it on commit, and lint-skills.py fails while it's stale.
 
     scripts/build-catalog.py          rewrite whatever is out of date, list what changed
     scripts/build-catalog.py --check  list what's out of date and exit 1, change nothing
@@ -17,8 +18,9 @@ from tooling.skill_inventory import REPO, inventory
 USAGE = """\
 Usage: scripts/build-catalog.py [--check]
 
-  (no args)  rewrite the skill catalog in README.md, skills/*/README.md and
-             .claude-plugin/plugin.json from each SKILL.md
+  (no args)  rewrite the skill catalogs: README.md, skills/*/README.md and
+             .claude-plugin/plugin.json from each SKILL.md, third-party/README.md
+             from third-party/skills.json
   --check    report what's out of date and exit 1, without writing"""
 
 

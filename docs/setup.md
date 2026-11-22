@@ -37,7 +37,7 @@ The links point at this checkout's working tree, so whatever branch is checked o
 
 ## The skill catalog
 
-The skill lists in `README.md`, each `skills/<bucket>/README.md` and `.claude-plugin/plugin.json` are generated from the skills by `./scripts/build-catalog.py` (`--check` to only report). An entry's text is the skill's `description`: whole for a user-invoked skill, and up to the first sentence starting "Use" for a model-invoked one. To change an entry, change the skill and rerun it; the pre-commit hook does that for you and stages the result.
+The skill lists in `README.md`, each `skills/<bucket>/README.md` and `.claude-plugin/plugin.json` are generated from the skills, and the one in `third-party/README.md` from `third-party/skills.json`, by `./scripts/build-catalog.py` (`--check` to only report). An owned skill's entry is its `description`: whole for a user-invoked skill, and up to the first sentence starting "Use" for a model-invoked one. A curated skill's is the first sentence of its `why`, grouped by its `invocation`. To change an entry, change its source and rerun it; the pre-commit hook does that for you and stages the result.
 
 ## Checks
 
