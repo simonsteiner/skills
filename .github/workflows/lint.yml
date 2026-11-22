@@ -30,6 +30,9 @@ jobs:
       - name: Test the tooling and the bundled scripts
         run: uv run --locked --no-build python3 -m unittest discover -s tests -t .
 
+      - name: No em or en dashes
+        run: python3 scripts/check-dashes.py
+
       # Same version as lefthook; config in ruff.toml.
       - name: Ruff
         run: uvx --no-build ruff@0.17.0 check scripts tests

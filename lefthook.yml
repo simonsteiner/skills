@@ -20,6 +20,10 @@ pre-commit:
       glob: "{scripts/*.py,scripts/**/*.py,tests/*.py,tests/**/*.py,skills/**,.lefthook/**,pyproject.toml,uv.lock}"
       run: uv run --locked --no-build python3 -m unittest discover -s tests -t .
 
+    # Same as CI: no em or en dashes in any staged text file.
+    dashes:
+      run: python3 scripts/check-dashes.py {staged_files}
+
     # Same as CI's Ruff step; bump the version in both places.
     ruff:
       glob: "*.py"
