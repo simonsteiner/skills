@@ -1,13 +1,14 @@
 # Skills
 
-A personal collection of agent skills in the open Agent Skills format: each owned skill is a `skills/<bucket>/<name>/` folder with a `SKILL.md`, published through skills.sh and `.claude-plugin/plugin.json`. Other people's skills are curated in `third-party/skills.json` and installed from their own repos, never copied in. The Python tooling in `scripts/` lints the skills, renders the skill catalog from them, dev-links them into the local agents and syncs the curated ones.
+A personal collection of agent skills in the open Agent Skills format: each owned skill is a `skills/<bucket>/<name>/` folder with a `SKILL.md`, published through skills.sh and `.claude-plugin/plugin.json`. Other people's skills are curated in `third-party/skills.json` and installed from their own repos, never copied in. The Python tooling in `scripts/` lints the skills, renders the skill catalogs from them and from `third-party/skills.json`, and installs both sets: `scripts/sync-skills.py` links the owned skills from a clone into the local agents and syncs the curated ones.
 Domain terms are in `GLOSSARY.md`; decisions and their trade-offs are in `docs/adr/`.
 
 ## Commands
 
 ```bash
 ./scripts/lint-skills.py  # check every skill against the authoring and listing rules (CI runs it)
-./scripts/build-catalog.py  # rewrite the skill catalog in README.md, skills/*/README.md and plugin.json
+./scripts/build-catalog.py  # rewrite the skill catalogs: README.md, skills/*/README.md, plugin.json, third-party/README.md
+./scripts/sync-skills.py --check  # what a sync would change: checkout, links, curated installs, upstream versions
 uv run --locked --no-build python3 -m unittest discover -s tests -t .  # run every test
 uv run --locked --no-build python3 -m unittest tests.tooling.test_catalog  # run one test module
 uvx ruff@0.17.0 check scripts tests  # lint the Python
@@ -21,7 +22,7 @@ npx changeset  # add a changeset for a user-visible change
 ### Buckets and the catalog
 
 - **A skill's bucket says how it's used.** `engineering/` daily code work, `productivity/` daily non-code workflow, `misc/` rarely used, `personal/` tied to my own setup, `in-progress/` drafts, `deprecated/` no longer used. Only `engineering/`, `productivity/` and `misc/` are published.
-- **The skill catalog is generated from the skills.** The lists in `README.md`, each `skills/<bucket>/README.md` and `.claude-plugin/plugin.json` are written by `scripts/build-catalog.py` (format in `scripts/tooling/catalog.py`); to change an entry, change the skill and rerun it. Prose outside the `skill-catalog` markers is hand-written.
+- **The skill catalogs are generated.** The lists in `README.md`, each `skills/<bucket>/README.md` and `.claude-plugin/plugin.json` come from the skills, and the one in `third-party/README.md` from `third-party/skills.json`; `scripts/build-catalog.py` writes them (format in `scripts/tooling/catalog.py`). To change an entry, change its source and rerun it. Prose outside the `skill-catalog` markers is hand-written.
 - **A skill's `description` is its catalog entry.** A user-invoked description is a human-facing summary, used whole; a model-invoked one is a summary followed by trigger phrasing that starts with a "Use when…" or "Use before…" sentence, and the catalog keeps only the summary.
 
 ### Invocation
@@ -48,22 +49,22 @@ npx changeset  # add a changeset for a user-visible change
 
 ## Hard constraints
 
-- **Never hand-edit the skill catalog.** Edit the skill and run `scripts/build-catalog.py`; lint fails on a stale catalog.
+- **Never hand-edit a skill catalog.** Edit the skill or `third-party/skills.json` and run `scripts/build-catalog.py`; lint fails on a stale catalog.
 - **Never edit `CHANGELOG.md`.** Every PR a skill's user would notice adds a `.changeset/<name>.md` with `"simonsteiner-skills": minor|patch` front matter and a prose note; CI writes the changelog on `main` ([ADR 0006](docs/adr/0006-apply-changesets-on-main-without-a-version-pr.md)).
 - **Never rewrite an ADR.** Supersede it with a new one.
 
 ## Gotchas
 
-- **The dev links point at this checkout's working tree.** Whatever branch is checked out is what the local agents run, and they read skill names and descriptions only at startup.
-- **Don't run `scripts/sync-third-party.py` from inside an agent session.** The skills.sh CLI then installs to that agent alone and leaves the others on their old copies.
+- **The links point at this checkout's working tree.** Whatever branch is checked out is what the local agents run, and they read skill names and descriptions only at startup.
+- **Don't run `scripts/sync-skills.py` or `sync-third-party.py` from inside an agent session.** The skills.sh CLI then installs to that agent alone and leaves the others on their old copies.
 
 ## Docs
 
 - **No deploy step:** merging to `main` publishes, since skills.sh installs straight from this repo; `.github/workflows/changelog.yml` then writes `CHANGELOG.md` from the changesets ([ADR 0006](docs/adr/0006-apply-changesets-on-main-without-a-version-pr.md)).
 - `README.md` — what the repo is, how to install it, and the generated skill catalog.
-- `docs/setup.md` — developing the skills: dev-mode links, when to sync, every check and the git hooks.
+- `docs/setup.md` — what the sync does and when to rerun it, every check and the git hooks.
 - `docs/invocation.md` — user-invoked vs model-invoked in full; read before writing a description or a cross-skill call.
 - `docs/evals.md` — running a skill's evals and trigger evals; `docs/session-mining.md` — mining real sessions before writing evals or changing a description.
 - `third-party/README.md` — the curated skills, why each is there, and what the sync's `--check` reports.
-- `docs/adr/` — decisions; `.out-of-scope/` — ideas deliberately not built.
+- `docs/adr/` — decisions; `.out-of-scope/` — ideas deliberately not built; `docs/research/` — dated research notes, not kept current.
 - `docs/arch-review/` — architecture review reports, written by the `arch-review` skill.
