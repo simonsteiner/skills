@@ -11,7 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "skills/engineering/setup-lefthook/scripts/check-file-tokens.py"
-# What the lefthook remote (lefthook/file-tokens.yml) ships to other repos.
+# What the lefthook remote (lefthook/hooks.yml) ships to other repos.
 REMOTE_COPY = ROOT / ".lefthook/pre-commit/check-file-tokens.py"
 
 # A git hook running the suite exports GIT_DIR, GIT_INDEX_FILE, …; they'd point every call at the outer repo.

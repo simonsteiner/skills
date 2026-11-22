@@ -18,6 +18,10 @@
       "should_trigger": true
     },
     {
+      "query": "add a pre-commit check so agents stop writing em dashes",
+      "should_trigger": true
+    },
+    {
       "query": "the lint step fails in CI, fix it",
       "should_trigger": false
     },

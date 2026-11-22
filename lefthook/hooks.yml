@@ -1,0 +1,7 @@
+# Loaded by repos that take the shared hook scripts from this repo as a lefthook
+# remote, pinned to a hooks.v* tag. It ships .lefthook/pre-commit/check-file-tokens.py
+# and check-dashes.py, copies of the scripts in skills/engineering/setup-lefthook/scripts/
+# that a test keeps identical (a symlink checks out as a text file on Windows). The jobs
+# and their args live in each repo's own lefthook.yml. No jobs here: a job defined in a
+# remote fails open when the remote can't be fetched, and a repo can't override it.
+min_version: 2.0.5 # `args:` on script jobs
