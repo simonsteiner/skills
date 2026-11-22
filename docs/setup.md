@@ -11,7 +11,7 @@ npm install               # changesets, rumdl, and the lefthook git hooks
 
 ## The one-stop sync
 
-`./scripts/sync-skills.py` runs three steps: it fetches `origin` and fast-forwards the checkout when the default branch is checked out (on any other branch it only says how far behind it is), runs `link-skills.py`, then runs `sync-third-party.py`. `--check` changes nothing and reports all of it, plus `sync-third-party.py --outdated`: which installed curated skills changed upstream since they were installed. That check compares the folder hash the skills.sh lock file recorded at install with the folder on the upstream default branch, one GitHub API call per source; set `GH_TOKEN` or `GITHUB_TOKEN` if you hit GitHub's anonymous limit of 60 calls an hour. Curated skills aren't pinned, so a sync always moves them to upstream's latest.
+`./scripts/sync-skills.py` runs three steps: it fetches `origin` and fast-forwards the checkout when the default branch is checked out, and reruns the updated copy of itself if that pulled anything (on any other branch it only says how far behind it is); then it runs `link-skills.py` and `sync-third-party.py`. `--check` changes nothing and reports all of it, plus `sync-third-party.py --outdated`: which installed curated skills changed upstream since they were installed. That check compares the folder hash the skills.sh lock file recorded at install with the folder on the upstream default branch, one GitHub API call per source, authenticated with `GH_TOKEN`, `GITHUB_TOKEN` or your `gh` login when there is one, else anonymous (60 calls an hour). Curated skills aren't pinned, so a sync always moves them to upstream's latest.
 
 ## Links
 

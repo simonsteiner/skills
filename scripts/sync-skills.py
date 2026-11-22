@@ -7,8 +7,9 @@
 A sync runs, in order:
 
 1. the checkout: fetch origin and fast-forward when the default branch is checked out and
-   behind. On any other branch it only says how far behind it is, so a feature branch
-   being developed is never moved.
+   behind, then rerun the updated copy of this script for the remaining steps. On any
+   other branch it only says how far behind it is, so a feature branch being developed is
+   never moved.
 2. scripts/link-skills.py: link the owned skills from this checkout into the agents.
 3. scripts/sync-third-party.py: install the curated skills from upstream, at latest.
 
@@ -21,12 +22,14 @@ terminal, not inside an agent session (the CLI would install curated skills to t
 alone), and restart your agents afterwards: they read their skill list at startup.
 """
 
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent
 REPO = SCRIPTS.parent
+PULLED = "SYNC_SKILLS_PULLED"  # set on the rerun after a pull, so it doesn't pull again
 
 USAGE = """\
 Usage: scripts/sync-skills.py [--check]
@@ -81,12 +84,27 @@ def main(argv):
         print(f"error: unknown argument '{' '.join(argv)}'\n{USAGE}", file=sys.stderr)
         return 2
     check = bool(argv)
-    steps = [("checkout", lambda: checkout(check)),
-             ("owned skills", lambda: run("link-skills.py", *argv)),
+    if not check and not os.environ.get(PULLED):
+        print("==> checkout", flush=True)
+        before = git("rev-parse", "HEAD")[1]
+        status = checkout(check)
+        print(flush=True)
+        if git("rev-parse", "HEAD")[1] != before:
+            # The pull may have changed the steps below, or this script: run the new copy.
+            os.execve(sys.executable, [sys.executable, str(SCRIPTS / "sync-skills.py"), *argv],
+                      {**os.environ, PULLED: str(status)})
+        return finish(status, argv)
+    return finish(int(os.environ.get(PULLED) or 0), argv)
+
+
+def finish(status, argv):
+    """The steps after the checkout: links, curated installs, and with --check the checkout too."""
+    check = bool(argv)
+    steps = [("owned skills", lambda: run("link-skills.py", *argv)),
              ("third-party skills", lambda: run("sync-third-party.py", *argv))]
     if check:
+        steps.insert(0, ("checkout", lambda: checkout(check)))
         steps.append(("third-party versions", lambda: run("sync-third-party.py", "--outdated")))
-    status = 0
     for title, step in steps:
         print(f"==> {title}", flush=True)
         status |= step()

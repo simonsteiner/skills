@@ -77,5 +77,23 @@ class CheckoutTest(unittest.TestCase):
         self.assertEqual(self.checkout(check=False), (0, "this branch tracks no remote branch; not pulled"))
 
 
+    def test_a_sync_that_pulls_reruns_the_updated_script(self):
+        calls = []
+        with mock.patch.object(sync_skills.os, "execve", side_effect=lambda *a: calls.append(a) or 0), \
+             mock.patch.object(sync_skills, "finish", side_effect=lambda status, argv: status), \
+             contextlib.redirect_stdout(io.StringIO()):
+            sync_skills.main([])
+        (_exe, args, env), = calls
+        self.assertEqual(args[1:], [str(sync_skills.SCRIPTS / "sync-skills.py")])
+        self.assertEqual(env[sync_skills.PULLED], "0")
+
+    def test_the_rerun_skips_the_checkout(self):
+        finish = mock.Mock(return_value=0)
+        with mock.patch.dict(os.environ, {sync_skills.PULLED: "0"}), \
+             mock.patch.object(sync_skills, "finish", finish), mock.patch.object(sync_skills, "checkout") as checkout:
+            sync_skills.main([])
+        checkout.assert_not_called()
+        finish.assert_called_once_with(0, [])
+
 if __name__ == "__main__":
     unittest.main()

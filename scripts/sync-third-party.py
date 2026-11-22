@@ -46,7 +46,7 @@ Usage: scripts/sync-third-party.py [--check | --outdated | --list]
              unmanaged and note
   --outdated list the installed curated skills whose folder changed upstream since
              they were installed; exits 1 when any did or a source couldn't be read
-             (set GH_TOKEN or GITHUB_TOKEN past GitHub's anonymous rate limit)
+             (authenticated by GH_TOKEN, GITHUB_TOKEN or a gh login, else anonymous)
   --list     print the curated list and the reason for each skill"""
 
 

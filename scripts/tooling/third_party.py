@@ -321,18 +321,28 @@ def _link_findings(manifest, home):
     return found
 
 
+def _gh_token():
+    """The gh CLI's token for github.com, or None when gh is missing or logged out."""
+    try:
+        done = subprocess.run(["gh", "auth", "token", "--hostname", "github.com"],
+                              capture_output=True, text=True, timeout=10, check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return done.stdout.strip() if done.returncode == 0 else None
+
+
 def github_folders(repo):
     """{folder path: git tree SHA} for every folder on `repo`'s default branch ("" is the root).
 
-    One GitHub API call; GH_TOKEN or GITHUB_TOKEN, when set, lifts the anonymous rate limit
-    of 60 calls an hour. Raises OSError when GitHub can't be reached, ValueError when the
+    One GitHub API call; a token lifts the anonymous rate limit of 60 calls an hour:
+    GH_TOKEN or GITHUB_TOKEN when set, else the gh CLI's login when there is one. Raises OSError when GitHub can't be reached, ValueError when the
     answer isn't a complete tree.
     """
     request = urllib.request.Request(
         f"https://api.github.com/repos/{repo}/git/trees/HEAD?recursive=1",
         headers={"Accept": "application/vnd.github+json", "User-Agent": "skills-sync-third-party"},
     )
-    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or _gh_token()
     if token:
         request.add_header("Authorization", f"Bearer {token}")
     with urllib.request.urlopen(request, timeout=30) as response:
