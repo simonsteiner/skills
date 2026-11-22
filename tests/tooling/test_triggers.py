@@ -149,6 +149,11 @@ class TriggersTest(unittest.TestCase):
         self.assertEqual(len(json.loads((iteration / "cases.json").read_text())), 3)
         self.assertEqual(self.prepared()[0].name, "iteration-2")
 
+    def test_a_task_line_names_the_router_model(self):
+        _, tasks = self.prepared()
+        line = triggers.task_line(*tasks[0])
+        self.assertEqual(line, {"config": "with_skill", "task": str(tasks[0][1]), "model": "haiku"})
+
     def test_prepare_batches_long_case_lists(self):
         many = [(f"commit {i}", i % 2 == 0) for i in range(triggers.BATCH + 1)]
         self.skill("commit", "Writes commits. Use when committing.", triggers=triggers_json("commit", *many))

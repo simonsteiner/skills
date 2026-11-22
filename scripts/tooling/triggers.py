@@ -43,6 +43,9 @@ FILE = "evals/triggers.json"
 BATCH = 15
 CATALOGUE = "catalogue.json"
 SEED = 0  # a fixed shuffle: reruns and both configs see the same order
+# The model each router runs on: on the 70-prompt set Haiku routed as well as Opus, missing only
+# prompts Sonnet or Opus missed too. docs/evals.md, "Cost", has the role table.
+ROUTER_MODEL = "haiku"
 
 
 def problems(skill):
@@ -202,6 +205,11 @@ def prepare(repo, skills, baseline=None, also=(), root=None):
             (batch / "task.md").write_text(TASK.format(catalogue=listing, messages=messages, answers=batch / "answers.json"))
             tasks.append((config, batch / "task.md"))
     return iteration, tasks
+
+
+def task_line(config, task):
+    """The JSON line printed for one router task; the coordinating agent spawns the router on its "model"."""
+    return {"config": config, "task": str(task), "model": ROUTER_MODEL}
 
 
 def _answers(config_dir, iteration):
