@@ -31,7 +31,7 @@ A router reads every description side by side at the start of a turn, with nothi
 
 ## Cost
 
-Subagents run on the session's model and effort unless told otherwise. Spawn each one on the `model` its task line names, and leave out `--baseline` when no description changed.
+Subagents run on the session's model and effort unless told otherwise. Spawn each one on the `model` its task line names.
 
 | Role | Model | Why |
 |---|---|---|
