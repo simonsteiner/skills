@@ -40,7 +40,7 @@ Each finding names what to cut or what to reuse, not only that something is too 
 
 You will build this tomorrow, from this doc alone. Read the doc, your reading list, and the code it touches.
 
-- **No decisions left.** Every place where you'd have to make a design choice yourself (a schema, an API shape, an error strategy, a dependency, what happens on an edge case) is a finding: **Major**, or **Blocker** when everything after it depends on the choice.
+- **No decisions left.** Every place where you'd have to make a design choice yourself (a schema, an API shape, an error strategy, a dependency, what happens on an edge case) is a finding: **Major**, or **Blocker** when everything after it depends on the choice. Count only choices where two competent builders would reasonably go different ways, and the difference shows in behaviour, an interface or a later phase. A choice every competent builder would make the same way (a local name, a loop shape, a library's default) isn't a finding.
 - **Actionable steps.** "Update the auth service" isn't a step; "add `expires_at` to `Session` in `src/auth/session.ts`" is. Flag the first kind.
 - **File list.** The files to create, change or delete, each marked as which. A plan with no file list, or with unmarked paths, is one **Major**, not one per path.
 - **Claims about current code.** Check that every file, function, endpoint, table or flag the doc says exists now does exist and does what the doc says. A false claim about current behaviour is a **Blocker**: every later reader inherits it. Files the plan will create aren't findings.
