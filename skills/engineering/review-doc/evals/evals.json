@@ -11,7 +11,9 @@
         "Reports `retryWithDelay` as duplicating `withBackoff` in src/events/bus.ts",
         "Reports the claim that src/events/queue.ts exists as a Blocker",
         "Edits only docs/designs/webhooks.md, never source files, and doesn't commit",
-        "Runs further rounds with new sub-agents and ends after two clean rounds in a row, at five rounds, or on churn, saying which",
+        "Runs further rounds with new sub-agents, giving each round from round 2 on the diff since the last round and limiting its Blockers and Majors to changed text, or text the change contradicts",
+        "Edits finding by finding rather than rewriting the doc or a whole section",
+        "Ends after one clean round, at three rounds, when a round's Blockers and Majors don't drop, or on churn, saying which",
         "Ends with a report that includes the final paraphrase and the findings it disagreed with or declined with their evidence"
       ]
     },
