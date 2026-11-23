@@ -1,5 +1,11 @@
 # simonsteiner-skills
 
+## 1.19.1
+
+### Patch Changes
+
+- [#107](https://github.com/simonsteiner/skills/pull/107) [`b83b11c`](https://github.com/simonsteiner/skills/commit/b83b11c948f7c5bb0209d1fb34b5245992f1440b) Thanks [@simonsteiner](https://github.com/simonsteiner)! - review-doc stops sooner on big plans. From round 2 on, reviewers get the diff since the last round and raise Blockers or Majors only on changed text. A Readiness Major now needs a choice two competent builders would make differently. One clean round converges. Fixes are targeted edits, not rewrites. The review stops to ask after three rounds, or when a round's Blockers and Majors don't drop.
+
 ## 1.19.0
 
 ### Minor Changes
