@@ -11,6 +11,8 @@ Both works are licensed under the Apache License, Version 2.0, reproduced below.
 
 `MECHANICS.md` adapts the MIT-licensed Web Interface Guidelines by Vercel Labs, from <https://github.com/vercel-labs/web-interface-guidelines> (`command.md` at `434b7f9`), the rules behind the `web-design-guidelines` skill in `vercel-labs/agent-skills`. Carried over: the source-level checks the skill's floor and audit lacked, regrouped under the audit dimensions they score: forms, focus and semantics, motion, media, theming, touch and viewport, and state, content, and locale. Left out: the copy rules that conflict with this skill's sentence case and voice, the React hydration checks, font and connection preloading (the `web-perf` skill's ground), and specific library picks. The MIT licence is reproduced below.
 
+The agent-ready forms group in `MECHANICS.md` adapts the Apache-2.0-licensed `modern-web-guidance` skill by Google Chrome, from <https://github.com/GoogleChrome/modern-web-guidance> (`guides/webmcp/agentic-forms.md`, skill version `2026_11_16-268fb9ea`). Carried over: the declarative form attributes, when to allow auto-submit, answering an agent's submit, the activity pseudo-classes, and which forms suit the declarative API. Rewritten as checks; the imperative API and the framework hooks were left to the curated skill, which `SKILL.md` and `MECHANICS.md` call. Copyright Google LLC; the Apache licence is reproduced below.
+
 ## Contents
 
 - [MIT License](#mit-license)

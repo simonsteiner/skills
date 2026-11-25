@@ -64,6 +64,8 @@ For a new surface where several directions are genuinely open, show the user the
 
 Read [FLOOR.md](FLOOR.md) immediately before the first UI edit, including small refinements, and build to it without announcing it. Read [MECHANICS.md](MECHANICS.md) with it on every build: the source-level checks a screenshot can't show, most of which apply to any interactive surface.
 
+Before writing a platform pattern from memory (a dialog, popover, anchored menu, view transition, scroll-driven animation, container query, or form validation), call the Skill tool with "modern-web-guidance" if it's installed and look the pattern up. Its guides decide API details; the brief, the mode, and this skill decide how it looks.
+
 - **The first viewport is a thesis, not a header.** Open with the most characteristic thing in the subject's world, at the scale it has in life: a headline, an image, a live demo, an interaction. The big-number-small-label-plus-accent hero is the default; use it only if it's truly the best option.
 - **Typography carries the personality.** Use type as an active part of the design, not a neutral delivery vehicle. Line lengths under ~75 characters; serif body gets a little more line-height than sans.
 - **Visual structure is information.** Borders, numbering, dividers, and labels encode something about the content. `01 / 02 / 03` only for a real sequence.

@@ -10,6 +10,17 @@ What a screenshot can't show. FLOOR.md checks the render; this lens reads the so
 - Submit stays enabled until the request starts, then shows progress. Errors render inline beside their field, and focus moves to the first one.
 - Leaving with unsaved changes asks first (`beforeunload` or a router guard).
 
+## Agent-ready forms (Integrity)
+
+Only when the user asks for agent access or the project already uses WebMCP: the API is in early preview, and browsers without it ignore the attributes, so no feature detection is needed. The browser builds each tool's input schema from the form's labels, `name`s, and types, so the Forms group above comes first.
+
+- A self-contained form carries `toolname` (a specific verb and object, like `search-flights`) and a `tooldescription` that says what it does and when to use it, without listing the fields.
+- `toolparamdescription` only explains a value the label doesn't, with an example; on a radio group it goes on the `<fieldset>`.
+- `toolautosubmit` only on reads and reversible actions (search, filter, add to cart, save a draft). Never on deleting, paying, sending to other people, publishing, or account and permission changes: the person confirms those.
+- The submit handler answers the agent: when `event.agentInvoked`, it passes validation errors and the result to `event.respondWith()` instead of only rendering them.
+- Agent activity is visible through `:tool-form-active` and `:tool-submit-active`, styled with the surface's own tokens.
+- Forms with dependent fields, custom controls, or several steps don't get the attributes; they need the imperative API or a framework's own hook. Call the Skill tool with "modern-web-guidance" if it's installed and retrieve its WebMCP guides before writing either.
+
 ## Focus and semantics (Accessibility)
 
 - No `outline: none` without a `:focus-visible` replacement. Style `:focus-visible`, not `:focus`; `:focus-within` for compound controls.
