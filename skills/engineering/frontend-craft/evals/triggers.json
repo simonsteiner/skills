@@ -1,5 +1,7 @@
 {
-  "skills": ["frontend-craft"],
+  "skills": [
+    "frontend-craft"
+  ],
   "triggers": [
     {
       "query": "build a landing page for our app",
@@ -35,6 +37,18 @@
     },
     {
       "query": "make the CLI output prettier with colors",
+      "should_trigger": false
+    },
+    {
+      "query": "I'm not sure how the new team invite flow should look, can you give me a few design directions before we build it?",
+      "should_trigger": true
+    },
+    {
+      "query": "what should the empty state for saved searches look like? show me some options first",
+      "should_trigger": true
+    },
+    {
+      "query": "give me a few options for how to structure the invoices database tables",
       "should_trigger": false
     }
   ]

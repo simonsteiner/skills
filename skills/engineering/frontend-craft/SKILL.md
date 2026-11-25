@@ -1,7 +1,7 @@
 ---
 name: frontend-craft
 description: >
-  Designs and builds frontend UI with a deliberate point of view instead of templated defaults: picks the surface's mode, plans a compact token system, reviews the plan against the brief, builds to a quality floor, and checks the render in bounded passes. Also critiques or audits existing UI and handles bolder, quieter, simpler, or polish requests. Use when building or redesigning a website, landing page, dashboard, app screen, component, form, or settings page; when the user asks for a UI to look less generic, better designed, bolder, or calmer; or when asked to critique, audit, or polish a frontend. Not for backend-only work.
+  Designs and builds frontend UI with a deliberate point of view instead of templated defaults: picks the surface's mode, plans a compact token system, reviews the plan against the brief, builds to a quality floor, and checks the render in bounded passes. Also shapes a design direction before any code, critiques or audits existing UI, and handles bolder, quieter, simpler, or polish requests. Use when building or redesigning a website, landing page, dashboard, app screen, component, form, or settings page; when the user is unsure how a feature or screen should look, or wants design options or a direction before building; when the user asks for a UI to look less generic, better designed, bolder, or calmer; or when asked to critique, audit, or polish a frontend. Not for backend-only work.
 ---
 
 # Frontend Craft
@@ -16,6 +16,7 @@ Work as the design lead of a studio known for giving every client an identity no
 
 Pick the entry from what was asked:
 
+- **Unsure of the direction** for a feature or surface, or asked for options before building: read [SHAPE.md](SHAPE.md) and follow it. Write no code until the user picks a direction.
 - **Build or redesign** a surface: [Build](#build).
 - **Refine** something that exists (bolder, quieter, simpler, polish, copy): [Refine](#refine).
 - **Critique or audit**: read [REVIEW.md](REVIEW.md) and follow it. Don't fix anything until the user picks what to address.
@@ -58,7 +59,7 @@ AI-generated design clusters around a few looks regardless of subject:
 
 Each is legitimate when the brief asks for it. Where an axis is free, landing on one means you weren't deciding. Work through a similar prompt in your head: if you'd arrive at the same plan for a different product in this category, revise that part and say what changed and why. Only then write code.
 
-For a new surface where several directions are genuinely open, show the user the plan (or two or three materially different ones) before building. A precise request, or an addition to an established surface, needs only a one-line confirmation.
+When several directions are genuinely open, for a new surface or for a feature on an established one, stop and shape them with [SHAPE.md](SHAPE.md) before building. A precise request, or an addition whose shape is obvious, needs only a one-line confirmation.
 
 ### 4. Build
 
