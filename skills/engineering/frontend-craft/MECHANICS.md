@@ -18,8 +18,8 @@ Only when the user asks for agent access or the project already uses WebMCP: the
 - `toolparamdescription` only explains a value the label doesn't, with an example; on a radio group it goes on the `<fieldset>`.
 - `toolautosubmit` only on reads and reversible actions (search, filter, add to cart, save a draft). Never on deleting, paying, sending to other people, publishing, or account and permission changes: the person confirms those.
 - The submit handler answers the agent: when `event.agentInvoked`, it passes validation errors and the result to `event.respondWith()` instead of only rendering them.
-- Agent activity is visible through `:tool-form-active` and `:tool-submit-active`, styled with the surface's own tokens.
-- Forms with dependent fields, custom controls, or several steps don't get the attributes; they need the imperative API or a framework's own hook. Call the Skill tool with "modern-web-guidance" if it's installed and retrieve its WebMCP guides before writing either.
+- Agent activity is visible through `:tool-form-active`, and `:tool-submit-active` on forms without `toolautosubmit` (it marks the pause for the person's review), styled with the surface's own tokens.
+- Forms with dependent fields, custom controls, or several steps don't get the attributes; they need the imperative API or a framework's own hook. Call the Skill tool with "modern-web-guidance" if it's installed and retrieve its WebMCP guides before writing either. Angular signal forms (`form()` from `@angular/forms/signals`) never get the attributes: they register through `provideExperimentalWebMcpForms()` and `form()`'s `experimentalWebMcpTool` option, and doing both registers the form twice.
 
 ## Focus and semantics (Accessibility)
 
