@@ -1,5 +1,13 @@
 # simonsteiner-skills
 
+## 1.20.0
+
+### Minor Changes
+
+- [#108](https://github.com/simonsteiner/skills/pull/108) [`6feaac0`](https://github.com/simonsteiner/skills/commit/6feaac018f9b37950dd7218b4be52446800b56c9) Thanks [@simonsteiner](https://github.com/simonsteiner)! - frontend-craft can now shape a design direction before any code. Ask it how a feature or screen should look, or for options before building, and it asks one round of questions. It then offers two or three directions, each with a wireframe, states, its one memorable move, and an honest risk, plus the category standard done well as a plain last option. When the directions differ in type, colour, or density, it also renders them as one HTML mockup with a switcher, kept outside the project. It ends with a short brief and waits for you to pick. Build step 3 hands off to it when the direction is genuinely open, including for a feature on an existing screen.
+
+- [#108](https://github.com/simonsteiner/skills/pull/108) [`da5fca4`](https://github.com/simonsteiner/skills/commit/da5fca46d18a6269d884a11426fa764186bf5206) Thanks [@simonsteiner](https://github.com/simonsteiner)! - Curates Chrome's `modern-web-guidance` skill, which looks up current web platform practice, WebMCP included, before code is written from memory. frontend-craft now calls it before writing a platform pattern such as a dialog, popover, or view transition. Its MECHANICS.md lens gains an agent-ready forms group, used only when asked for or when the project already uses WebMCP. It covers the declarative WebMCP attributes, auto-submit only for safe actions, and answering an agent's submit.
+
 ## 1.19.1
 
 ### Patch Changes
