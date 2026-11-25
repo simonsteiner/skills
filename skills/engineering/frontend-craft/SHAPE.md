@@ -34,18 +34,27 @@ Each direction gets:
 
 Run Build step 3's review over each: a direction that would come out the same for an unrelated product in the category gets revised before it's shown.
 
+### HTML mockups, when the difference only shows rendered
+
+The ASCII wireframe is the default, and enough when directions differ in layout or flow. When they differ in type, colour, density, or world, or the user asks to see them, and you can render HTML, add a mockup:
+
+- **One self-contained file** holding every direction, including the standard option, with a small switcher to flip between them. Real content, and the project's own tokens and fonts when the surface exists.
+- **Equal fidelity.** Each direction at the same finish, so none wins by being further along. Static, with just enough interaction to show the memorable move.
+- **Outside the project.** It goes in the scratchpad or a preview, never the codebase; shaping still writes no project code.
+- **One render check**, desktop and mobile, to confirm it shows what the directions claim; then present it. Feedback feeds the next round of directions, not polish on the mockup.
+
 Add one more option, last and plain: **the category standard, done well.** It's the user's door, not your recommendation, and the other directions are never weakened or inflated beside it. If the user takes it, ask for two or three products it should sit alongside and make their craft level the bar.
 
 ## 4. Recommend, then let the user choose
 
-Lead with the direction you'd build and say why in one line, then show all of them in full so they can be compared side by side. The user may pick one, combine parts, or ask for another round. A new round drops every direction already shown; after two rounds without a pick, ask what quality is missing instead of drafting more.
+Lead with the direction you'd build and say why in one line, then show all of them in full (wireframes, and the mockup when there is one) so they can be compared side by side. The user may pick one, combine parts, or ask for another round. A new round drops every direction already shown; after two rounds without a pick, ask what quality is missing instead of drafting more.
 
 ## 5. Write the brief and stop
 
 Write the smallest brief that lets Build start without inventing anything:
 
 - **Job and audience**, with the mode.
-- **Chosen direction:** thesis, wireframe, memorable move, and the tokens when the world is new.
+- **Chosen direction:** thesis, wireframe, memorable move, the tokens when the world is new, and the mockup's path when there is one.
 - **States and content ranges.**
 - **Boundaries:** what stays untouched, and the anti-goals.
 - **Open decisions** a builder must not settle alone, and binding constraints.
