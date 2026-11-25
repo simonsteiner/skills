@@ -1,6 +1,6 @@
 # Shape a direction
 
-Decide what a feature or surface should be and how it should look, and stop at a confirmed brief. Shaping writes no code: Build picks the brief up once the user chooses a direction.
+Decide what a feature or surface should be and how it should look, and stop at a confirmed brief. Shaping writes no project code (a throwaway mockup outside the repo is fine): Build picks the brief up once the user chooses a direction.
 
 ## 1. Ask, once
 
@@ -11,7 +11,7 @@ Read what's already true first, as SKILL.md says: the `DESIGN.md` if there is on
 - What real content and data does it carry, at its shortest, typical, and longest? Which states matter: first run, empty, loading, error, success, overflow?
 - What must stay untouched, and what would make it feel wrong even if it looked polished?
 
-Where the code or the brief already answers one, state the likely answer and invite correction instead of asking. Ask a second round only when the answers expose a material gap. Never ask for CSS values or offer canned aesthetic lanes.
+Where the code or the brief already answers one, state the likely answer and invite correction instead of asking. Ask a second round only when the answers expose a material gap. Never ask for CSS values or offer canned aesthetic lanes. Coming from Build, skip what its steps 1 and 2 already settled, and draft the directions from that plan rather than beside it.
 
 ## 2. Name the rut
 
@@ -32,7 +32,9 @@ Each direction gets:
 - **Memorable move:** the one place it spends its boldness.
 - **Honest risk:** what could go wrong, including that it's familiar when that's true.
 
-Run Build step 3's review over each: a direction that would come out the same for an unrelated product in the category gets revised before it's shown.
+Run the calibration review from Build step 3 (the five looks and the similar-prompt test) over each: a direction that would come out the same for an unrelated product in the category gets revised before it's shown.
+
+Add one more option, last and plain: **the category standard, done well.** It's the user's door, not your recommendation, and the other directions are never weakened or inflated beside it. If the user takes it, ask for two or three products it should sit alongside and make their craft level the bar.
 
 ### HTML mockups, when the difference only shows rendered
 
@@ -42,8 +44,6 @@ The ASCII wireframe is the default, and enough when directions differ in layout 
 - **Equal fidelity.** Each direction at the same finish, so none wins by being further along. Static, with just enough interaction to show the memorable move.
 - **Outside the project.** It goes in the scratchpad or a preview, never the codebase; shaping still writes no project code.
 - **One render check**, desktop and mobile, to confirm it shows what the directions claim; then present it. Feedback feeds the next round of directions, not polish on the mockup.
-
-Add one more option, last and plain: **the category standard, done well.** It's the user's door, not your recommendation, and the other directions are never weakened or inflated beside it. If the user takes it, ask for two or three products it should sit alongside and make their craft level the bar.
 
 ## 4. Recommend, then let the user choose
 

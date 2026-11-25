@@ -16,7 +16,7 @@ Work as the design lead of a studio known for giving every client an identity no
 
 Pick the entry from what was asked:
 
-- **Unsure of the direction** for a feature or surface, or asked for options before building: read [SHAPE.md](SHAPE.md) and follow it. Write no code until the user picks a direction.
+- **Unsure of the direction** for a feature or surface, or asked for options before building: read [SHAPE.md](SHAPE.md) and follow it. Write no project code until the user picks a direction.
 - **Build or redesign** a surface: [Build](#build).
 - **Refine** something that exists (bolder, quieter, simpler, polish, copy): [Refine](#refine).
 - **Critique or audit**: read [REVIEW.md](REVIEW.md) and follow it. Don't fix anything until the user picks what to address.
@@ -59,7 +59,7 @@ AI-generated design clusters around a few looks regardless of subject:
 
 Each is legitimate when the brief asks for it. Where an axis is free, landing on one means you weren't deciding. Work through a similar prompt in your head: if you'd arrive at the same plan for a different product in this category, revise that part and say what changed and why. Only then write code.
 
-When several directions are genuinely open, for a new surface or for a feature on an established one, stop and shape them with [SHAPE.md](SHAPE.md) before building. A precise request, or an addition whose shape is obvious, needs only a one-line confirmation.
+When several directions are genuinely open, for a new surface or for a feature on an established one, stop and shape them with [SHAPE.md](SHAPE.md), starting from the grounding and plan so far, before building. A precise request, or an addition whose shape is obvious, needs only a one-line confirmation.
 
 ### 4. Build
 
