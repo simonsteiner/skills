@@ -1,7 +1,5 @@
 {
-  "skills": [
-    "frontend-craft"
-  ],
+  "skills": ["frontend-craft"],
   "triggers": [
     {
       "query": "build a landing page for our app",
@@ -48,7 +46,11 @@
       "should_trigger": true
     },
     {
-      "query": "give me a few options for how to structure the invoices database tables",
+      "query": "add a filters panel to the existing orders screen, but I'm not sure how it should look; show me some directions",
+      "should_trigger": true
+    },
+    {
+      "query": "give me a few options for naming the CLI flags",
       "should_trigger": false
     }
   ]
