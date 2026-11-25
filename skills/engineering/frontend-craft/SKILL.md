@@ -1,7 +1,7 @@
 ---
 name: frontend-craft
 description: >
-  Designs and builds frontend UI with a deliberate point of view instead of templated defaults: picks the surface's mode, plans a compact token system, reviews the plan against the brief, builds to a quality floor, and checks the render in bounded passes. Also critiques or audits existing UI and handles bolder, quieter, simpler, or polish requests. Use when building or redesigning a website, landing page, dashboard, app screen, component, form, or settings page; when the user asks for a UI to look less generic, better designed, bolder, or calmer; or when asked to critique, audit, or polish a frontend. Not for backend-only work.
+  Designs and builds frontend UI with a deliberate point of view instead of templated defaults: picks the surface's mode, plans a compact token system, reviews the plan against the brief, builds to a quality floor, and checks the render in bounded passes. Also shapes a design direction before any code, critiques or audits existing UI, and handles bolder, quieter, simpler, or polish requests. Use when building or redesigning a website, landing page, dashboard, app screen, component, form, or settings page; when the user is unsure how a feature or screen should look, or wants design options or a direction before building; when the user asks for a UI to look less generic, better designed, bolder, or calmer; or when asked to critique, audit, or polish a frontend. Not for backend-only work.
 ---
 
 # Frontend Craft
@@ -16,6 +16,7 @@ Work as the design lead of a studio known for giving every client an identity no
 
 Pick the entry from what was asked:
 
+- **Unsure of the direction** for a feature or surface, or asked for options before building: read [SHAPE.md](SHAPE.md) and follow it. Write no project code until the user picks a direction.
 - **Build or redesign** a surface: [Build](#build).
 - **Refine** something that exists (bolder, quieter, simpler, polish, copy): [Refine](#refine).
 - **Critique or audit**: read [REVIEW.md](REVIEW.md) and follow it. Don't fix anything until the user picks what to address.
@@ -58,11 +59,13 @@ AI-generated design clusters around a few looks regardless of subject:
 
 Each is legitimate when the brief asks for it. Where an axis is free, landing on one means you weren't deciding. Work through a similar prompt in your head: if you'd arrive at the same plan for a different product in this category, revise that part and say what changed and why. Only then write code.
 
-For a new surface where several directions are genuinely open, show the user the plan (or two or three materially different ones) before building. A precise request, or an addition to an established surface, needs only a one-line confirmation.
+When several directions are genuinely open, for a new surface or for a feature on an established one, stop and shape them with [SHAPE.md](SHAPE.md), starting from the grounding and plan so far, before building. A precise request, or an addition whose shape is obvious, needs only a one-line confirmation.
 
 ### 4. Build
 
 Read [FLOOR.md](FLOOR.md) immediately before the first UI edit, including small refinements, and build to it without announcing it. Read [MECHANICS.md](MECHANICS.md) with it on every build: the source-level checks a screenshot can't show, most of which apply to any interactive surface.
+
+Before writing a platform pattern from memory (a dialog, popover, anchored menu, view transition, scroll-driven animation, container query, or form validation), call the Skill tool with "modern-web-guidance" if it's installed and look the pattern up. Its guides decide API details; the brief, the mode, and this skill decide how it looks.
 
 - **The first viewport is a thesis, not a header.** Open with the most characteristic thing in the subject's world, at the scale it has in life: a headline, an image, a live demo, an interaction. The big-number-small-label-plus-accent hero is the default; use it only if it's truly the best option.
 - **Typography carries the personality.** Use type as an active part of the design, not a neutral delivery vehicle. Line lengths under ~75 characters; serif body gets a little more line-height than sans.

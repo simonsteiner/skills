@@ -334,6 +334,25 @@
           "why": "Never curated: a one-pass whole-codebase refactor that competes with the owned arch-review's backlog of stacked PRs. Its coupling lens (hidden links, needless links, surplus), special cases as evidence, git co-change and the comments rule were adapted into arch-review instead (MIT, credited in its CREDITS.md)."
         }
       ]
+    },
+    {
+      "repo": "GoogleChrome/modern-web-guidance",
+      "why": "Chrome's guides to current web platform practice (HTML, CSS, client-side JS, forms, accessibility, performance, WebMCP), retrieved on demand by an npx CLI. Platform APIs move faster than training data, and the owned frontend-craft makes design choices rather than tracking APIs, so the two sit side by side the way web-perf does. Each lookup runs `npx -y modern-web-guidance@latest`, an unpinned npm package; it only reads and prints guides.",
+      "skills": [
+        {
+          "name": "modern-web-guidance",
+          "path": "skills/modern-web-guidance",
+          "invocation": "model",
+          "why": "Searches and retrieves a guide before writing a UI pattern (dialogs, popovers, anchor positioning, view transitions, form validation, Core Web Vitals) instead of from memory. Its WebMCP guides cover the declarative form attributes and the imperative registerTool API for agent-ready pages. frontend-craft's Build step and its MECHANICS.md agent-ready forms group call it. Its description says to run first on every HTML/CSS/JS task, so it loads beside frontend-craft on most UI work."
+        }
+      ],
+      "archived": [
+        {
+          "name": "chrome-extensions",
+          "path": "skills/chrome-extensions",
+          "why": "Never curated: no Chrome extension work to use it on."
+        }
+      ]
     }
   ]
 }

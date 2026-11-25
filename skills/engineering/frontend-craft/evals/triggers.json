@@ -36,6 +36,22 @@
     {
       "query": "make the CLI output prettier with colors",
       "should_trigger": false
+    },
+    {
+      "query": "I'm not sure how the new team invite flow should look, can you give me a few design directions before we build it?",
+      "should_trigger": true
+    },
+    {
+      "query": "what should the empty state for saved searches look like? show me some options first",
+      "should_trigger": true
+    },
+    {
+      "query": "add a filters panel to the existing orders screen, but I'm not sure how it should look; show me some directions",
+      "should_trigger": true
+    },
+    {
+      "query": "give me a few options for naming the CLI flags",
+      "should_trigger": false
     }
   ]
 }

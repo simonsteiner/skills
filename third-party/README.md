@@ -201,4 +201,19 @@ Two skills on agent-friendly codebases. Only prune-tests is curated; untangle-co
 
 </details>
 
+### [GoogleChrome/modern-web-guidance](https://github.com/GoogleChrome/modern-web-guidance)
+
+Chrome's guides to current web platform practice (HTML, CSS, client-side JS, forms, accessibility, performance, WebMCP), retrieved on demand by an npx CLI. Platform APIs move faster than training data, and the owned frontend-craft makes design choices rather than tracking APIs, so the two sit side by side the way web-perf does. Each lookup runs `npx -y modern-web-guidance@latest`, an unpinned npm package; it only reads and prints guides.
+
+#### Model-invoked
+
+- **[modern-web-guidance](https://github.com/GoogleChrome/modern-web-guidance/blob/HEAD/skills/modern-web-guidance/SKILL.md)**: Searches and retrieves a guide before writing a UI pattern (dialogs, popovers, anchor positioning, view transitions, form validation, Core Web Vitals) instead of from memory.
+
+<details>
+<summary>Archived (1)</summary>
+
+- **[chrome-extensions](https://github.com/GoogleChrome/modern-web-guidance/blob/HEAD/skills/chrome-extensions/SKILL.md)**: Never curated: no Chrome extension work to use it on.
+
+</details>
+
 <!-- skill-catalog:end -->
